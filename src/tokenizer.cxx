@@ -38,7 +38,7 @@ static std::vector<token_t*> tokens;
 
 std::string tokenToString(TokenType type)
 {
-    switch (type)
+    switch(type)
     {
     case TokenType::INVALID:
         return "INVALID";
@@ -88,14 +88,16 @@ void newToken()
     token = (token_t*)calloc(1,sizeof(token_t)+1);
     token->line = line;
     token->column = col;
+    token->file = file;
     token->text = (codechar*)calloc(1,sizeof(codechar)*((uint64_t)mdata-(uint64_t)str)+1);
     ntl0:;
 }
 
 std::vector<token_t*> tokenize(codechar* __str)
 {
+    std::cout << "\033[32m";
     tokens.clear();
-    line = 0;
+    line = 1;
     col = 0;
     tlen = 0;
     str = __str;
@@ -512,6 +514,8 @@ std::vector<token_t*> tokenizeFile(char* fname)
     fread(content, fsize, 1, f);
     fclose(f);
     content[fsize] = 0x00;//terminate content string
+
+    file = fname;
 
     return tokenize(content);
 }

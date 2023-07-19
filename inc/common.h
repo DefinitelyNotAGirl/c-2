@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 10th 2023 3:57:09 pm
+ * Last Modified: Tuesday July 18th 2023 4:48:23 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -53,6 +53,7 @@ struct token_t
 {
     TokenType type;
     uint64_t line;
+    char* file;
     uint64_t column;
     codechar* text;
 };

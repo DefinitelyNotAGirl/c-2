@@ -1,11 +1,11 @@
 /*
- * Created Date: Monday July 17th 2023
+ * Created Date: Wednesday July 19th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 18th 2023 4:48:23 pm
+ * Last Modified: Wednesday July 19th 2023 8:06:45 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -27,8 +27,3 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-
-//#include <stdint>
-
-#define _MALLOCSIZE 0x200000
-u64 malloc(uint64_t size);

@@ -29,25 +29,49 @@
  */
 
 #include <common.h>
+#include <options.h>
 #include <compiler.hxx>
 #include <util.h>
+#include <errors.h>
+
+void pushScope()
+{
+    scope* ns = (scope*)malloc(sizeof(scope));
+    ns->parent = currentScope;
+    ns->defines = std::vector<define*>();
+    ns->functions = std::vector<function*>();
+    ns->variables = std::vector<variable*>();
+    ns->types = std::vector<type*>();
+    currentScope = ns;
+}
+
+void popScope()
+{
+    scope* oldScope = currentScope;
+    currentScope = currentScope->parent;
+
+    free(oldScope);
+}
 
 void parse(std::vector<token_t*> tokens)
 {
+    std::cout << "\033[33m";
+    pushScope();
     for(uint64_t c = 0;c<tokens.size();c++)
     {
         token_t* i = tokens[c];
-        std::cout << std::endl << "############"<<std::endl;
-        std::cout << "token: " << i->text << " type: " << tokenToString(i->type) << std::endl;
-        std::cout << "first char: " << i->text[0] << std::endl;
+        //std::cout << std::endl << "############"<<std::endl;
+        if(options::dprintTokens)
+            std::cout << "token: " << i->text << " type: " << tokenToString(i->type) << std::endl;
+        //std::cout << "first char: " << i->text[0] << std::endl;
         if(i->text[0] == '#')
         {
             strToLower(i->text);
             //directive
             if(cstrcmp(i->text,(codechar*)"#include"))
             {
-                std::cout << "include" << std::endl;
-                std::cout << "str char 0: " << tokens[c+1]->text[0] << std::endl;
+                //std::cout << "include" << std::endl;
+                //std::cout << "str char 0: " << tokens[c+1]->text[0] << std::endl;
                 switch(tokens[c+1]->text[0])
                 {
                     case('"'):
@@ -77,22 +101,42 @@ void parse(std::vector<token_t*> tokens)
                             std::vector<token_t*> newTokens = tokenizeFile(file);
                             inject(newTokens,tokens,c+2);
                             c+=1;
+                            std::cout << "\033[33m";
                             goto skipInvalidString;
                         }
 
 
                         invalidString:;
-                        std::cout << "last char: " << tokens[c+1]->text[strlen(tokens[c+1]->text)-1] << std::endl;
-                        exit(-1);
+                        //std::cout << "last char: " << tokens[c+1]->text[strlen(tokens[c+1]->text)-1] << std::endl;
+                        //exit(-1);
                         skipInvalidString:;
                     }
                     default:
                         break;
                 }
             }
+            else if(cstrcmp(i->text,(codechar*)"#define"))
+            {
+                i = tokens[++c];
+                if(!isLatinChar(i->text[0]))
+                {
+                    error::variableNameLatinChar(c,tokens);
+                    std::cout << "\033[33m";
+                }
+                if(strContains(i->text,'('))
+                {
+                    //function
+                }
+                else
+                {
+                    // standard macro
+                    i = tokens[++c];
+                    resolveIMM(i->text);
+                }
+            }
             else
             {
-                std::cout << "directive: " << i->text << std::endl;
+                //std::cout << "directive: " << i->text << std::endl;
             }
         }
     }

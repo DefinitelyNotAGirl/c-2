@@ -66,3 +66,24 @@ bool cstrcmp(codechar* a, codechar* b)
             return 0;
     return 1;
 }
+
+bool isDigit(codechar c)
+{
+    if(c >= '0' && c <= '9')
+        return 1;
+    return 0;
+}
+bool isLatinChar(codechar c)
+{
+    if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_'))
+        return 1;
+    return 0;
+}
+
+bool strContains(codechar* buff, codechar c)
+{
+    for(uint64_t i = 0;i<strlen(buff);i++)
+        if(buff[i] == c)
+            return 1;
+    return 0;
+}

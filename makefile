@@ -27,10 +27,10 @@ build/%.o: src/%.s
 	@$(AS) $(ASARGS) -M -MD -c -o $@ $<
 	$(info  	$(AS)	$<)
 build/%.o: src/%.cpp
-	@$(CXX) -O0 $(CXXARGS) -g -rdynamic -pedantic -Wunreachable-code -Wno-literal-suffix -Wno-pointer-arith -MP -MD -fpermissive -Iinc/ -c -o $@ $<
+	@$(CXX) -O0 $(CXXARGS) -g -Wno-write-strings -rdynamic -pedantic -Wunreachable-code -Wno-literal-suffix -Wno-pointer-arith -MP -MD -fpermissive -Iinc/ -c -o $@ $<
 	$(info 	$(CXX)	$<)
 build/%.o: src/%.cxx
-	@$(CXX) -O0 $(CXXARGS) -g -rdynamic -pedantic -Wno-multichar -Wunreachable-code -Wno-literal-suffix -Wno-pointer-arith -MP -MD -fpermissive -Iinc/ -c -o $@ $<
+	@$(CXX) -O0 $(CXXARGS) -g -Wno-write-strings -rdynamic -pedantic -Wno-multichar -Wunreachable-code -Wno-literal-suffix -Wno-pointer-arith -MP -MD -fpermissive -Iinc/ -c -o $@ $<
 	$(info 	$(CXX)	$<)
 build/%.o: src/%.c
 	@$(CC) $(CCARGS) -Wunreachable-code -Iinc/ -c -o $@ $<

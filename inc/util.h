@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 10th 2023 4:17:52 pm
+ * Last Modified: Tuesday July 18th 2023 4:48:23 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -37,6 +37,9 @@ bool cstrcmp(codechar* a, codechar* b);
 uint64_t strlen(codechar* str);
 void strToLower(codechar* buff);
 
+bool isDigit(codechar);
+bool isLatinChar(codechar);
+
 template<typename T>
 void inject(std::vector<T>& src, std::vector<T>& dst, uint64_t offset)
 {
@@ -53,3 +56,5 @@ void inject(std::vector<T>& src, std::vector<T>& dst, uint64_t offset)
     for(uint64_t i = offset;i<old.size();i++)
         dst.push_back(old[i]);
 }
+
+bool strContains(codechar* buff, codechar c);

@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 10th 2023 3:57:00 pm
+ * Last Modified: Tuesday July 18th 2023 4:48:23 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -29,8 +29,12 @@
  */
 
 #include <common.h>
+#include <compiler.hxx>
 
 std::list<std::string> sourceFiles;
+std::list<std::string> dependencies;
+std::vector<litop*> litops;
+scope* currentScope = nullptr;
 
 namespace options
 {
