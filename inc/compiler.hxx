@@ -42,6 +42,24 @@ enum class defineType : uint8_t {
     INT,STRING
 };
 
+enum class langTypes : uint64_t {
+    _void_,
+    primitive64,
+    primitive32,
+    primitive16,
+    primitive8,
+    u64,
+    u32,
+    u16,
+    u8,
+    i64,
+    i32,
+    i16,
+    i8,
+    f64,
+    f32
+};//do not add more than 0x1000 types to this enum
+
 struct expression
 {
     exprType type;

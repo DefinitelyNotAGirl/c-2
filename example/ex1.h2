@@ -29,6 +29,7 @@
  */
 
 //#include <stdint>
+#include "example/litop.h2"
 
-#define _MALLOCSIZE 0x200000
+#define _MALLOCSIZE 0x32MiB
 u64 malloc(uint64_t size);

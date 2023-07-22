@@ -35,6 +35,7 @@ std::list<std::string> sourceFiles;
 std::list<std::string> dependencies;
 std::vector<litop*> litops;
 scope* currentScope = nullptr;
+uint64_t defaultNumberBase = 10;
 
 namespace options
 {

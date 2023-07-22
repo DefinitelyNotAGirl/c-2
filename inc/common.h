@@ -37,6 +37,7 @@
 #include <cstdlib>
 #include <list>
 #include <vector>
+#include <bits.h>
 
 typedef char codechar;
 enum class TokenType : uint64_t

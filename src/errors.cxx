@@ -42,4 +42,64 @@ namespace error
             std::cout << ' ';
         std::cout << "\033[31m^\033[0m" << std::endl;
     }
+
+    void terminatorB4Token(uint64_t tPOS, std::vector<token_t*>& tokens)
+    {
+        std::cerr << "\033[0m";
+        std::cerr << "\033[31mERROR:\033[0m expected ';' before token \""<<tokens[tPOS]->text<<"\""<< std::endl;
+        uint64_t arrowPOS = 0;
+        if(tPOS > 1)
+        {
+            std::cerr << "In file: " << tokens[tPOS]->file << " at line: " << tokens[tPOS]->line << ": " << tokens[tPOS-1]->text << " \033[31m" << tokens[tPOS]->text <<"\033[0m"<< std::endl;
+            arrowPOS = strlen(tokens[tPOS]->file)+10+11+strlen(std::to_string(tokens[tPOS]->line).c_str())+strlen(tokens[tPOS-1]->text)+1;
+        }
+        else
+        {
+            std::cerr << "In file: " << tokens[tPOS]->file << " at line: " << tokens[tPOS]->line << ": " << " \033[31m" << tokens[tPOS]->text <<"\033[0m"<< std::endl;
+            arrowPOS = strlen(tokens[tPOS]->file)+10+11+strlen(std::to_string(tokens[tPOS]->line).c_str())+1;
+        }
+        for(uint64_t i = 0; i < arrowPOS; i++)
+            std::cout << ' ';
+        std::cout << "\033[31m^\033[0m" << std::endl;
+    }
+
+    void invalidLitopOP(uint64_t tPOS, std::vector<token_t*>& tokens)
+    {
+        std::cerr << "\033[0m";
+        std::cerr << "\033[31mERROR:\033[0m invalid litop operation \""<<tokens[tPOS]->text<<"\""<< std::endl;
+        uint64_t arrowPOS = 0;
+        if(tPOS > 1)
+        {
+            std::cerr << "In file: " << tokens[tPOS]->file << " at line: " << tokens[tPOS]->line << ": " << tokens[tPOS-1]->text << " \033[31m" << tokens[tPOS]->text <<"\033[0m"<< std::endl;
+            arrowPOS = strlen(tokens[tPOS]->file)+10+11+strlen(std::to_string(tokens[tPOS]->line).c_str())+strlen(tokens[tPOS-1]->text)+1;
+        }
+        else
+        {
+            std::cerr << "In file: " << tokens[tPOS]->file << " at line: " << tokens[tPOS]->line << ": " << " \033[31m" << tokens[tPOS]->text <<"\033[0m"<< std::endl;
+            arrowPOS = strlen(tokens[tPOS]->file)+10+11+strlen(std::to_string(tokens[tPOS]->line).c_str())+1;
+        }
+        for(uint64_t i = 0; i < arrowPOS; i++)
+            std::cout << ' ';
+        std::cout << "\033[31m^\033[0m" << std::endl;
+    }
+
+    void litopValueImmediate(uint64_t tPOS, std::vector<token_t*>& tokens)
+    {
+        std::cerr << "\033[0m";
+        std::cerr << "\033[31mERROR:\033[0m litop value must be an immediate"<< std::endl;
+        uint64_t arrowPOS = 0;
+        if(tPOS > 1)
+        {
+            std::cerr << "In file: " << tokens[tPOS]->file << " at line: " << tokens[tPOS]->line << ": " << tokens[tPOS-1]->text << " \033[31m" << tokens[tPOS]->text <<"\033[0m"<< std::endl;
+            arrowPOS = strlen(tokens[tPOS]->file)+10+11+strlen(std::to_string(tokens[tPOS]->line).c_str())+strlen(tokens[tPOS-1]->text)+1;
+        }
+        else
+        {
+            std::cerr << "In file: " << tokens[tPOS]->file << " at line: " << tokens[tPOS]->line << ": " << " \033[31m" << tokens[tPOS]->text <<"\033[0m"<< std::endl;
+            arrowPOS = strlen(tokens[tPOS]->file)+10+11+strlen(std::to_string(tokens[tPOS]->line).c_str())+1;
+        }
+        for(uint64_t i = 0; i < arrowPOS; i++)
+            std::cout << ' ';
+        std::cout << "\033[31m^\033[0m" << std::endl;
+    }
 }

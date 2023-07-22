@@ -93,12 +93,22 @@ void parse(std::vector<token_t*> tokens)
 
                         validString:;   
                         {
-                            //record string from 1 to strlen-3 ==
+                            //record string from 1 to strlen-2 ==
                             uint64_t size = (strlen(tokens[c+1]->text)-2)*sizeof(codechar);
+                            std::cout << "string size: " << size << std::endl;
                             char* file = (char*)malloc(size+1);
+                            file[size] = 0;
                             memcpy(file,tokens[c+1]->text+1,size);
                             std::cout << "including file: " << file << std::endl;
-                            std::vector<token_t*> newTokens = tokenizeFile(file);
+                            std::vector<token_t*> newTokens;
+                            token_t* nt = (token_t*)malloc(sizeof(token_t));
+                            nt->text = ";";
+                            nt->column = 0;
+                            nt->line = 0;
+                            nt->type = TokenType::TERMINATOR;
+                            newTokens.push_back(nt);
+                            for(auto t : tokenizeFile(file))
+                                newTokens.push_back(t);
                             inject(newTokens,tokens,c+2);
                             c+=1;
                             std::cout << "\033[33m";
@@ -137,6 +147,143 @@ void parse(std::vector<token_t*> tokens)
             else
             {
                 //std::cout << "directive: " << i->text << std::endl;
+            }
+        }
+        else if(cstrcmp(i->text,(codechar*)"litop"))
+        {
+            if(c!=0 && tokens[c-1]->type != TokenType::TERMINATOR)
+            {
+                error::terminatorB4Token(c,tokens);
+            }
+            else
+            {
+                codechar* name = tokens[c+1]->text;
+                if(cstrcmp(tokens[c+2]->text,(codechar*)"mul"))
+                {
+                    litopIMM* lit = (litopIMM*)malloc(sizeof(litopIMM));
+                    lit->name = name;
+                    lit->type = litopType::IMM;
+                    lit->op = arithType::MUL;
+                    expression* exp = resolveIMM(tokens[c+3]->text);
+                    if(exp->type != exprType::IMM)
+                    {
+                        error::litopValueImmediate(c+3,tokens);
+                    }
+                    switch(((exprIMM*)exp)->vType)
+                    {
+                        case((uint64_t)langTypes::u64):
+                        case((uint64_t)langTypes::u32):
+                        case((uint64_t)langTypes::u16):
+                        case((uint64_t)langTypes::u8):
+                            lit->rIsSigned = 0;
+                            break;
+                        case((uint64_t)langTypes::i64):
+                        case((uint64_t)langTypes::i32):
+                        case((uint64_t)langTypes::i16):
+                        case((uint64_t)langTypes::i8):
+                            lit->rIsSigned = 1;
+                            break;
+                        default:
+                            lit->rIsSigned = 1;
+                    }
+                    lit->rightHand = ((exprIMM*)exp)->value;
+                    litops.push_back((litop*)lit);
+                }
+                else if(cstrcmp(tokens[c+2]->text,(codechar*)"add"))
+                {
+                    litopIMM* lit = (litopIMM*)malloc(sizeof(litopIMM));
+                    lit->name = name;
+                    lit->type = litopType::IMM;
+                    lit->op = arithType::ADD;
+                    expression* exp = resolveIMM(tokens[c+3]->text);
+                    if(exp->type != exprType::IMM)
+                    {
+                        error::litopValueImmediate(c+3,tokens);
+                    }
+                    switch(((exprIMM*)exp)->vType)
+                    {
+                        case((uint64_t)langTypes::u64):
+                        case((uint64_t)langTypes::u32):
+                        case((uint64_t)langTypes::u16):
+                        case((uint64_t)langTypes::u8):
+                            lit->rIsSigned = 0;
+                            break;
+                        case((uint64_t)langTypes::i64):
+                        case((uint64_t)langTypes::i32):
+                        case((uint64_t)langTypes::i16):
+                        case((uint64_t)langTypes::i8):
+                            lit->rIsSigned = 1;
+                            break;
+                        default:
+                            lit->rIsSigned = 1;
+                    }
+                    lit->rightHand = ((exprIMM*)exp)->value;
+                    litops.push_back((litop*)lit);
+                }
+                else if(cstrcmp(tokens[c+2]->text,(codechar*)"sub"))
+                {
+                    litopIMM* lit = (litopIMM*)malloc(sizeof(litopIMM));
+                    lit->name = name;
+                    lit->type = litopType::IMM;
+                    lit->op = arithType::SUB;
+                    expression* exp = resolveIMM(tokens[c+3]->text);
+                    if(exp->type != exprType::IMM)
+                    {
+                        error::litopValueImmediate(c+3,tokens);
+                    }
+                    switch(((exprIMM*)exp)->vType)
+                    {
+                        case((uint64_t)langTypes::u64):
+                        case((uint64_t)langTypes::u32):
+                        case((uint64_t)langTypes::u16):
+                        case((uint64_t)langTypes::u8):
+                            lit->rIsSigned = 0;
+                            break;
+                        case((uint64_t)langTypes::i64):
+                        case((uint64_t)langTypes::i32):
+                        case((uint64_t)langTypes::i16):
+                        case((uint64_t)langTypes::i8):
+                            lit->rIsSigned = 1;
+                            break;
+                        default:
+                            lit->rIsSigned = 1;
+                    }
+                    lit->rightHand = ((exprIMM*)exp)->value;
+                    litops.push_back((litop*)lit);
+                }
+                else if(cstrcmp(tokens[c+2]->text,(codechar*)"div"))
+                {
+                    litopIMM* lit = (litopIMM*)malloc(sizeof(litopIMM));
+                    lit->name = name;
+                    lit->type = litopType::IMM;
+                    lit->op = arithType::DIV;
+                    expression* exp = resolveIMM(tokens[c+3]->text);
+                    if(exp->type != exprType::IMM)
+                    {
+                        error::litopValueImmediate(c+3,tokens);
+                    }
+                    switch(((exprIMM*)exp)->vType)
+                    {
+                        case((uint64_t)langTypes::u64):
+                        case((uint64_t)langTypes::u32):
+                        case((uint64_t)langTypes::u16):
+                        case((uint64_t)langTypes::u8):
+                            lit->rIsSigned = 0;
+                            break;
+                        case((uint64_t)langTypes::i64):
+                        case((uint64_t)langTypes::i32):
+                        case((uint64_t)langTypes::i16):
+                        case((uint64_t)langTypes::i8):
+                            lit->rIsSigned = 1;
+                            break;
+                        default:
+                            lit->rIsSigned = 1;
+                    }
+                    lit->rightHand = ((exprIMM*)exp)->value;
+                    litops.push_back((litop*)lit);
+                }
+                else
+                    error::invalidLitopOP(c,tokens);
             }
         }
     }
