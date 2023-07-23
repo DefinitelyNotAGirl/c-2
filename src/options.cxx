@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 10th 2023 4:02:45 pm
+ * Last Modified: Tuesday July 18th 2023 4:48:23 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -55,6 +55,7 @@ bool strToBool(std::string str)
 CARGHANDLER_BOOLEAN(MD)
 CARGHANDLER_BOOLEAN(C)
 CARGHANDLER_BOOLEAN(fclasslayout)
+CARGHANDLER_BOOLEAN(ffunctioninfo)
 CARGHANDLER_BOOLEAN(ffreestanding)
 CARGHANDLER_BOOLEAN(fnostdlib)
 CARGHANDLER_BOOLEAN(fnolibc)
@@ -64,6 +65,7 @@ CARGHANDLER_BOOLEAN(dprintTokens)
 #define name_MD "-MD"
 #define name_C "-C"
 #define name_fclasslayout "--fclasslayout"
+#define name_ffunctioninfo "--ffunctioninfo"
 #define name_ffreestanding "--ffreestanding"
 #define name_fnostdlib "--fnostdlib"
 #define name_fnolibc "--fnolibc"
@@ -86,6 +88,7 @@ void cliOptions(int argc, char **argv)
     CARGHANDLER_BOOLEAN_CA0(C);
     //f
     CARGHANDLER_BOOLEAN_CA0(fclasslayout);
+    CARGHANDLER_BOOLEAN_CA0(ffunctioninfo);
     CARGHANDLER_BOOLEAN_CA0(ffreestanding);
     CARGHANDLER_BOOLEAN_CA0(fnostdlib);
     CARGHANDLER_BOOLEAN_CA0(fnolibc);

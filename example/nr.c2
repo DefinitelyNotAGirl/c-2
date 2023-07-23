@@ -38,3 +38,11 @@ litop KiB mul 0x1000;
 #define b8  0o40MiB
 #define b4  0q200MiB
 #define b2  0b100000MiB
+#define bd    32MiB
+
+#define nlb16 0x200
+#define nlb10 0d512
+#define nlb8  0o1000
+#define nlb4  0q20000
+#define nlb2  0b1000000000
+#define nld     512

@@ -60,6 +60,63 @@ enum class langTypes : uint64_t {
     f32
 };//do not add more than 0x1000 types to this enum
 
+//attributes layout:
+// 0: macro
+// 1: const
+// 2: static
+// 3: extern
+// 4: volatile
+// 5: constexpr
+// 6: primitive
+// 7: primitive-in-place
+// 8-15: primitive operation
+// 16-19: primitive bits left
+// 20-23: primitive bits right
+// all unspecified bits are unused and must be set to 0
+
+//primitive ops enum:
+// 0x00: invalid
+// 0x01: Equal
+// 0x02: Not Equal
+// 0x03: Greater
+// 0x04: Greater Equal
+// 0x05: Less
+// 0x06: Less Equal
+// 0x07: Not Zero
+// 0x08: Equal Zero
+// 0x09: shift left
+// 0x0A: shift right
+// 0x0B: negate
+// 0x0C: Add
+// 0x0D: Sub
+// 0x0E: Mul
+// 0x0F: Div
+// 0x10: Or
+// 0x11: And
+// 0x12: Xor
+// 0x13: Mod
+// 0x14: Assign
+// 0x15: inc
+// 0x16: dec
+
+//primitive bits enum:
+// 0x0: 8
+// 0x1: 16
+// 0x2: 32
+// 0x3: 64
+// 0x4: 128
+// 0x5: 256
+// 0x6: 512
+// 0x7: 1024
+// 0x8: 2048
+// 0x9: 4096
+// 0xA: 8192
+// 0xB: 16384
+// 0xC: 32768
+// 0xD: 65536
+// 0xE: 131072
+// 0xF: 262144
+
 struct expression
 {
     exprType type;
@@ -81,17 +138,19 @@ struct exprCall
 
 struct type;
 
-struct function
+struct variable
 {
     codechar* name;
     type* dType;
+    uint64_t attr;
 } packed;
 
-struct variable
+struct function
 {
     codechar* name;
     variable* args;
     type* returnType;
+    uint64_t attr;
 } packed;
 
 struct type
@@ -99,6 +158,7 @@ struct type
     codechar* name;
     function* functions;
     variable* members;
+    uint64_t size;
 } packed;
 
 struct define
@@ -136,11 +196,12 @@ struct litopIMM
 
 expression* resolveIMM(codechar* token);
 
+extern std::vector<type*> types;
+extern std::vector<function*> functions;
+
 struct scope
 {
     scope* parent;
-    std::vector<type*> types;
-    std::vector<function*> functions;
     std::vector<variable*> variables;
     std::vector<define*> defines;
 };

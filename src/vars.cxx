@@ -33,9 +33,12 @@
 
 std::list<std::string> sourceFiles;
 std::list<std::string> dependencies;
+std::vector<type*> types;
+std::vector<function*> functions;
 std::vector<litop*> litops;
 scope* currentScope = nullptr;
 uint64_t defaultNumberBase = 10;
+uint64_t tabLength = 4;
 
 namespace options
 {
@@ -44,6 +47,7 @@ namespace options
     bool fnostdlib = false;
     bool fnolibc = false;
     bool fclasslayout = false;
+    bool ffunctioninfo = false;
 
     //-m******
     bool mnortti = false;

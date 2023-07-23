@@ -47,9 +47,12 @@ enum class TokenType : uint64_t
     MISC,
     SCOPE,
     TERMINATOR,
-    PA
+    PA,
+    WHITESPACE
 };
+
 std::string tokenToString(TokenType type);
+
 struct token_t
 {
     TokenType type;
@@ -57,5 +60,6 @@ struct token_t
     char* file;
     uint64_t column;
     codechar* text;
+    uint64_t whiteSpaceLength;
 };
 std::vector<token_t*> tokenizeFile(char* fname);

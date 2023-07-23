@@ -33,10 +33,6 @@
 #include <util.h>
 #include <options.h>
 
-bool isConstExpr(std::string& token)
-{
-}
-
 expression* resolveIMM(codechar* token)
 {
     uint64_t value = 0;
@@ -203,6 +199,10 @@ expression* resolveIMM(codechar* token)
                 endSwitchB4:;
                 goto breakResNumeric;
             default:
+                defFormatNumberRes:;
+                i = 0;
+                if(options::dprintTokens)
+                    std::cout << "number format: default" << std::endl;
                 switch(defaultNumberBase)
                 {
                     case(2):
@@ -221,6 +221,9 @@ expression* resolveIMM(codechar* token)
         case('"'):
             //string
             break;
+        default:
+            if(isDigit(token[0]))
+                goto defFormatNumberRes;
 
         //
         // finish up numeric values
@@ -272,7 +275,7 @@ expression* resolveIMM(codechar* token)
                 }
             }
             skipLitopCheck:;
-            std::cout << "value: " <<std::hex<< value << std::endl;
+            std::cout << "value: " <<std::dec<< value << std::endl;
             exprIMM* expr = (exprIMM*)malloc(sizeof(exprIMM));
             expr->type = exprType::IMM;
             expr->vType = (uint64_t)langTypes::u64;

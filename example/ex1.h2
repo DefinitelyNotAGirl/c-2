@@ -32,4 +32,4 @@
 #include "example/litop.h2"
 
 #define _MALLOCSIZE 0x32MiB
-u64 malloc(uint64_t size);
+u64 malloc(u64 size);

@@ -33,6 +33,7 @@
 
 extern std::list<std::string> sourceFiles;
 extern uint64_t defaultNumberBase;
+extern uint64_t tabLength;
 
 namespace options
 {
@@ -45,6 +46,7 @@ namespace options
     extern bool fnostdlib;
     extern bool fnolibc;
     extern bool fclasslayout;
+    extern bool ffunctioninfo;
 
     //-m******
     extern bool mnortti;

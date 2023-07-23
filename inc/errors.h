@@ -38,4 +38,5 @@ namespace error
     void terminatorB4Token(uint64_t tPOS, std::vector<token_t*>& tokens);
     void invalidLitopOP(uint64_t tPOS, std::vector<token_t*>& tokens);
     void litopValueImmediate(uint64_t tPOS, std::vector<token_t*>& tokens);
+    void noSuchType(uint64_t tPOS, std::vector<token_t*>& tokens);
 }

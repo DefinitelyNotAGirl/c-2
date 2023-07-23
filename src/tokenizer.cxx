@@ -64,6 +64,7 @@ static uint64_t col = 0;
 static uint64_t tlen = 0;
 static char* file;
 static codechar* str;
+static uint64_t wlen = 0;
 
 void newToken()
 {
@@ -74,12 +75,16 @@ void newToken()
         if(len == 0)
             goto ntl0;
 
-        std::cout << "\n###############\n";
-        std::cout << "ttext: " <<std::hex<< (void*)token->text << std::endl;
-        std::cout << "ttext size: " <<std::hex<< len << std::endl;
+        if(options::dprintTokens)
+        {
+            std::cout << "\n###############\n";
+            std::cout << "ttext: " <<std::hex<< (void*)token->text << std::endl;
+            std::cout << "ttext size: " <<std::hex<< len << std::endl;
+        }
         if(len > 0)
             token->text = realloc(token->text,len+1);
-        std::cout << "tlist size: " <<std::dec<< tokens.size() << std::endl;
+        if(options::dprintTokens)
+            std::cout << "tlist size: " <<std::dec<< tokens.size() << std::endl;
         tokens.push_back(token);
         if(options::dprintTokens)
             std::cout << "Token: " <<std::dec<< token->line << ":" << token->column << ":" << tokenToString(token->type) << ":" << token->text << std::endl;
@@ -89,8 +94,10 @@ void newToken()
     token->line = line;
     token->column = col;
     token->file = file;
+    token->whiteSpaceLength = wlen;
     token->text = (codechar*)calloc(1,sizeof(codechar)*((uint64_t)mdata-(uint64_t)str)+1);
     ntl0:;
+    wlen = 0;
 }
 
 std::vector<token_t*> tokenize(codechar* __str)
@@ -100,6 +107,7 @@ std::vector<token_t*> tokenize(codechar* __str)
     line = 1;
     col = 0;
     tlen = 0;
+    wlen = 0;
     str = __str;
     mdata = strlen(str)+str;
     newToken();
@@ -116,7 +124,8 @@ std::vector<token_t*> tokenize(codechar* __str)
         {
             //handle operators
             case('+'):
-                newToken();
+                if(!cstrcmp(tokens.back()->text,"operator"))
+                    newToken();
                 token->type = TokenType::OPERATOR;
                 token->text[tlen++] = '+';
                 switch(*(str+(sizeof(codechar)*1)))
@@ -136,7 +145,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                 newToken();
                 break;
             case('-'):
-                newToken();
+                if(!cstrcmp(tokens.back()->text,"operator"))
+                    newToken();
                 token->type = TokenType::OPERATOR;
                 token->text[tlen++] = '-';
                 switch(*(str+(sizeof(codechar)*1)))
@@ -156,7 +166,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                 newToken();
                 break;
             case('*'):
-                newToken();
+                if(!cstrcmp(tokens.back()->text,"operator"))
+                    newToken();
                 token->type = TokenType::OPERATOR;
                 token->text[tlen++] = '*';
                 switch(*(str+(sizeof(codechar)*1)))
@@ -173,7 +184,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                 switch(*(str+(sizeof(codechar)*1)))
                 {
                     case('=')://divide-assign operator (/=)
-                        newToken();
+                        if(!cstrcmp(tokens.back()->text,"operator"))
+                            newToken();
                         token->type = TokenType::OPERATOR;
                         token->text[tlen++] = '/';
                         token->text[tlen++] = '=';
@@ -188,7 +200,6 @@ std::vector<token_t*> tokenize(codechar* __str)
                         line++;
                         break;
                     case('*'):
-                        std::cout << "block comment started" << std::endl;
                         while(*str!=0x00)
                         {
                             switch(*str)
@@ -204,12 +215,11 @@ std::vector<token_t*> tokenize(codechar* __str)
                             str+=sizeof(codechar);
                         }
                         breakBlockComment:;
-                        std::cout << "block comment ended" << std::endl;
-                        std::cout << "end char: " << std::hex << (uint64_t)*str << std::endl;
                         str+=sizeof(codechar);
                         break;
                     default:
-                        newToken();
+                        if(!cstrcmp(tokens.back()->text,"operator"))
+                            newToken();
                         token->type = TokenType::OPERATOR;
                         token->text[tlen++] = '/';
                         newToken();
@@ -217,7 +227,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                 }
                 break;
             case('^'):
-                newToken();
+                if(!cstrcmp(tokens.back()->text,"operator"))
+                    newToken();
                 token->type = TokenType::OPERATOR;
                 token->text[tlen++] = '^';
                 switch(*(str+(sizeof(codechar)*1)))
@@ -231,7 +242,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                 newToken();
                 break;
             case('='):
-                newToken();
+                if(!cstrcmp(tokens.back()->text,"operator"))
+                    newToken();
                 token->type = TokenType::OPERATOR;
                 token->text[tlen++] = '=';
                 switch(*(str+(sizeof(codechar)*1)))
@@ -257,7 +269,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                 switch(*(str+(sizeof(codechar)*1)))
                 {
                     case('=')://greater-or-equal operator (>=)
-                        newToken();
+                        if(!cstrcmp(tokens.back()->text,"operator"))
+                            newToken();
                         token->type = TokenType::OPERATOR;
                         token->text[tlen++] = '>';
                         token->text[tlen++] = '=';
@@ -265,7 +278,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                         str+=sizeof(codechar);
                         break;
                     case('>')://bitshift right operator (>>)
-                        newToken();
+                        if(!cstrcmp(tokens.back()->text,"operator"))
+                            newToken();
                         token->type = TokenType::OPERATOR;
                         token->text[tlen++] = '>';
                         token->text[tlen++] = '>';
@@ -286,7 +300,6 @@ std::vector<token_t*> tokenize(codechar* __str)
                         }
                         else
                         {
-                            std::cout << "prev token text: " << tokens[tokens.size()-1]->text << std::endl;
                             newToken();
                             token->type = TokenType::OPERATOR;
                             token->text[tlen++] = '>';
@@ -299,7 +312,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                 switch(*(str+(sizeof(codechar)*1)))
                 {
                     case('=')://greater-or-equal operator (>=)
-                        newToken();
+                        if(!cstrcmp(tokens.back()->text,"operator"))
+                            newToken();
                         token->type = TokenType::OPERATOR;
                         token->text[tlen++] = '<';
                         token->text[tlen++] = '=';
@@ -307,7 +321,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                         str+=sizeof(codechar);
                         break;
                     case('<')://bitshift right operator (>>)
-                        newToken();
+                        if(!cstrcmp(tokens.back()->text,"operator"))
+                            newToken();
                         token->type = TokenType::OPERATOR;
                         token->text[tlen++] = '<';
                         token->text[tlen++] = '<';
@@ -328,7 +343,6 @@ std::vector<token_t*> tokenize(codechar* __str)
                         }
                         else
                         {
-                            std::cout << "prev token text: " << tokens[tokens.size()-1]->text << std::endl;
                             newToken();
                             token->type = TokenType::OPERATOR;
                             token->text[tlen++] = '<';
@@ -338,7 +352,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                 }
                 break;
             case('&'):
-                newToken();
+                if(!cstrcmp(tokens.back()->text,"operator"))
+                    newToken();
                 token->type = TokenType::OPERATOR;
                 token->text[tlen++] = '&';
                 switch(*(str+(sizeof(codechar)*1)))
@@ -352,7 +367,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                 newToken();
                 break;
             case('|'):
-                newToken();
+                if(!cstrcmp(tokens.back()->text,"operator"))
+                    newToken();
                 token->type = TokenType::OPERATOR;
                 token->text[tlen++] = '|';
                 switch(*(str+(sizeof(codechar)*1)))
@@ -366,7 +382,8 @@ std::vector<token_t*> tokenize(codechar* __str)
                 newToken();
                 break;
             case('%'):
-                newToken();
+                if(!cstrcmp(tokens.back()->text,"operator"))
+                    newToken();
                 token->type = TokenType::OPERATOR;
                 token->text[tlen++] = '%';
                 switch(*(str+(sizeof(codechar)*1)))
@@ -382,8 +399,32 @@ std::vector<token_t*> tokenize(codechar* __str)
 
             //handle whitespaces
             case('\n'):
+                newToken();
                 line++;
                 col = 0;
+                token->text[tlen++] = ' ';
+                token->type = TokenType::WHITESPACE;
+                while(true)
+                {
+                    switch(*(str+=sizeof(codechar)))
+                    {
+                        case(0x00):
+                            goto wsklb;
+                        case('\t'):
+                            wlen+=tabLength;
+                            break;
+                        case(' '):
+                            wlen++;
+                            break;
+                        case('\n'):
+                            wlen = 0;
+                            break;
+                        default:
+                            str--;
+                            goto wsklb;
+                    }
+                }
+                wsklb:;
             case(' '):
             case(0x09)://horizontal tab
             case(0x0b)://vertical tab
@@ -397,6 +438,12 @@ std::vector<token_t*> tokenize(codechar* __str)
                 token->type = TokenType::TERMINATOR;
                 newToken();
                 break;
+            case(':'):
+                newToken();
+                token->text[tlen++] = *str;
+                token->type = TokenType::TERMINATOR;
+                newToken();
+                break;
 
             //misc
             case(','):
@@ -404,6 +451,7 @@ std::vector<token_t*> tokenize(codechar* __str)
                 token->text[tlen++] = *str;
                 token->type = TokenType::TERMINATOR;
                 newToken();
+                break;
 
             //open scopes
             case('{'):

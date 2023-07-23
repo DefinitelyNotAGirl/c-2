@@ -1,11 +1,11 @@
 /*
- * Created Date: Thursday July 13th 2023
+ * Created Date: Sunday July 23rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 18th 2023 4:48:23 pm
+ * Last Modified: Sunday July 23rd 2023 3:59:31 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -27,41 +27,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-
-#include "example/std.h2"
-
-#define test2 500
-#sym testsym
-#add test2 1
-
-#include "example/ex1.h2"
-
-void main(u64 test, u32 args):
-    //operator tests
-    u64 test = 1;
-    test+500;
-    test+=500;
-    test++;
-    test-=100;
-    test-100;
-    test--;
-    test / 999;
-    test/= 999;
-    test*5000;
-    test*=5000;
-    test%250;
-    test %= 250;
-
-u64 malloc(u64 size)
-{
-    u64 nsize = 2MiB;
-    return nsize;
-}
-
-u64 calloc(u64 size):
-    u32 ksize = 32KiB;
-    return ksize;
-
-
-#cmp test2 600
-#je testsym
+class u64 : primitive64;
+class u32 : private primitive32;
+class u16 : private primitive16;
+class u8 : private primitive8;
+primitiveMul_64 u64 multiply(u64,u64);
+primitiveMul_64 u64 operator*(u64,u64);
+primitiveDiv_64 u64 operator/(u64,u64);
+primitivesub_64 u64 operator-(u64,u64);
+primitiveAdd_64 u64 operator+(u64,u64);
+primitiveMul_A_64 void operator*=(u64,u64);
+primitiveDiv_A_64 void operator/=(u64,u64);
+primitivesub_A_64 void operator-=(u64,u64);
+primitiveAdd_A_64 void operator+=(u64,u64);
+primitiveEqual_64 bool operator==(u64,u64);
+primitiveInc_64 void operator++(u64);
+primitiveDec_64 void operator--(u64);
+primitiveAssign_64_64 operator u64(u64);
+primitiveAssign_64_32 operator u64(u32);
+primitiveAssign_64_16 operator u64(u16);
+primitiveAssign_64_8 operator u64(u8);
