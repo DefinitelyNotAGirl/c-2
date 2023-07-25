@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 18th 2023 4:48:23 pm
+ * Last Modified: Monday July 10th 2023 4:26:13 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -27,42 +27,63 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
 
 #include <common.h>
 
-extern std::list<std::string> sourceFiles;
-extern uint64_t defaultNumberBase;
-extern uint64_t tabLength;
-extern char c_alert;
-extern char c_backspace;
-extern char c_escape;
-extern char c_formfeedpagebreak;
-extern char c_newline;
-extern char c_cariagereturn;
-extern char c_horizontaltab;
-extern char c_verticaltab;
-
-namespace options
+void strToLower(std::string& str)
 {
-    //-w*******
+    char* buff = (char*)str.c_str();
+    for(uint64_t i = 0;i<str.size();i++)
+        if(buff[i] >= 'A' && buff[i] <= 'Z')
+            buff[i]+=0x20;
+}
 
-    //-wno-****
+void strToLower(codechar* buff)
+{
+    for(uint64_t i = 0;i<strlen(buff);i++)
+        if(buff[i] >= 'A' && buff[i] <= 'Z')
+            buff[i]+=0x20;
+}
 
-    //-f*******
-    extern bool ffreestanding;
-    extern bool fnostdlib;
-    extern bool fnolibc;
-    extern bool fclasslayout;
-    extern bool ffunctioninfo;
+uint64_t strlen(codechar* str)
+{
+    uint64_t len = 0;
+    while(*str != 0)
+    {
+        str+=sizeof(codechar);
+        len++;
+    }
+    return len;
+}
 
-    //-m******
-    extern bool mnortti;
+bool cstrcmp(codechar* a, codechar* b)
+{
+    uint64_t len = strlen(a);
+    if(len != strlen(b))
+        return 0;
+    for(uint64_t i = 0;i<len;i++)
+        if(a[i] != b[i])
+            return 0;
+    return 1;
+}
 
-    //-d******
-    extern bool dprintTokens;
+bool isDigit(codechar c)
+{
+    if(c >= '0' && c <= '9')
+        return 1;
+    return 0;
+}
+bool isLatinChar(codechar c)
+{
+    if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_'))
+        return 1;
+    return 0;
+}
 
-    //misc
-    extern bool MD;
-    extern bool C;
+bool strContains(codechar* buff, codechar c)
+{
+    for(uint64_t i = 0;i<strlen(buff);i++)
+        if(buff[i] == c)
+            return 1;
+    return 0;
 }

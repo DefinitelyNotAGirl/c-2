@@ -30,28 +30,34 @@
 
 #include "example/std.h2"
 
-#define test2 500
+#define test3 500
 #sym testsym
 #add test2 1
 
-#include "example/ex1.h2"
+#define test4 void pasted(u64 arg, u16 arg2);
+
+#include W"example/ex1.h2"
 
 void main(u64 test, u32 args):
     //operator tests
     u64 test = 1;
+    u64 test2 = 0;
+    test2 = 
     test+500;
     test+=500;
     test++;
     test-=100;
-    test-100;
+    test2 = test-100;
     test--;
-    test / 999;
-    test/= 999;
-    test*5000;
+    /* comment test */
+    test2 = test / 999;
+    test/= 9/*this is dumb*/99;
+    test2 = test*5000;
     test*=5000;
-    test%250;
+    test2 = test%250;
     test %= 250;
 
+char* strtest = "Hello, world!";
 u64 malloc(u64 size)
 {
     u64 nsize = 2MiB;
@@ -59,9 +65,14 @@ u64 malloc(u64 size)
 }
 
 u64 calloc(u64 size):
-    u32 ksize = 32KiB;
+    u32 ksize;
+    if(size > 0):
+        ksize = 32KiB;
+    else:
+        ksize = 64KiB;
     return ksize;
 
+noop void zalloc(u64 size);
 
 #cmp test2 600
 #je testsym

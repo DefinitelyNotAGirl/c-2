@@ -29,16 +29,26 @@
  */
 
 #include <common.h>
-#include <compiler.hxx>
+
+#include <class_type.h>
 
 std::list<std::string> sourceFiles;
 std::list<std::string> dependencies;
 std::vector<type*> types;
-std::vector<function*> functions;
-std::vector<litop*> litops;
-scope* currentScope = nullptr;
+//std::vector<function*> functions;
+//std::vector<litop*> litops;
+//scope* currentScope = nullptr;
 uint64_t defaultNumberBase = 10;
 uint64_t tabLength = 4;
+
+char c_alert                = 0x07;
+char c_backspace            = 0x08;
+char c_escape               = 0x1B;
+char c_formfeedpagebreak    = 0x0C;
+char c_newline              = 0x0A;
+char c_cariagereturn        = 0x0D;
+char c_horizontaltab        = 0x09;
+char c_verticaltab          = 0x0B;
 
 namespace options
 {

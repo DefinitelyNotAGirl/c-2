@@ -199,11 +199,14 @@ expression* resolveIMM(codechar* token);
 extern std::vector<type*> types;
 extern std::vector<function*> functions;
 
+codechar* manglePseudoName(codechar* name);
+
 struct scope
 {
     scope* parent;
     std::vector<variable*> variables;
     std::vector<define*> defines;
+    uint64_t subScope;
 };
 
 extern scope* currentScope;

@@ -1,11 +1,11 @@
-/*
- * Created Date: Sunday July 23rd 2023
+/**
+ * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 24th 2023 12:43:39 am
+ * Last Modified: Tuesday July 18th 2023 4:48:23 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -27,26 +27,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-class u64 : primitive64;
-class u32 : primitive32;
-class u16 : primitive16;
-class u8 : primitive8;
-class void : primitive0;
-class bool : primitive8;
-class char : primitive8;
-class wchar : primitive16;
-primitiveMul u64 operator*(u64,u64);
-primitiveDiv u64 operator/(u64,u64);
-primitivesub u64 operator-(u64,u64);
-primitiveAdd u64 operator+(u64,u64);
-primitiveMul_A void operator*=(u64,u64);
-primitiveDiv_A void operator/=(u64,u64);
-primitivesub_A void operator-=(u64,u64);
-primitiveAdd_A void operator+=(u64,u64);
-primitiveEqual bool operator==(u64,u64);
-primitiveInc void operator++(u64);
-primitiveDec void operator--(u64);
-primitiveAssign void u64(u64);
-primitiveAssign void u64(u32);
-primitiveAssign void u64(u16);
-primitiveAssign void u64(u8);
+#pragma once
+#define packed __attribute__((packed))
+#define PRINT_DEBUG std::cout << __FILE__  << ":" <<std::dec<< __LINE__ << std::endl;
+#include <string>
+#include <cstring>
+#include <iostream>
+#include <cstdint>
+#include <cstdlib>
+#include <list>
+#include <vector>
+#include <bits.h>
+
+typedef char codechar;
+enum class TokenType : uint64_t
+{
+    INVALID,
+    OPERATOR,
+    MISC,
+    SCOPE,
+    TERMINATOR,
+    PA,
+    WHITESPACE
+};
+
+std::string tokenToString(TokenType type);
+
+struct token_t
+{
+    TokenType type;
+    uint64_t line;
+    char* file;
+    uint64_t column;
+    codechar* text;
+    uint64_t whiteSpaceLength;
+};
+std::vector<token_t*> tokenizeFile(char* fname);

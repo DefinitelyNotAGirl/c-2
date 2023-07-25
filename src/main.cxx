@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 18th 2023 4:48:23 pm
+ * Last Modified: Tuesday July 25th 2023 12:46:40 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -30,18 +30,16 @@
 
 #include <options.h>
 #include <common.h>
-
+#include <compiler.h>
 #include <stdio.h>
 #include <execinfo.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-struct token_t;
-typedef char codechar;
 void cliOptions(int argc, char **argv);
-std::vector<token_t*> tokenize(codechar* __str);
-void parse(std::vector<token_t*> tokens);
+std::vector<line> getLines(std::string fname);
+void parse(std::vector<line> lines);
 
 void HANDLER_SIGSEGV(int sig) {
     void *array[10];
@@ -64,6 +62,10 @@ int main(int argc, char** argv)
     cliOptions(argc, argv);
 
     for(std::string i : sourceFiles)
-        parse(tokenizeFile(i.c_str()));
+    {
+        std::vector<line> lines = getLines(i);
+        parse(lines);
+        //reset compiler
+    }
     return 0;
 }

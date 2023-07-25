@@ -1,8 +1,8 @@
 /*
- * Created Date: Sunday July 23rd 2023
+ * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 24th 2023 12:43:39 am
+ * Last Modified: Tuesday July 18th 2023 4:48:23 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,26 +27,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-class u64 : primitive64;
-class u32 : primitive32;
-class u16 : primitive16;
-class u8 : primitive8;
-class void : primitive0;
-class bool : primitive8;
-class char : primitive8;
-class wchar : primitive16;
-primitiveMul u64 operator*(u64,u64);
-primitiveDiv u64 operator/(u64,u64);
-primitivesub u64 operator-(u64,u64);
-primitiveAdd u64 operator+(u64,u64);
-primitiveMul_A void operator*=(u64,u64);
-primitiveDiv_A void operator/=(u64,u64);
-primitivesub_A void operator-=(u64,u64);
-primitiveAdd_A void operator+=(u64,u64);
-primitiveEqual bool operator==(u64,u64);
-primitiveInc void operator++(u64);
-primitiveDec void operator--(u64);
-primitiveAssign void u64(u64);
-primitiveAssign void u64(u32);
-primitiveAssign void u64(u16);
-primitiveAssign void u64(u8);
+
+#include <options.h>
+#include <common.h>
+
+#include <stdio.h>
+#include <execinfo.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+struct token_t;
+typedef char codechar;
+void cliOptions(int argc, char **argv);
+std::vector<token_t*> tokenize(codechar* __str);
+void parse(std::vector<token_t*> tokens);
+
+void HANDLER_SIGSEGV(int sig) {
+    void *array[10];
+    size_t size;
+
+    // get void*'s for all entries on the stack
+    size = backtrace(array, 30);
+
+    // print out all the frames to stderr
+    fprintf(stderr, "Error: signal %d:\n", sig);
+    backtrace_symbols_fd(array, size, STDERR_FILENO);
+    exit(1);
+}
+
+int main(int argc, char** argv)
+{
+    signal(SIGSEGV, HANDLER_SIGSEGV);   // install our handler
+    signal(SIGABRT, HANDLER_SIGSEGV);   // install our handler
+
+    cliOptions(argc, argv);
+
+    for(std::string i : sourceFiles)
+        parse(tokenizeFile(i.c_str()));
+    return 0;
+}

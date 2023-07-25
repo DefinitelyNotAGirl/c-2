@@ -1,11 +1,11 @@
 /*
- * Created Date: Sunday July 23rd 2023
+ * Created Date: Wednesday July 5th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 24th 2023 12:43:39 am
+ * Last Modified: Wednesday July 5th 2023 3:51:28 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -27,26 +27,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-class u64 : primitive64;
-class u32 : primitive32;
-class u16 : primitive16;
-class u8 : primitive8;
-class void : primitive0;
-class bool : primitive8;
-class char : primitive8;
-class wchar : primitive16;
-primitiveMul u64 operator*(u64,u64);
-primitiveDiv u64 operator/(u64,u64);
-primitivesub u64 operator-(u64,u64);
-primitiveAdd u64 operator+(u64,u64);
-primitiveMul_A void operator*=(u64,u64);
-primitiveDiv_A void operator/=(u64,u64);
-primitivesub_A void operator-=(u64,u64);
-primitiveAdd_A void operator+=(u64,u64);
-primitiveEqual bool operator==(u64,u64);
-primitiveInc void operator++(u64);
-primitiveDec void operator--(u64);
-primitiveAssign void u64(u64);
-primitiveAssign void u64(u32);
-primitiveAssign void u64(u16);
-primitiveAssign void u64(u8);
+
+#include <cstdint>
+#include <cstring>
+#include <cstdlib>
+#include <iostream>
+#include <vector>
+
+template<typename T>
+class revstack
+{
+private:
+    std::vector<T> stack;
+public:
+    revstack(){}
+
+    void push(T ptr)
+    {
+        this->stack.push_back(ptr);
+    }
+
+    void pop()
+    {
+        this->stack.pop_back();
+    }
+
+    uint64_t size()
+    {
+        return this->stack.size();
+    }
+
+    T operator[](uint64_t index)
+    {
+        return this->stack[this->stack.size()-1-index];
+    }
+};

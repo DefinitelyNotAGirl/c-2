@@ -1,8 +1,8 @@
-/*
+/**
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 6:09:06 am
+ * Last Modified: Tuesday July 25th 2023 9:05:48 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,12 +27,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-
-/**
- * Created Date: Monday July 10th 2023
+#pragma once
+/*
+ * Created Date: Wednesday July 5th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 10th 2023 4:26:13 pm
+ * Last Modified: Wednesday July 5th 2023 3:51:28 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -58,33 +58,37 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include <common.h>
+#include <cstdint>
+#include <cstring>
+#include <cstdlib>
+#include <iostream>
+#include <vector>
 
-void strToLower(std::string& str)
+template<typename T>
+class revstack
 {
-    char* buff = (char*)str.c_str();
-    for(uint64_t i = 0;i<str.size();i++)
-        if(buff[i] >= 'A' && buff[i] <= 'Z')
-            buff[i]+=0x20;
-}
+private:
+    std::vector<T> stack;
+public:
+    revstack(){}
 
-bool isDigit(char c)
-{
-    if(c >= '0' && c <= '9')
-        return 1;
-    return 0;
-}
-bool isLatinChar(char c)
-{
-    if((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c == '_'))
-        return 1;
-    return 0;
-}
+    void push(T ptr)
+    {
+        this->stack.push_back(ptr);
+    }
 
-bool strContains(char* buff, char c)
-{
-    for(uint64_t i = 0;i<strlen(buff);i++)
-        if(buff[i] == c)
-            return 1;
-    return 0;
-}
+    void pop()
+    {
+        this->stack.pop_back();
+    }
+
+    uint64_t size()
+    {
+        return this->stack.size();
+    }
+
+    T operator[](uint64_t index)
+    {
+        return this->stack[this->stack.size()-1-index];
+    }
+};

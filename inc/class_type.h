@@ -1,8 +1,8 @@
-/*
- * Created Date: Sunday July 23rd 2023
+/**
+ * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 24th 2023 12:43:39 am
+ * Last Modified: Tuesday July 25th 2023 10:49:38 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,26 +27,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-class u64 : primitive64;
-class u32 : primitive32;
-class u16 : primitive16;
-class u8 : primitive8;
-class void : primitive0;
-class bool : primitive8;
-class char : primitive8;
-class wchar : primitive16;
-primitiveMul u64 operator*(u64,u64);
-primitiveDiv u64 operator/(u64,u64);
-primitivesub u64 operator-(u64,u64);
-primitiveAdd u64 operator+(u64,u64);
-primitiveMul_A void operator*=(u64,u64);
-primitiveDiv_A void operator/=(u64,u64);
-primitivesub_A void operator-=(u64,u64);
-primitiveAdd_A void operator+=(u64,u64);
-primitiveEqual bool operator==(u64,u64);
-primitiveInc void operator++(u64);
-primitiveDec void operator--(u64);
-primitiveAssign void u64(u64);
-primitiveAssign void u64(u32);
-primitiveAssign void u64(u16);
-primitiveAssign void u64(u8);
+#pragma once
+
+#include <common.h>
+
+class variable;
+
+class type
+{
+public:
+    uint64_t size;
+    std::string name;
+    std::vector<variable*> members;
+};

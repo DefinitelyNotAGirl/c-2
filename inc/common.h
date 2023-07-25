@@ -1,11 +1,11 @@
 /**
- * Created Date: Monday July 10th 2023
+ * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 18th 2023 4:48:23 pm
+ * Last Modified: Tuesday July 25th 2023 12:53:17 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -28,38 +28,13 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #pragma once
+
+#include <string>
+#include <vector>
+#include <list>
+#include <iostream>
 #define packed __attribute__((packed))
 #define PRINT_DEBUG std::cout << __FILE__  << ":" <<std::dec<< __LINE__ << std::endl;
-#include <string>
-#include <cstring>
-#include <iostream>
 #include <cstdint>
 #include <cstdlib>
-#include <list>
-#include <vector>
-#include <bits.h>
-
-typedef char codechar;
-enum class TokenType : uint64_t
-{
-    INVALID,
-    OPERATOR,
-    MISC,
-    SCOPE,
-    TERMINATOR,
-    PA,
-    WHITESPACE
-};
-
-std::string tokenToString(TokenType type);
-
-struct token_t
-{
-    TokenType type;
-    uint64_t line;
-    char* file;
-    uint64_t column;
-    codechar* text;
-    uint64_t whiteSpaceLength;
-};
-std::vector<token_t*> tokenizeFile(char* fname);
+#include <cstring>
