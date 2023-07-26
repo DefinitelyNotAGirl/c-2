@@ -38,5 +38,6 @@ class token
 public:
     line* Line = nullptr;
     std::string text;
+    uint64_t col = 0;
     uint64_t type = 0;
 };

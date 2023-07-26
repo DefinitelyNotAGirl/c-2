@@ -34,5 +34,6 @@
 #include <class_line.h>
 #include <class_token.h>
 #include <class_type.h>
+#include <class_variable.h>
 
 extern std::vector<type*> types;

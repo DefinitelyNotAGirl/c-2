@@ -45,11 +45,16 @@
 // 8 - keyword
 // 9 - type name
 // 10 - variable name
+// 11 - attribute
+// 12 - built in primitive type
+// 13 - short OP
 
 token line::nextToken()
 {
     token t;
     std::string s;
+
+    t.col = tpos;
     
     for(tpos = tpos;tpos < this->text.size();tpos++)
     {
@@ -86,6 +91,12 @@ token line::nextToken()
                 break;
             case(';'):
             case(' '):
+            case('\n'):
+            case('\t'):
+            case(','):
+            case('('):
+            case('{'):
+            case('['):
                 goto endLoop1;
             default:
                 s += this->text[tpos];
@@ -96,8 +107,8 @@ token line::nextToken()
 
     if(s.empty())
         t.type = 0;
-    else if(s == "#include")
-        t.type = 5;
+    else if(s == "#include")t.type = 5;
+    else if(s == "#define")t.type = 5;
     else if(s.back() == '"')
     {
         if(s.front() == '"')
@@ -114,10 +125,61 @@ token line::nextToken()
             }
         }
     }
-    else if(s == "class")
-    {
-        t.type = 8;
-    }
+    //keywords
+    else if(s == "if")t.type = 8;
+    else if(s == "else")t.type = 8;
+    else if(s == "while")t.type = 8;
+    else if(s == "do")t.type = 8;
+    else if(s == "for")t.type = 8;
+    else if(s == "break")t.type = 8;
+    else if(s == "continue")t.type = 8;
+    else if(s == "return")t.type = 8;
+    else if(s == "switch")t.type = 8;
+    else if(s == "case")t.type = 8;
+    else if(s == "default")t.type = 8;
+    else if(s == "class")t.type = 8;
+    else if(s == "litop")t.type = 8;
+    else if(s == "extends")t.type = 8;
+    //short ops
+    else if(s == "add")t.type = 13;
+    else if(s == "sub")t.type = 13;
+    else if(s == "mul")t.type = 13;
+    else if(s == "div")t.type = 13;
+    else if(s == "cast")t.type = 13;
+    //attributes
+    else if(s == "public")t.type = 11;
+    else if(s == "protected")t.type = 11;
+    else if(s == "private")t.type = 11;
+    else if(s == "static")t.type = 11;
+    else if(s == "volatile")t.type = 11;
+    else if(s == "inline")t.type = 11;
+    else if(s == "const")t.type = 11;
+    else if(s == "extern")t.type = 11;
+    else if(s == "noop")t.type = 11;
+    else if(s == "primitiveInPlace")t.type = 11;
+    else if(s == "primitiveAdd")t.type = 11;
+    else if(s == "primitiveSub")t.type = 11;
+    else if(s == "primitiveMul")t.type = 11;
+    else if(s == "primitiveDiv")t.type = 11;
+    else if(s == "primitiveEqual")t.type = 11;
+    else if(s == "primitiveNotEqual")t.type = 11;
+    else if(s == "primitiveGreater")t.type = 11;
+    else if(s == "primitiveGreaterEqual")t.type = 11;
+    else if(s == "primitiveLess")t.type = 11;
+    else if(s == "primitiveLessEqual")t.type = 11;
+    else if(s == "primitiveAnd")t.type = 11;
+    else if(s == "primitiveXor")t.type = 11;
+    else if(s == "primitiveOr")t.type = 11;
+    else if(s == "primitiveNot")t.type = 11;
+    else if(s == "primitiveInc")t.type = 11;
+    else if(s == "primitiveDec")t.type = 11;
+    else if(s == "primitiveAssign")t.type = 11;
+    //built-in primitive types
+    else if(s == "primitive64")t.type = 12;
+    else if(s == "primitive32")t.type = 12;
+    else if(s == "primitive16")t.type = 12;
+    else if(s == "primitive8")t.type = 12;
+    else if(s == "primitive0")t.type = 12;
     else
     {
         //some identifier

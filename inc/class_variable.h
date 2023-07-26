@@ -33,8 +33,16 @@
 
 class type;
 
+class member {
+public:
+    type* dataType;
+    std::string name;
+    int64_t offset;
+};
+
 class variable
 {
+public:
     type* dataType;
     std::string name;
 };

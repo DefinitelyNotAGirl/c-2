@@ -27,26 +27,43 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-class u64 : primitive64;
-class u32 : primitive32;
-class u16 : primitive16;
+class u64 extends primitive64;
+class u32 extends primitive32;
+class u16 extends primitive16;
 class u8 : primitive8;
 class void : primitive0;
 class bool : primitive8;
 class char : primitive8;
 class wchar : primitive16;
+class long : nosuchtype;
+class u128 : primitive64,primitive64;
+
+primitiveMul u256 operator*(u128,u128);
+
 primitiveMul u64 operator*(u64,u64);
 primitiveDiv u64 operator/(u64,u64);
-primitivesub u64 operator-(u64,u64);
+primitiveSub u64 operator-(u64,u64);
 primitiveAdd u64 operator+(u64,u64);
-primitiveMul_A void operator*=(u64,u64);
-primitiveDiv_A void operator/=(u64,u64);
-primitivesub_A void operator-=(u64,u64);
-primitiveAdd_A void operator+=(u64,u64);
+
+primitiveMul primitiveInPlace void operator*=(u64,u64);
+primitiveDiv primitiveInPlace void operator/=(u64,u64);
+primitiveSub primitiveInPlace void operator-=(u64,u64);
+primitiveAdd primitiveInPlace void operator+=(u64,u64);
+
 primitiveEqual bool operator==(u64,u64);
+
 primitiveInc void operator++(u64);
 primitiveDec void operator--(u64);
+
 primitiveAssign void u64(u64);
 primitiveAssign void u64(u32);
 primitiveAssign void u64(u16);
 primitiveAssign void u64(u8);
+
+class string
+{
+    private char* data;
+    private u64 size;
+
+    public void operator+=(string);
+}

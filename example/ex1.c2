@@ -36,7 +36,7 @@
 
 #define test4 void pasted(u64 arg, u16 arg2);
 
-#include W"example/ex1.h2"
+#include "example/ex1.h2"
 
 void main(u64 test, u32 args):
     //operator tests
