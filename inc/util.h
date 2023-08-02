@@ -37,6 +37,8 @@ void strToLower(std::string& str);
 bool isDigit(char);
 bool isLatinChar(char);
 
+uint64_t roundUp(uint64_t numToRound, uint64_t multiple);
+
 template<typename T>
 void inject(std::vector<T>& src, std::vector<T>& dst, uint64_t offset)
 {

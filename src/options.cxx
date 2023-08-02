@@ -51,29 +51,57 @@ bool strToBool(std::string str)
     else\
         options::optname = strToBool(args.front());\
 }
+#define CARGHANDLER_STRING(optname) void cargHandler_string_ ## optname (CARGPARSE_HANDLER_ARGS){\
+    if(args.size()==0)\
+        options::optname = defaultSysRoot;\
+    else\
+    {\
+        std::string dir = args.front();\
+        while(dir.back() == '/')\
+            dir.pop_back();\
+        options::optname = dir;\
+    }\
+}
+#define CARGHANDLER_INT(optname) void cargHandler_int_ ## optname (CARGPARSE_HANDLER_ARGS){\
+    options::optname = atoi(args.front().c_str());\
+}
 
 CARGHANDLER_BOOLEAN(MD)
 CARGHANDLER_BOOLEAN(C)
+CARGHANDLER_STRING(SysRoot)
 CARGHANDLER_BOOLEAN(fclasslayout)
 CARGHANDLER_BOOLEAN(ffunctioninfo)
+CARGHANDLER_BOOLEAN(fvariableinfo)
 CARGHANDLER_BOOLEAN(ffreestanding)
+CARGHANDLER_BOOLEAN(fnoautoinclude)
 CARGHANDLER_BOOLEAN(fnostdlib)
 CARGHANDLER_BOOLEAN(fnolibc)
 CARGHANDLER_BOOLEAN(mnortti)
 CARGHANDLER_BOOLEAN(dprintTokens)
+CARGHANDLER_BOOLEAN(ddebug)
+CARGHANDLER_INT(fcpl)
 
 #define name_MD "-MD"
 #define name_C "-C"
-#define name_fclasslayout "--fclasslayout"
+#define name_fclasslayout "--fclassinfo"
 #define name_ffunctioninfo "--ffunctioninfo"
+#define name_fvariableinfo "--fvariableinfo"
 #define name_ffreestanding "--ffreestanding"
-#define name_fnostdlib "--fnostdlib"
-#define name_fnolibc "--fnolibc"
+#define name_fnoautoinclude "--fno-autoinclude"
+#define name_fnostdlib "--fno-stdlib"
+#define name_fnolibc "--fno-libc"
 #define name_mnortti "--mno-rtti"
 #define name_dprintTokens "--dprint-tokens"
+#define name_ddebug "--ddebug"
+#define name_SysRoot "--isysroot"
+#define name_fcpl "--fcpl"
 
 #define CARGHANDLER_BOOLEAN_N(optname) cargHandler_bool_ ## optname
+#define CARGHANDLER_STRING_N(optname) cargHandler_string_ ## optname
+#define CARGHANDLER_INT_N(optname) cargHandler_int_ ## optname
 #define CARGHANDLER_BOOLEAN_CA0(optname) carg.addParameter(false,0,name_##optname,&CARGHANDLER_BOOLEAN_N(optname));
+#define CARGHANDLER_STRING_CA1(optname) carg.addParameter(false,1,name_##optname,&CARGHANDLER_STRING_N(optname));
+#define CARGHANDLER_INT_CA1(optname) carg.addParameter(false,1,name_##optname,&CARGHANDLER_INT_N(optname));
 
 void cargHandler_unknown(CARGPARSE_UNKOWNHANDLER_ARGS)
 {
@@ -86,16 +114,22 @@ void cliOptions(int argc, char **argv)
     //misc
     CARGHANDLER_BOOLEAN_CA0(MD);
     CARGHANDLER_BOOLEAN_CA0(C);
+    CARGHANDLER_STRING_CA1(SysRoot);
     //f
     CARGHANDLER_BOOLEAN_CA0(fclasslayout);
     CARGHANDLER_BOOLEAN_CA0(ffunctioninfo);
+    CARGHANDLER_BOOLEAN_CA0(fvariableinfo);
     CARGHANDLER_BOOLEAN_CA0(ffreestanding);
+    CARGHANDLER_BOOLEAN_CA0(fnoautoinclude);
+    CARGHANDLER_BOOLEAN_CA0(fnostdlib);
     CARGHANDLER_BOOLEAN_CA0(fnostdlib);
     CARGHANDLER_BOOLEAN_CA0(fnolibc);
+    CARGHANDLER_INT_CA1(fcpl);
     //m
     CARGHANDLER_BOOLEAN_CA0(mnortti);
     //d
     CARGHANDLER_BOOLEAN_CA0(dprintTokens);
+    CARGHANDLER_BOOLEAN_CA0(ddebug);
 
     carg.unknownHandler = &cargHandler_unknown;
 

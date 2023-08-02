@@ -1,8 +1,8 @@
-/*
- * Created Date: Sunday July 23rd 2023
+/**
+ * Created Date: Wednesday August 2nd 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 24th 2023 12:43:39 am
+ * Last Modified: Wednesday August 2nd 2023 1:27:30 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,45 +27,30 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-class f64 extends primitiveFloat64;
-class f32 extends primitiveFloat32;
-class u64 extends primitive64;
-class u32 extends primitive32;
-class u16 extends primitive16;
-class u8 : primitive8;
-class void : primitive0;
-class bool : primitive8;
-class char : primitive8;
-class wchar : primitive16;
-//class long : nosuchtype;
-class u128 : primitive64,primitive64;
-class u256 : u128,u128;
+#pragma once
 
-primitiveMul u256 operator*(u128,u128);
+class functionStorage;
 
-primitiveMul u64 operator*(u64,u64);
-primitiveDiv u64 operator/(u64,u64);
-primitiveSub u64 operator-(u64,u64);
-primitiveAdd u64 operator+(u64,u64);
+#include <compiler.h>
 
-primitiveMul primitiveInPlace void operator*=(u64,u64);
-primitiveDiv primitiveInPlace void operator/=(u64,u64);
-primitiveSub primitiveInPlace void operator-=(u64,u64);
-primitiveAdd primitiveInPlace void operator+=(u64,u64);
-
-primitiveEqual bool operator==(u64,u64);
-
-primitiveInc void operator++(u64);
-primitiveDec void operator--(u64);
-
-primitiveAssign void u64(u64);
-primitiveAssign void u64(u32);
-primitiveAssign void u64(u16);
-primitiveAssign void u64(u8);
-
-class string
+class functionStorage
 {
-    private char* data;
-    private u64 size;
-    public void operator+=(string);
-}
+private:
+    uint64_t* regData;
+
+public:
+    functionStorage();
+    ~functionStorage();
+
+    uint64_t stackSize = 0;
+
+    uint8_t ABI = 0;
+    
+    //return codes:
+    //0: free
+    //1: used
+    //2: unavailable
+    uint64_t registerStatus(__register__);
+    void registerStatus(__register__ reg,uint64_t value);
+    void setStorage(variable* var);
+};

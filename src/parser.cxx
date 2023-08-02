@@ -37,6 +37,9 @@
 #include <unistd.h>
 #include <rstack.h>
 #include <util.h>
+#include <error.h>
+#include <rstack.h>
+#include <codegen.h>
 
 std::vector<line> getLines(std::string fname);
 
@@ -50,8 +53,19 @@ type* getType(std::string name)
     for(type* t : types)
         if(t->name == name)
             return t;
+    if(name.back() == '*')
+    {
+        //unknown pointer type, create a new type
+        type* t = new type;
+        t->name = name;
+        t->size = 8;
+        types.push_back(t);
+        return t;
+    }
     return nullptr;
 }
+
+revstack<std::string> scopenames;
 
 void parse(std::vector<line> lines)
 {
@@ -61,9 +75,50 @@ void parse(std::vector<line> lines)
         line& L = lines[i];
         if(L.text.empty())
             break;
-        if(options::dprintTokens)
+        if(options::ddebug)
             std::cout << "line: " << L.text << std::endl;
         token t = L.nextToken();
+
+        bool isPrimitiveFunction = 0;
+        bool isFunctionOnly = 0;
+        std::list<token> attribs;
+
+        if(options::ddebug)
+            std::cout << "indent: " << L.leadingSpaces << " / " << currentScope->leadingSpace << std::endl;
+        if((L.leadingSpaces < currentScope->leadingSpace) && currentScope->isIndentBased)
+        {
+            scope* ts = currentScope;
+            while(true)
+            {
+                if(L.leadingSpaces < ts->leadingSpace)
+                {
+                    if(options::ddebug)std::cout << "body ended" << std::endl;
+
+                    if(ts->t == scopeType::FUNCTION)
+                    {
+                        genFunctionPrologue(ts);
+                        genFunctionEpilogue(ts);
+                    }
+                    
+
+                    ts = ts->parent;
+                }
+                else
+                {
+                    break;
+                }
+                if(ts == nullptr)
+                {
+                    std::cout << "indentation error! (2)" << std::endl;
+                    break;
+                }
+            }
+            currentScope = ts;
+        }
+        else if((L.leadingSpaces > currentScope->leadingSpace) && currentScope->isIndentBased)
+        {
+            std::cout << "indentation error! (1)" << std::endl;
+        }
 
         switch(t.type)
         {
@@ -115,23 +170,19 @@ void parse(std::vector<line> lines)
                                                 else if(t.text == "primitive32"){ntype->size+=4;startOffset+=4;}
                                                 else if(t.text == "primitive16"){ntype->size+=2;startOffset+=2;}
                                                 else if(t.text == "primitive8") {ntype->size+=1;startOffset+=1;}
+                                                else if(t.text == "primitiveFloat64") {ntype->size+=1;startOffset+=8;}
+                                                else if(t.text == "primitiveFloat32") {ntype->size+=1;startOffset+=4;}
                                             }
                                             else if(t.type == 9)
                                             {
                                                 type* it = getType(t.text);
                                                 if(it==nullptr)
                                                 {
-                                                    std::cout << "\033[31mERROR:\033[0m \"" << t.text << "\" does not name a type" << std::endl;
-                                                    std::string lineNumStr = std::to_string(L.lineNum);
-                                                    std::cout << "at line: " << lineNumStr << " in file: "<<L.file<<": "<<L.text<<  std::endl;
-                                                    uint64_t arrowPos = t.col+lineNumStr.size()+10+11+2+L.file.size()-2;
-                                                    for(uint64_t i = 0; i < arrowPos; i++)
-                                                        std::cout << ' ';
-                                                    std::cout << "\033[31m^\033[0m" << std::endl;
+                                                    error::noSuchType(t);
                                                     delete ntype;
                                                     goto ERRORENDLINE;
                                                 }
-                                                for(member m : it->members)
+                                                for(variable m : it->members)
                                                 {
                                                     m.offset+=startOffset;
                                                     ntype->members.push_back(m);
@@ -142,13 +193,7 @@ void parse(std::vector<line> lines)
                                         }
                                         if(t.type != 0)
                                         {
-                                            std::cout << "\033[31mERROR:\033[0m \"" << t.text << "\" does not name a type" << std::endl;
-                                            std::string lineNumStr = std::to_string(L.lineNum);
-                                            std::cout << "at line: " << lineNumStr << " in file: "<<L.file<<": "<<L.text<<  std::endl;
-                                            uint64_t arrowPos = t.col+lineNumStr.size()+10+11+2+L.file.size()-2;
-                                            for(uint64_t i = 0; i < arrowPos; i++)
-                                                std::cout << ' ';
-                                            std::cout << "\033[31m^\033[0m" << std::endl;
+                                            error::noSuchType(t);
                                             delete ntype;
                                             goto ERRORENDLINE;
                                         }
@@ -161,7 +206,7 @@ void parse(std::vector<line> lines)
                                 std::cout << "##############" << std::endl;
                                 std::cout << "class: " << ntype->name << std::endl;
                                 std::cout << "    size: " << ntype->size << std::endl;
-                                for(member& m : ntype->members)
+                                for(variable& m : ntype->members)
                                 {
                                     if(m.offset > 0)
                                         std::cout << "    (+"<<m.offset<<")";
@@ -180,99 +225,415 @@ void parse(std::vector<line> lines)
                 }
                 else if(t.text == "litop")
                 {
+                    t = L.nextToken();
+                    switch(t.type)
+                    {
+                        case(1):
+                        {
+                            litop* lop = new litop;
+                            lop->name = t.text;
+                            t = L.nextToken();
+                            switch(t.type)
+                            {
+                                case(13):
+                                    if(t.text == "add")
+                                        lop->op = shortOP::ADD;
+                                    else if(t.text == "sub")
+                                        lop->op = shortOP::SUB;
+                                    else if(t.text == "mul")
+                                        lop->op = shortOP::MUL;
+                                    else if(t.text == "div")
+                                        lop->op = shortOP::DIV;
+                                    else if(t.text == "cast")
+                                        lop->op = shortOP::CAST;
+                                    
+                                    if(lop->op == shortOP::CAST)
+                                    {
+                                        t = L.nextToken();
+                                        switch(t.type)
+                                        {
+                                            case(9):
+                                            {
+                                                type* ct = getType(t.text);
+                                                if(ct == nullptr)
+                                                {
+                                                    error::noSuchType(t);
+                                                    delete lop;
+                                                    goto ERRORENDLINE;
+                                                }
+                                                break;
+                                            }
+                                            default:
+                                                error::noSuchType(t);
+                                                delete lop;
+                                                goto ERRORENDLINE;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        t = L.nextToken();
+                                        lop->value = resolve(t)->immediateValue;
+                                        litops.push_back(lop);
+                                    }
+                                    break;
+                                default:
+                                    error::expectedShortop(t);
+                            }
+                            break;
+                        }
+                        default:
+                        {
+                            error::expectedNewUnique(t);
+                        }
+                    }
                 }
                 else if(t.text == "return")
                 {
                 }
                 break;
-        }
-
-        /*
-        //integers
-        uint64_t inherited_classes = 0;
-
-        //data structures
-        revstack<token> TTS;
-        type* ntype = nullptr;
-        type* dataType = nullptr;
-
-        while(t.type)
-        {
-            std::cout << "token: " << t.text << std::endl;
-
-            switch(t.type)
-            {
-                case(6)://default width string literal
-                    if(TTS[0].text == "#include")
-                    {
-                        std::cout << "including file: " << t.text << std::endl;
-                        parse(getLines(t.text));
-                    }
-                    break;
-                case(9):
-                    if(TTS[0].text == "class")
-                    {
-                        std::cout << "ERROR: class \"" << t.text << "\" already exists!" << std::endl;
-                    }
-                    break;
-                case(1):
-                    if(TTS.size() > 0)
-                    {
-                        if(TTS[0].text == "class")
+            case(25):
+            case(22):
+            case(21):
+            case(20):
+                collectAttributes:;
+                while(t.type >= 20 && t.type < 30)
+                {
+                    attribs.push_back(t);
+                    t = L.nextToken();
+                }
+                //std::cout << "attributes: ";
+                //for(token& a : attribs)
+                //    std::cout << a.text << " ";
+                //std::cout << std::endl;
+            case(9):
+                switch(t.type)
+                {
+                    case(9):{
+                        //function or variable declaration
+                        type* it = getType(t.text);
+                        if(it==nullptr)
                         {
-                            ntype = new type;
-                            ntype->name = t.text;
-                            std::cout << "new class: " << t.text << std::endl;
-                        }
-                        else if(TTS.size() > 1 && (TTS[1].text == "class" && t.text == ":"))
-                        {
-                            std::cout << "fetching inheritance..." << std::endl;
-                        }
-                        goto case1TokenEnd;
-                    }
-                    {
-                        dataType = getType(t.text);
-                        variable* var = getVariable(t.text);
-                        if(dataType == nullptr && var == nullptr)
-                        {
-                            //no such type error
-                            std::cout << "\033[31mERROR:\033[0m \"" << t.text << "\" does not name a type or variable!" << std::endl;
-                            std::string lineNumStr = std::to_string(L.lineNum);
-                            std::cout << "at line: " << lineNumStr << " in file: "<<L.file<<": "<<L.text<<  std::endl;
-                            uint64_t arrowPos = t.col+lineNumStr.size()+10+11+2+L.file.size()-2;
-                            for(uint64_t i = 0; i < arrowPos; i++)
-                                std::cout << ' ';
-                            std::cout << "\033[31m^\033[0m" << std::endl;
+                            error::noSuchType(t);
                             goto ERRORENDLINE;
                         }
-                    }
-                    case1TokenEnd:;
-                    break;
-                case(12):
-                    if(TTS.size() > 1)
-                    {
-                        if(TTS[2+inherited_classes].text == "class")
+                        t = L.nextToken();
+                        std::string name = t.text;
+                        bool isFunction = false;
+                        if(name.back() == '(')
                         {
-                            std::cout << "inheriting class: " << t.text << std::endl;
-                            inherited_classes++;
-                            if(t.text == "primitive64")     ntype->size+=8;
-                            else if(t.text == "primitive32")ntype->size+=4;
-                            else if(t.text == "primitive16")ntype->size+=2;
-                            else if(t.text == "primitive8") ntype->size+=1;
+                            name.pop_back();
+                            isFunction = true;
+                            //function
                         }
+                        else
+                        {
+                            //check for next non whitespace char
+                            uint64_t start = t.col+name.length();
+                            for(uint64_t i = start; i < L.text.length(); i++)
+                            {
+                                switch(L.text[i])
+                                {
+                                    case(' '):
+                                    case('\t'):
+                                    case('\n'):
+                                        break;
+                                    case('('):
+                                        //function
+                                        isFunction = true;
+                                    default:
+                                        goto break_1;
+                                }
+                            }
+                            break_1:;
+                        }
+                        if(isFunction)
+                        {
+                            bool isStatic = false;
+                            bool isInline = false;
+                            bool isExtern = false;
+                            bool isConst = false;
+                            bool isNoop = false;
+                            uint8_t access = 0;
+                            uint8_t ABI = 0;
+                            for(token& attr : attribs)
+                            {
+                                if(attr.text == "static")
+                                    isStatic = true;
+                                else if(attr.text == "public")
+                                    access = 0;
+                                else if(attr.text == "protected")
+                                    access = 1;
+                                else if(attr.text == "private")
+                                    access = 2;
+                                else if(attr.text == "inline")
+                                    isInline = true;
+                                else if(attr.text == "const")
+                                    isConst = true;
+                                else if(attr.text == "extern")
+                                    isExtern = true;
+                                else if(attr.text == "noop")
+                                    isNoop = true;
+                                else if(attr.text.substr(0, 4) == "ABI-")
+                                {
+                                    std::string abiName = attr.text.substr(4);
+                                    if(abiName == "MICROSOFTx64")
+                                        ABI = 2;
+                                    else if(abiName == "SYSTEMVamd64")
+                                        ABI = 1;
+                                }
+                                else if(attr.text.substr(0,strlen("primitive")) == "primitive")
+                                {
+                                    //primitives
+                                }
+                                else
+                                {
+                                    error::invalidFunctionAttribute(attr);
+                                    goto ERRORENDLINE;
+                                }
+                            }
+                            type* returnType = nullptr;
+                            std::vector<type*> paramTypes;
+                            bool hasMoreParams = true;
+                            while(hasMoreParams)
+                            {
+                                t = L.nextToken();
+                                if(t.text.front() == '(')
+                                {
+                                    t.text = t.text.substr(1);
+                                    t.type = tokenType(t.text);
+                                }
+                                if(t.text.back() == ':')
+                                {
+                                    t.text.pop_back();
+                                    t.type = tokenType(t.text);
+                                    hasMoreParams = false;
+                                }
+                                if(t.text.back() == ')')
+                                {
+                                    t.text.pop_back();
+                                    t.type = tokenType(t.text);
+                                    hasMoreParams = false;
+                                }
+                                switch(t.type)
+                                {
+                                    case(9):
+                                        returnType = getType(t.text);
+                                        paramTypes.push_back(returnType);
+                                        if(returnType == nullptr)
+                                        {
+                                            error::noSuchType(t);
+                                            goto ERRORENDLINE;
+                                        }
+                                        break;
+                                    case(1):
+                                        if(returnType != nullptr)
+                                        {
+                                            returnType = nullptr;
+                                            break;
+                                        }
+                                    default:
+                                        error::expectedTypename(t);
+                                        goto ERRORENDLINE;
+                                }
+                            }
+                            returnType = it;
+
+                            if(ABI == 0)
+                                ABI = defaultABI;
+                            std::string symbol = currentScope->name + mangleTypeName(returnType->name) + "_" + manglePseudoName(name);
+                            for(type* p : paramTypes)
+                                symbol+="_"+mangleTypeName(p->name);
+
+                            if(options::ffunctioninfo)
+                            {
+                                std::cout << "##############" << std::endl;
+                                std::cout << "function: " << name << std::endl;
+                                std::cout << "symbol: " << symbol << std::endl;
+                                std::cout << "ABI: ";
+                                switch(ABI)
+                                {
+                                    case(1):
+                                        std::cout << "SystemV amd64" << std::endl;
+                                        break;
+                                    case(2):
+                                        std::cout << "Microsoft x64" << std::endl;
+                                        break;
+                                    default:
+                                        std::cout << "Unknown" << std::endl;
+                                }
+                                std::cout << "return type: " << returnType->name << std::endl;
+                                if(paramTypes.size() > 0)
+                                {
+                                    std::cout << "parameters: " << std::endl;
+                                    for(type* p : paramTypes)
+                                        std::cout << "        " << p->name << std::endl;
+                                }
+                                std::cout << std::endl;
+                            }
+
+                            if(L.text.back() == ':')
+                            {
+                                //indent based body
+                                scope* sc = new scope;
+                                sc->parent = currentScope;
+                                sc->name = symbol + "__";
+                                sc->leadingSpace = L.leadingSpaces+tabLength;
+                                sc->isIndentBased = true;
+                                sc->t = scopeType::FUNCTION;
+                                sc->fstore = new functionStorage;
+                                sc->fstore->ABI = ABI;
+
+                                function* func = new function;
+                                func->name = name;
+                                func->symbol = symbol;
+                                func->parameters = paramTypes;
+                                func->returnType = returnType;
+
+                                sc->func = func;
+                                currentScope = sc;
+                                if(options::ddebug)std::cout << "body started" << std::endl;
+                            }
+                        }
+                        else
+                        {
+                            variable* var = new variable;
+                            var->dataType = it;
+                            bool isStatic = false;
+                            bool isExtern = false;
+                            bool isConst = false;
+                            bool isVolatile = false;
+                            bool noalloc = false;
+                            uint8_t access = 0;
+                            for(token& attr : attribs)
+                            {
+                                if(attr.text[0] == '(' && attr.text.back() == ')')
+                                {
+                                    //storage attribute
+                                    if(isdigit(attr.text[1]))
+                                    {
+                                        //absolute memory address
+                                        token blub = t;
+                                        blub.text = attr.text.substr(1, attr.text.size()-2);
+                                        uint64_t addr = resolve(blub)->immediateValue;
+                                        var->storage = storageType::MEMORY_ABSOLUTE;
+                                        var->offset = addr;
+                                    }
+                                    else if(attr.text[1] == '+' || attr.text[1] == '-')
+                                    {
+                                        //address relative to SP
+                                        token blub = t;
+                                        blub.text = attr.text.substr(1, attr.text.size()-2);
+                                        uint64_t offset = resolve(blub)->immediateValue;
+                                        var->storage = storageType::MEMORY;
+                                        var->offset = offset;
+                                    }
+                                    else
+                                    {
+                                        //register
+                                        std::string rname = attr.text.substr(1, attr.text.size()-2);
+                                        __register__ reg = registerID(rname);
+                                        if(reg == __register__::invalid)
+                                            std::cout << "invalid register name: " << rname << std::endl;
+                                        uint64_t rsize = 0x0000FF0000 & (uint64_t)reg;
+                                        if(rsize < it->size)
+                                        {
+                                            std::cout   << "ERROR: register \"" << rname 
+                                                        << "\" is too small to fit variable of type \"" 
+                                                        << it->name << "\"!" 
+                                                        << std::endl;
+                                        }
+                                        
+                                        var->storage = storageType::REGISTER;
+                                        var->reg = reg;
+                                    }
+                                }
+                                else if(attr.text == "static")
+                                    isStatic = true;
+                                else if(attr.text == "public")
+                                    access = 0;
+                                else if(attr.text == "protected")
+                                    access = 1;
+                                else if(attr.text == "private")
+                                    access = 2;
+                                else if(attr.text == "const")
+                                    isConst = true;
+                                else if(attr.text == "extern")
+                                    isExtern = true;
+                                else if(attr.text == "noalloc")
+                                    noalloc = true;
+                                else if(attr.text == "volatile")
+                                    isVolatile = true;
+                                else
+                                {
+                                    error::invalidVariableAttribute(attr);
+                                    goto ERRORENDLINE;
+                                }
+                            }
+                            if(var->storage == storageType::INVALID)
+                            {
+                                //auto storage
+                                if(currentScope->t == scopeType::FUNCTION)
+                                    currentScope->fstore->setStorage(var);
+                            }
+                            std::string symbol = currentScope->name + mangleTypeName(it->name) + "_" + manglePseudoName(name);
+                            if(options::fvariableinfo)
+                            {
+                                std::cout << "##############" << std::endl;
+                                std::cout << "variable: " << name << std::endl;
+                                std::cout << "symbol: " << symbol << std::endl;
+                                std::cout << "type: " << var->dataType->name << std::endl;
+                                std::cout << "storage: ";
+                                if(currentScope->t == scopeType::FUNCTION)
+                                {
+                                    if(var->storage == storageType::MEMORY)
+                                    {
+                                        if(var->offset < 0)
+                                            std::cout << "SP";
+                                        else
+                                            std::cout << "SP+";
+                                        std::cout <<std::dec<< (int64_t)var->offset;
+                                    }
+                                    else if(var->storage == storageType::REGISTER)
+                                    {
+                                        std::cout << registerNAME(var->reg);
+                                    }
+                                    else if(var->storage == storageType::MEMORY_ABSOLUTE)
+                                    {
+                                        std::cout << "0x" << std::hex << var->offset;
+                                    }
+                                }
+                                else
+                                {
+                                    if(var->storage == storageType::REGISTER)
+                                    {
+                                        std::cout << registerNAME(var->reg);
+                                    }
+                                    else if(var->storage == storageType::MEMORY_ABSOLUTE)
+                                    {
+                                        std::cout << "0x" << std::hex << var->offset;
+                                    }
+                                }
+                                std::cout << std::endl;
+                                std::cout << std::endl;
+                            }
+                        }
+                        
+                        break;
                     }
-                    break;
-            }
+                    case(10):
+                    {
+                        //do smth with variable
 
-            TTS.push(t);
-
-            if(ntype!=nullptr)
-                types.push_back(ntype);
-
-            //epilogue
-            t = L.nextToken();
+                        break;
+                    }
+                    case(11):
+                    {
+                        //function call
+                        break;
+                    }
+                }
+            break;
         }
-        */
 
         ERRORENDLINE:;
         if(i++ >= lines.size())

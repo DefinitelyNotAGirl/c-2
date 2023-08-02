@@ -244,10 +244,13 @@ std::vector<line> getLines(std::string fname)
 
     std::string content = content__;
 
-    std::cout << "code after comments: " << std::endl;
-    std::cout << content << std::endl;
+    if(options::ddebug)
+    {
+        std::cout << "code after comments: " << std::endl;
+        std::cout << content << std::endl;
+    }
 
-    if(options::dprintTokens)
+    if(options::ddebug)
         std::cout << "lines: " << std::endl;
     std::vector<line> lines;
 

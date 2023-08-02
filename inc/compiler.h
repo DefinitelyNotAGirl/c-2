@@ -34,6 +34,24 @@
 #include <class_line.h>
 #include <class_token.h>
 #include <class_type.h>
+#include <class_litop.h>
 #include <class_variable.h>
+#include <storage.h>
+#include <function.h>
+#include <class_scope.h>
+
+variable* resolve(token& t);
+variable* resolveIMM(char* token);
+
+type* getType(std::string name);
+uint64_t tokenType(std::string& s);
+std::string manglePseudoName(std::string& s);
+std::string mangleTypeName(std::string& s);
+
+std::string getNewName();
+
+extern scope* globalScope;
+extern scope* currentScope;
 
 extern std::vector<type*> types;
+extern std::vector<litop*> litops;

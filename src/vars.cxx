@@ -29,17 +29,18 @@
  */
 
 #include <common.h>
-
-#include <class_type.h>
+#include <compiler.h>
 
 std::list<std::string> sourceFiles;
 std::list<std::string> dependencies;
 std::vector<type*> types;
 //std::vector<function*> functions;
-//std::vector<litop*> litops;
-//scope* currentScope = nullptr;
+std::vector<litop*> litops;
+scope* globalScope = new scope;
+scope* currentScope = globalScope;
 uint64_t defaultNumberBase = 10;
 uint64_t tabLength = 4;
+uint64_t defaultABI = 1;//default to SystemV amd64 ABI
 
 char c_alert                = 0x07;
 char c_backspace            = 0x08;
@@ -56,16 +57,22 @@ namespace options
     bool ffreestanding = false;
     bool fnostdlib = false;
     bool fnolibc = false;
+    bool fnoautoinclude = false;
     bool fclasslayout = false;
     bool ffunctioninfo = false;
+    bool fvariableinfo = false;
+    int fcpl = 3;
+    int asmVerbose = 3;
 
     //-m******
     bool mnortti = false;
 
     //-d******
     bool dprintTokens = false;
+    bool ddebug = false;
 
     //misc
+    std::string SysRoot = defaultSysRoot;
     bool MD = false;
     bool C = false;
 }

@@ -1,8 +1,8 @@
 /*
- * Created Date: Sunday July 23rd 2023
+ * Created Date: Wednesday August 2nd 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 24th 2023 12:43:39 am
+ * Last Modified: Wednesday August 2nd 2023 5:15:44 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,45 +27,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-class f64 extends primitiveFloat64;
-class f32 extends primitiveFloat32;
-class u64 extends primitive64;
-class u32 extends primitive32;
-class u16 extends primitive16;
-class u8 : primitive8;
-class void : primitive0;
-class bool : primitive8;
-class char : primitive8;
-class wchar : primitive16;
-//class long : nosuchtype;
-class u128 : primitive64,primitive64;
-class u256 : u128,u128;
 
-primitiveMul u256 operator*(u128,u128);
-
-primitiveMul u64 operator*(u64,u64);
-primitiveDiv u64 operator/(u64,u64);
-primitiveSub u64 operator-(u64,u64);
-primitiveAdd u64 operator+(u64,u64);
-
-primitiveMul primitiveInPlace void operator*=(u64,u64);
-primitiveDiv primitiveInPlace void operator/=(u64,u64);
-primitiveSub primitiveInPlace void operator-=(u64,u64);
-primitiveAdd primitiveInPlace void operator+=(u64,u64);
-
-primitiveEqual bool operator==(u64,u64);
-
-primitiveInc void operator++(u64);
-primitiveDec void operator--(u64);
-
-primitiveAssign void u64(u64);
-primitiveAssign void u64(u32);
-primitiveAssign void u64(u16);
-primitiveAssign void u64(u8);
-
-class string
-{
-    private char* data;
-    private u64 size;
-    public void operator+=(string);
-}
+u64_largeFunc_u64_u64_u64:
+    push %rbx # save rbx as mandated by the SystemV amd64 ABI
+    push %rsp # save rsp as mandated by the SystemV amd64 ABI
+    push %rbp # save rbp as mandated by the SystemV amd64 ABI
+    push %r12 # save r12 as mandated by the SystemV amd64 ABI
+    push %r13 # save r13 as mandated by the SystemV amd64 ABI
+    push %r14 # save r14 as mandated by the SystemV amd64 ABI
+    push %r15 # save r15 as mandated by the SystemV amd64 ABI
+    sub $16, %rsp
+u64_largeFunc_u64_u64_u64__epilogue:
+    add $16, %rsp
+    pop %rbx # restore rbx as mandated by the SystemV amd64 ABI
+    pop %rsp # restore rsp as mandated by the SystemV amd64 ABI
+    pop %rbp # restore rbp as mandated by the SystemV amd64 ABI
+    pop %r12 # restore r12 as mandated by the SystemV amd64 ABI
+    pop %r13 # restore r13 as mandated by the SystemV amd64 ABI
+    pop %r14 # restore r14 as mandated by the SystemV amd64 ABI
+    pop %r15 # restore r15 as mandated by the SystemV amd64 ABI
+    ret

@@ -30,10 +30,12 @@
 #pragma once
 
 #include <common.h>
+#define defaultSysRoot "/usr/local"
 
 extern std::list<std::string> sourceFiles;
 extern uint64_t defaultNumberBase;
 extern uint64_t tabLength;
+extern uint64_t defaultABI;
 extern char c_alert;
 extern char c_backspace;
 extern char c_escape;
@@ -53,16 +55,22 @@ namespace options
     extern bool ffreestanding;
     extern bool fnostdlib;
     extern bool fnolibc;
+    extern bool fnoautoinclude;
     extern bool fclasslayout;
     extern bool ffunctioninfo;
+    extern bool fvariableinfo;
+    extern int fcpl;
+    extern int asmVerbose;
 
     //-m******
     extern bool mnortti;
 
     //-d******
     extern bool dprintTokens;
+    extern bool ddebug;
 
     //misc
     extern bool MD;
     extern bool C;
+    extern std::string SysRoot;
 }

@@ -1,8 +1,8 @@
-/*
- * Created Date: Sunday July 23rd 2023
+/**
+ * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 24th 2023 12:43:39 am
+ * Last Modified: Sunday July 30th 2023 4:53:27 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,45 +27,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-class f64 extends primitiveFloat64;
-class f32 extends primitiveFloat32;
-class u64 extends primitive64;
-class u32 extends primitive32;
-class u16 extends primitive16;
-class u8 : primitive8;
-class void : primitive0;
-class bool : primitive8;
-class char : primitive8;
-class wchar : primitive16;
-//class long : nosuchtype;
-class u128 : primitive64,primitive64;
-class u256 : u128,u128;
+#pragma once
 
-primitiveMul u256 operator*(u128,u128);
+#include <common.h>
+#include <compiler.h>
 
-primitiveMul u64 operator*(u64,u64);
-primitiveDiv u64 operator/(u64,u64);
-primitiveSub u64 operator-(u64,u64);
-primitiveAdd u64 operator+(u64,u64);
-
-primitiveMul primitiveInPlace void operator*=(u64,u64);
-primitiveDiv primitiveInPlace void operator/=(u64,u64);
-primitiveSub primitiveInPlace void operator-=(u64,u64);
-primitiveAdd primitiveInPlace void operator+=(u64,u64);
-
-primitiveEqual bool operator==(u64,u64);
-
-primitiveInc void operator++(u64);
-primitiveDec void operator--(u64);
-
-primitiveAssign void u64(u64);
-primitiveAssign void u64(u32);
-primitiveAssign void u64(u16);
-primitiveAssign void u64(u8);
-
-class string
+namespace error
 {
-    private char* data;
-    private u64 size;
-    public void operator+=(string);
+    void noSuchType(token& t);
+    void noSuchLitop(token& t, uint64_t offset = 0);
+    void expectedNewUnique(token& t);
+    void expectedShortop(token& t);
+    void invalidFunctionAttribute(token& t);
+    void invalidVariableAttribute(token& t);
+    void expectedTypename(token& t);
 }

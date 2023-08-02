@@ -46,7 +46,7 @@ void HANDLER_SIGSEGV(int sig) {
     size_t size;
 
     // get void*'s for all entries on the stack
-    size = backtrace(array, 30);
+    size = backtrace(array, 50);
 
     // print out all the frames to stderr
     fprintf(stderr, "Error: signal %d:\n", sig);
@@ -60,6 +60,9 @@ int main(int argc, char** argv)
     signal(SIGABRT, HANDLER_SIGSEGV);   // install our handler
 
     cliOptions(argc, argv);
+
+    if(options::fcpl != 3)
+        std::cout << "cpu privilege level: " << options::fcpl << std::endl;
 
     for(std::string i : sourceFiles)
     {

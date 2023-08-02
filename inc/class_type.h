@@ -39,6 +39,6 @@ class type
 public:
     uint64_t size;
     std::string name;
-    std::vector<member> members;
+    std::vector<variable> members;
     std::vector<type*> supertypes;
 };

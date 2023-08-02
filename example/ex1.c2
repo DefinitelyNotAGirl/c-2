@@ -38,12 +38,17 @@
 
 #include "example/ex1.h2"
 
-void main(u64 test, u32 args):
+volatile noalloc (6MiB) u64 bootInfo;
+
+void main(u64 test, u32 arg):
     //operator tests
-    u64 test = 1;
-    u64 test2 = 0;
-    test2 = 
-    test+500;
+    volatile (rcx) u64 test = 1;
+    (rbx) u64 test2 = 3;
+    (+12) u32 test3 = 0;
+    (rsp) const u32 rsp;
+    (-8) u64 belowStack = 512;
+    (EFER) u64 EFER;
+    test2 = test+500;
     test+=500;
     test++;
     test-=100;
@@ -57,6 +62,29 @@ void main(u64 test, u32 args):
     test2 = test%250;
     test %= 250;
 
+ABI-MICROSOFTx64 void EFIentry(u64 a,u32 b):
+    main(a,b);
+
+u64 largeFunc(u64 a,u64 b,u64 c):
+    u64 i = 512;
+    u64 _1  = i++;
+    u64 _2  = i++;
+    u64 _3  = i++;
+    u64 _4  = i++;
+    u64 _5  = i++;
+    u64 _6  = i++;
+    u64 _7  = i++;
+    u64 _8  = i++;
+    u64 _9  = i++;
+    u64 _10 = i++;
+    u64 _11 = i++;
+    u64 _12 = i++;
+    u64 _13 = i++;
+    u64 _14 = i++;
+    u64 _15 = i++;
+    u64 _16 = i++;
+    u64 _17 = i++;
+
 char* strtest = "Hello, world!";
 u64 malloc(u64 size)
 {
@@ -65,14 +93,16 @@ u64 malloc(u64 size)
 }
 
 u64 calloc(u64 size):
-    u32 ksize;
+    u64 ksize;
     if(size > 0):
         ksize = 32KiB;
     else:
         ksize = 64KiB;
     return ksize;
 
-noop void zalloc(u64 size);
+noop void zalloc (u64 size);
+
+ABI-SYSTEMVamd64 u64 error(u64 ec);
 
 #cmp test2 600
 #je testsym
