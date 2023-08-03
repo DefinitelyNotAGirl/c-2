@@ -29,67 +29,52 @@
  */
 
 #include <compiler.h>
+#include "master.h"
 #include <util.h>
 
-static void genFunctionPrologueSysV64(scope* sc)
+static void genFunctionPrologueSysV64(std::vector<std::string>& lines, scope* sc)
 {
     using enum __register__;
-    std::vector<std::string> lines;
+
+    lines.push_back(
+            "\n# "
+            +sc->func->returnType->name
+            +" "
+            +sc->func->name
+            +"(");
+    for(type* t : sc->func->parameters)
+        lines.back() += (t->name+",");
+    if(lines.back().back() == ',')
+        lines.back().pop_back();
+    lines.back() += (")");
 
     lines.push_back(sc->func->symbol+":");
 
+    pushRegSave();
     if(sc->fstore->registerStatus(rbx) == 1)
-    {
-        lines.push_back("    push %rbx");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # save rbx as mandated by the SystemV amd64 ABI");
-    }
+        saveRegister(rbx);
     if(sc->fstore->registerStatus(rsp) == 1) 
-    {
-        lines.push_back("    push %rsp");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # save rsp as mandated by the SystemV amd64 ABI");
-    }
+        saveRegister(rsp);
     if(sc->fstore->registerStatus(rbp) == 1)
-    {
-        lines.push_back("    push %rbp");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # save rbp as mandated by the SystemV amd64 ABI");
-    }
+        saveRegister(rbp);
     if(sc->fstore->registerStatus(r12) == 1)
-    {
-        lines.push_back("    push %r12");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # save r12 as mandated by the SystemV amd64 ABI");
-    }
+        saveRegister(r12);
     if(sc->fstore->registerStatus(r13) == 1)
-    {
-        lines.push_back("    push %r13");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # save r13 as mandated by the SystemV amd64 ABI");
-    }
+        saveRegister(r13);
     if(sc->fstore->registerStatus(r14) == 1) 
-    {
-        lines.push_back("    push %r14");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # save r14 as mandated by the SystemV amd64 ABI");
-    }
+        saveRegister(r14);
     if(sc->fstore->registerStatus(r15) == 1)
-    {
-        lines.push_back("    push %r15");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # save r15 as mandated by the SystemV amd64 ABI");
-    }
+        saveRegister(r15);
 
-    lines.push_back("    sub $"+std::to_string(sc->fstore->stackSize)+", %rsp");
+    lines.push_back(getIndent()+"sub $"+std::to_string(sc->fstore->stackSize)+", %rsp");
 
-    for(std::string& line : lines)
-    {
-        std::cout << line << std::endl;
-    }
+    //for(std::string& line : lines)
+    //{
+    //    std::cout << line << std::endl;
+    //}
 }
 
-void genFunctionPrologue(scope* sc)
+void genFunctionPrologue(std::vector<std::string>& lines, scope* sc)
 {
     //generate prologue
     sc->fstore->stackSize = roundUp(sc->fstore->stackSize, 16);
@@ -104,7 +89,7 @@ void genFunctionPrologue(scope* sc)
     switch(sc->fstore->ABI)
     {
         case(1):
-            genFunctionPrologueSysV64(sc);
+            genFunctionPrologueSysV64(lines,sc);
             break;
     }
 }

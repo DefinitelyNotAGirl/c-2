@@ -48,6 +48,8 @@ primitiveDiv u64 operator/(u64,u64);
 primitiveSub u64 operator-(u64,u64);
 primitiveAdd u64 operator+(u64,u64);
 
+primitiveAssign primitiveInPlace void operator=(u64,u64);
+
 primitiveMul primitiveInPlace void operator*=(u64,u64);
 primitiveDiv primitiveInPlace void operator/=(u64,u64);
 primitiveSub primitiveInPlace void operator-=(u64,u64);
@@ -65,7 +67,7 @@ primitiveAssign void u64(u8);
 
 class string
 {
-    private char* data;
-    private u64 size;
+    private char* m_data;
+    private u64 m_size;
     public void operator+=(string);
 }

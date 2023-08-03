@@ -673,3 +673,110 @@ void functionStorage::setStorage(variable* var)
         std::cout << "ERROR: unsupported ABI: " << this->ABI << std::endl;
     }
 }
+
+__register__ functionStorage::getFreeRegister()
+{
+    using enum __register__;
+    if(this->registerStatus(rax) == 0)
+        return rax;
+    else if(this->registerStatus(rcx) == 0)
+        return rcx;
+    else if(this->registerStatus(rdx) == 0)
+        return rdx;
+    else if(this->registerStatus(r8) == 0)
+        return r8;
+    else if(this->registerStatus(r9) == 0)
+        return r9;
+    else if(this->registerStatus(r10) == 0)
+        return r10;
+    else if(this->registerStatus(r11) == 0)
+        return r11;	
+    else if(this->registerStatus(rbx) == 0)
+        return rbx;
+    else if(this->registerStatus(rdi) == 0)
+        return rdi;
+    else if(this->registerStatus(rsi) == 0)
+        return rsi;
+    else if(this->registerStatus(rsp) == 0)
+        return rsp;
+    else if(this->registerStatus(rbp) == 0)
+        return rbp;
+    else if(this->registerStatus(r12) == 0)
+        return r12;
+    else if(this->registerStatus(r13) == 0)
+        return r13;
+    else if(this->registerStatus(r14) == 0)
+        return r14;
+    else if(this->registerStatus(r15) == 0)
+        return r15;
+    else
+        return invalid;
+}
+
+void functionStorage::setArgumentStorage(variable* var)
+{
+    using enum __register__;
+    if(this->ABI == 1)
+    {
+        //SystemV amd64 ABI
+        if(var->dataType->members.size() == 0 && var->dataType->size <= 8)
+        {
+            //64 bit primitive
+
+            //scratch registers
+            if(this->registerStatus(rdi) == 0)
+            {
+                var->storage = storageType::REGISTER;
+                var->reg = rdi;
+                this->registerStatus(rdi,1);
+                return;
+            }
+            else if(this->registerStatus(rsi) == 0)
+            {
+                var->storage = storageType::REGISTER;
+                var->reg = rsi;
+                this->registerStatus(rsi,1);
+                return;
+            }
+            else if(this->registerStatus(rdx) == 0)
+            {
+                var->storage = storageType::REGISTER;
+                var->reg = rdx;
+                this->registerStatus(rdx,1);
+                return;
+            }
+            else if(this->registerStatus(rcx) == 0)
+            {
+                var->storage = storageType::REGISTER;
+                var->reg = rcx;
+                this->registerStatus(rcx,1);
+                return;
+            }
+            else if(this->registerStatus(r8) == 0)
+            {
+                var->storage = storageType::REGISTER;
+                var->reg = r8;
+                this->registerStatus(r8,1);
+                return;
+            }
+            else if(this->registerStatus(r9) == 0)
+            {
+                var->storage = storageType::REGISTER;
+                var->reg = r9;
+                this->registerStatus(r9,1);
+                return;
+            }
+        }
+
+        //no registers aviable, store in stack
+        var->storage = storageType::MEMORY;
+        //align stack size
+        this->stackSize += this->stackSize%var->dataType->size;
+        var->offset=this->stackSize;
+        this->stackSize+=var->dataType->size;
+    }
+    else
+    {
+        std::cout << "ERROR: unsupported ABI: " << this->ABI << std::endl;
+    }
+}

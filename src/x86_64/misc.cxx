@@ -1,8 +1,8 @@
-/**
- * Created Date: Tuesday July 25th 2023
+/*
+ * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 12:57:50 am
+ * Last Modified: Thursday August 3rd 2023 1:58:41 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,25 +27,35 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
 
-#include <common.h>
+#include "pops.h"
+#include <bits.h>
 
-class token;
+location::location(__register__ base, uint64_t offset)
+    :base(base),offset(offset){}
+location::location(uint64_t offset)
+    :base(__register__::invalid),offset(offset){}
 
-class line
+std::string location::expr()
 {
-private:
-    uint64_t tpos = 0;
-    
-public:
-    uint64_t lineNum;
-    std::string file;
-    
-    std::string text;
-
-    uint64_t leadingSpaces;
-
-    token nextToken();
-    void stripTokens(uint64_t n);
-};
+    std::string res;
+    if(this->base != __register__::invalid)
+    {
+        res = "%"+registerNAME(this->base);
+        if(!EXPR_GETBIT_63(this->offset))
+            this->offset--;
+        this->offset^=-1;
+        if(EXPR_GETBIT_63(this->offset))
+            res+="-";
+        else
+            res+="+";
+        res+="$";
+        std::string num = std::to_string((int64_t)this->offset);
+        if(num[0] == '-')
+            num = num.substr(1,num.length());
+        res+=num;
+    }
+    else
+        res+=std::to_string(this->offset);
+    return res;
+}

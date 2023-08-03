@@ -44,6 +44,8 @@ extern char c_newline;
 extern char c_cariagereturn;
 extern char c_horizontaltab;
 extern char c_verticaltab;
+extern std::string objOut;
+extern std::string asmOut;
 
 namespace options
 {
@@ -64,6 +66,7 @@ namespace options
 
     //-m******
     extern bool mnortti;
+    extern bool mnorodata;
 
     //-d******
     extern bool dprintTokens;
@@ -72,5 +75,7 @@ namespace options
     //misc
     extern bool MD;
     extern bool C;
+    extern bool as;
+    extern std::string output;
     extern std::string SysRoot;
 }

@@ -51,16 +51,11 @@ bool strToBool(std::string str)
     else\
         options::optname = strToBool(args.front());\
 }
-#define CARGHANDLER_STRING(optname) void cargHandler_string_ ## optname (CARGPARSE_HANDLER_ARGS){\
-    if(args.size()==0)\
-        options::optname = defaultSysRoot;\
-    else\
-    {\
-        std::string dir = args.front();\
-        while(dir.back() == '/')\
-            dir.pop_back();\
-        options::optname = dir;\
-    }\
+#define CARGHANDLER_PATH(optname) void cargHandler_path_ ## optname (CARGPARSE_HANDLER_ARGS){\
+    std::string dir = args.front();\
+    while(dir.back() == '/')\
+        dir.pop_back();\
+    options::optname = dir;\
 }
 #define CARGHANDLER_INT(optname) void cargHandler_int_ ## optname (CARGPARSE_HANDLER_ARGS){\
     options::optname = atoi(args.front().c_str());\
@@ -68,7 +63,9 @@ bool strToBool(std::string str)
 
 CARGHANDLER_BOOLEAN(MD)
 CARGHANDLER_BOOLEAN(C)
-CARGHANDLER_STRING(SysRoot)
+CARGHANDLER_BOOLEAN(as)
+CARGHANDLER_PATH(SysRoot)
+CARGHANDLER_PATH(output)
 CARGHANDLER_BOOLEAN(fclasslayout)
 CARGHANDLER_BOOLEAN(ffunctioninfo)
 CARGHANDLER_BOOLEAN(fvariableinfo)
@@ -77,12 +74,15 @@ CARGHANDLER_BOOLEAN(fnoautoinclude)
 CARGHANDLER_BOOLEAN(fnostdlib)
 CARGHANDLER_BOOLEAN(fnolibc)
 CARGHANDLER_BOOLEAN(mnortti)
+CARGHANDLER_BOOLEAN(mnorodata)
 CARGHANDLER_BOOLEAN(dprintTokens)
 CARGHANDLER_BOOLEAN(ddebug)
 CARGHANDLER_INT(fcpl)
 
 #define name_MD "-MD"
 #define name_C "-C"
+#define name_output "-o"
+#define name_as "-S"
 #define name_fclasslayout "--fclassinfo"
 #define name_ffunctioninfo "--ffunctioninfo"
 #define name_fvariableinfo "--fvariableinfo"
@@ -91,16 +91,17 @@ CARGHANDLER_INT(fcpl)
 #define name_fnostdlib "--fno-stdlib"
 #define name_fnolibc "--fno-libc"
 #define name_mnortti "--mno-rtti"
+#define name_mnorodata "--mno-rodata"
 #define name_dprintTokens "--dprint-tokens"
 #define name_ddebug "--ddebug"
 #define name_SysRoot "--isysroot"
 #define name_fcpl "--fcpl"
 
 #define CARGHANDLER_BOOLEAN_N(optname) cargHandler_bool_ ## optname
-#define CARGHANDLER_STRING_N(optname) cargHandler_string_ ## optname
+#define CARGHANDLER_PATH_N(optname) cargHandler_path_ ## optname
 #define CARGHANDLER_INT_N(optname) cargHandler_int_ ## optname
 #define CARGHANDLER_BOOLEAN_CA0(optname) carg.addParameter(false,0,name_##optname,&CARGHANDLER_BOOLEAN_N(optname));
-#define CARGHANDLER_STRING_CA1(optname) carg.addParameter(false,1,name_##optname,&CARGHANDLER_STRING_N(optname));
+#define CARGHANDLER_PATH_CA1(optname) carg.addParameter(false,1,name_##optname,&CARGHANDLER_PATH_N(optname));
 #define CARGHANDLER_INT_CA1(optname) carg.addParameter(false,1,name_##optname,&CARGHANDLER_INT_N(optname));
 
 void cargHandler_unknown(CARGPARSE_UNKOWNHANDLER_ARGS)
@@ -114,7 +115,9 @@ void cliOptions(int argc, char **argv)
     //misc
     CARGHANDLER_BOOLEAN_CA0(MD);
     CARGHANDLER_BOOLEAN_CA0(C);
-    CARGHANDLER_STRING_CA1(SysRoot);
+    CARGHANDLER_BOOLEAN_CA0(as);
+    CARGHANDLER_PATH_CA1(output);
+    CARGHANDLER_PATH_CA1(SysRoot);
     //f
     CARGHANDLER_BOOLEAN_CA0(fclasslayout);
     CARGHANDLER_BOOLEAN_CA0(ffunctioninfo);
@@ -127,6 +130,7 @@ void cliOptions(int argc, char **argv)
     CARGHANDLER_INT_CA1(fcpl);
     //m
     CARGHANDLER_BOOLEAN_CA0(mnortti);
+    CARGHANDLER_BOOLEAN_CA0(mnorodata);
     //d
     CARGHANDLER_BOOLEAN_CA0(dprintTokens);
     CARGHANDLER_BOOLEAN_CA0(ddebug);

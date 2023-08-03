@@ -40,11 +40,98 @@
 #include <error.h>
 #include <rstack.h>
 #include <codegen.h>
+#include <sstream>
+
+std::vector<std::string> DataCode;
+std::vector<std::string> RoDataCode;
+std::vector<std::string> BssCode;
+std::vector<std::string> TextCode;
+std::vector<std::string> MiscCode;
 
 std::vector<line> getLines(std::string fname);
 
+std::string getIndent()
+{
+    scope* sc = currentScope->parent;
+    std::string ret;
+    while(sc != nullptr)
+    {
+        ret+="    ";
+        sc = sc->parent;
+    }
+    return ret;
+}
+
+function* getFunction(std::string name)
+{
+    return nullptr;
+}
+
+std::string getFunctionExpression(function* f)
+{
+    std::string res = f->returnType->name+" "+f->name + "(";
+    for(type* i : f->parameters)
+        res+=i->name+",";
+    if(res.back() == ',')
+        res.pop_back();
+    res+=")";
+    return res;
+}
+
+std::string getFunctionExpression(std::string name, std::vector<variable*> args)
+{
+    std::string res = name + "(";
+    for(variable* i : args)
+        res+=i->dataType->name+",";
+    if(res.back() == ',')
+        res.pop_back();
+    res+=")";
+    return res;
+}
+
+function* getFunction(std::string name, std::vector<variable*> args)
+{
+    scope* sc = currentScope;
+    std::vector<function*> candidates;
+    while(sc != nullptr)
+    {
+        for(function* i : sc->functions)
+        {
+            if(i->name == name)
+            {
+                if(i->parameters.size() == args.size())
+                {
+                    for(uint64_t II = 0;II<i->parameters.size();II++)
+                        if(i->parameters[II] != args[II]->dataType)
+                            goto notThisFunction;
+                        //else
+                        //    std::cout <<std::hex<<i->parameters[II]<< " != " << args[II] << std::endl;
+                    return i;
+                }
+                notThisFunction:;
+                candidates.push_back(i);
+            }
+            //else
+            //    std::cout << i->name <<" != "<< name << std::endl;
+        }
+        sc = sc->parent;
+    }
+    std::cout << "ERROR: cannot find a function to match call \"" << getFunctionExpression(name,args) << "\", candidates are: " << std::endl;
+    for(function* candidate : candidates)
+        std::cout << "    " << getFunctionExpression(candidate) << std::endl;
+    return nullptr;
+}
+
 variable* getVariable(std::string name)
 {
+    scope* sc = currentScope;
+    while(sc != nullptr)
+    {
+        for(variable* i : sc->variables)
+            if(i->name == name)
+                return i;
+        sc = sc->parent;
+    }
     return nullptr;
 }
 
@@ -96,8 +183,13 @@ void parse(std::vector<line> lines)
 
                     if(ts->t == scopeType::FUNCTION)
                     {
-                        genFunctionPrologue(ts);
-                        genFunctionEpilogue(ts);
+                        std::vector<std::string> lines;
+                        genFunctionPrologue(lines,ts);
+                        for(std::string& i : ts->func->code)
+                            lines.push_back(i);
+                        genFunctionEpilogue(lines,ts);
+                        for(std::string& i : lines)
+                            TextCode.push_back(i);
                     }
                     
 
@@ -353,6 +445,10 @@ void parse(std::vector<line> lines)
                             bool isExtern = false;
                             bool isConst = false;
                             bool isNoop = false;
+                            bool isPrimitive = false;
+                            bool primitiveFloat = false;
+                            bool primitiveInPlace = false;
+                            primitiveOP op = primitiveOP::invalid;
                             uint8_t access = 0;
                             uint8_t ABI = 0;
                             for(token& attr : attribs)
@@ -383,7 +479,48 @@ void parse(std::vector<line> lines)
                                 }
                                 else if(attr.text.substr(0,strlen("primitive")) == "primitive")
                                 {
+                                    isPrimitive = true;
                                     //primitives
+                                    if(attr.text == "primitiveInPlace")
+                                        primitiveInPlace = true;
+                                    else if(attr.text == "primitiveFloat")
+                                        primitiveFloat = true;
+                                    else if(attr.text == "primitiveAdd")
+                                        op = primitiveOP::add;
+                                    else if(attr.text == "primitiveSub")
+                                        op = primitiveOP::sub;
+                                    else if(attr.text == "primitiveMul")
+                                        op = primitiveOP::mul;
+                                    else if(attr.text == "primitiveDiv")
+                                        op = primitiveOP::div;
+                                    else if(attr.text == "primitiveMod")
+                                        op = primitiveOP::mod;
+                                    else if(attr.text == "primitiveEqual")
+                                        op = primitiveOP::equal;
+                                    else if(attr.text == "primitiveNotEqual")
+                                        op = primitiveOP::NotEqual;
+                                    else if(attr.text == "primitiveGreater")
+                                        op = primitiveOP::Greater;
+                                    else if(attr.text == "primitiveGreaterEqual")
+                                        op = primitiveOP::GreaterEqual;
+                                    else if(attr.text == "primitiveLess")
+                                        op = primitiveOP::Less;
+                                    else if(attr.text == "primitiveLessEqual")
+                                        op = primitiveOP::LessEqual;
+                                    else if(attr.text == "primitiveAnd")
+                                        op = primitiveOP::_and;
+                                    else if(attr.text == "primitiveXor")
+                                        op = primitiveOP::_xor;
+                                    else if(attr.text == "primitiveOr")
+                                        op = primitiveOP::_or;
+                                    else if(attr.text == "primitiveNot")
+                                        op = primitiveOP::Not;
+                                    else if(attr.text == "primitiveInc")
+                                        op = primitiveOP::Inc;
+                                    else if(attr.text == "primitiveDec")
+                                        op = primitiveOP::Dec;
+                                    else if(attr.text == "primitiveAssign")
+                                        op = primitiveOP::assign;
                                 }
                                 else
                                 {
@@ -393,6 +530,7 @@ void parse(std::vector<line> lines)
                             }
                             type* returnType = nullptr;
                             std::vector<type*> paramTypes;
+                            std::vector<variable*> arguments;
                             bool hasMoreParams = true;
                             while(hasMoreParams)
                             {
@@ -419,6 +557,12 @@ void parse(std::vector<line> lines)
                                     case(9):
                                         returnType = getType(t.text);
                                         paramTypes.push_back(returnType);
+                                        if(arguments.size() != 0)
+                                            if(arguments.back()->name == "")
+                                                arguments.back()->name = getNewName();
+
+                                        arguments.push_back(new variable);
+                                        arguments.back()->dataType = returnType;
                                         if(returnType == nullptr)
                                         {
                                             error::noSuchType(t);
@@ -428,6 +572,8 @@ void parse(std::vector<line> lines)
                                     case(1):
                                         if(returnType != nullptr)
                                         {
+                                            if(arguments.size() != 0)
+                                                arguments.back()->name = t.text;
                                             returnType = nullptr;
                                             break;
                                         }
@@ -436,6 +582,9 @@ void parse(std::vector<line> lines)
                                         goto ERRORENDLINE;
                                 }
                             }
+                            if(arguments.size() != 0)
+                                if(arguments.back()->name == "")
+                                    arguments.back()->name = getNewName();
                             returnType = it;
 
                             if(ABI == 0)
@@ -471,6 +620,19 @@ void parse(std::vector<line> lines)
                                 std::cout << std::endl;
                             }
 
+                            function* func = new function;
+                            func->name = name;
+                            func->symbol = symbol;
+                            func->parameters = paramTypes;
+                            func->returnType = returnType;
+                            func->fstore = new functionStorage;
+                            func->fstore->ABI = ABI;
+                            func->isPrimitive = isPrimitive;
+                            func->primitiveFloat = primitiveFloat;
+                            func->primitiveInPlace = primitiveInPlace;
+                            func->op = op;
+                            currentScope->functions.push_back(func);
+
                             if(L.text.back() == ':')
                             {
                                 //indent based body
@@ -480,18 +642,46 @@ void parse(std::vector<line> lines)
                                 sc->leadingSpace = L.leadingSpaces+tabLength;
                                 sc->isIndentBased = true;
                                 sc->t = scopeType::FUNCTION;
-                                sc->fstore = new functionStorage;
-                                sc->fstore->ABI = ABI;
-
-                                function* func = new function;
-                                func->name = name;
-                                func->symbol = symbol;
-                                func->parameters = paramTypes;
-                                func->returnType = returnType;
-
+                                sc->fstore = func->fstore;
                                 sc->func = func;
+
+                                //declare variables for arguments
+                                for(variable* arg : arguments)
+                                {
+                                    sc->fstore->setArgumentStorage(arg);
+                                    if(options::asmVerbose >= 2)
+                                    {
+                                        std::string comment = "    # "+arg->name+" is stored ";
+                                        if(arg->storage == storageType::MEMORY)
+                                        {
+                                            if(arg->offset < 0)
+                                                comment+="at SP";
+                                            else
+                                                comment+="at SP+";
+                                            comment+=std::to_string((int64_t)arg->offset);
+                                        }
+                                        else if(arg->storage == storageType::REGISTER)
+                                        {
+                                            comment+="in "+registerNAME(arg->reg);
+                                        }
+                                        else if(arg->storage == storageType::MEMORY_ABSOLUTE)
+                                        {
+                                            std::stringstream stream;
+                                            stream << std::hex << (int64_t)arg->offset;
+                                            comment+="at 0x"+stream.str();
+                                        }
+                                        sc->func->code.push_back(comment);
+                                    }
+                                }
                                 currentScope = sc;
                                 if(options::ddebug)std::cout << "body started" << std::endl;
+                                MiscCode.push_back("global "+symbol);
+                            }
+                            else if(L.text.back() == ';')
+                            {
+                                //function declaration
+                                if(!isPrimitive)
+                                    MiscCode.push_back("extern "+symbol);
                             }
                         }
                         else
@@ -575,7 +765,32 @@ void parse(std::vector<line> lines)
                                 if(currentScope->t == scopeType::FUNCTION)
                                     currentScope->fstore->setStorage(var);
                             }
-                            std::string symbol = currentScope->name + mangleTypeName(it->name) + "_" + manglePseudoName(name);
+                            std::string symbol = currentScope->name + mangleTypeName(it->name) + "__" + manglePseudoName(name);
+                            var->name = name;
+                            var->symbol = symbol;
+                            if(options::asmVerbose >= 2 && currentScope->t == scopeType::FUNCTION)
+                            {
+                                std::string comment = getIndent()+"# "+var->name+" is stored ";
+                                if(var->storage == storageType::MEMORY)
+                                {
+                                    if(var->offset < 0)
+                                        comment+="at SP";
+                                    else
+                                        comment+="at SP+";
+                                    comment+=std::to_string((int64_t)var->offset);
+                                }
+                                else if(var->storage == storageType::REGISTER)
+                                {
+                                    comment+="in "+registerNAME(var->reg);
+                                }
+                                else if(var->storage == storageType::MEMORY_ABSOLUTE)
+                                {
+                                    std::stringstream stream;
+                                    stream << std::hex << (int64_t)var->offset;
+                                    comment+="at 0x"+stream.str();
+                                }
+                                currentScope->func->code.push_back(comment);
+                            }
                             if(options::fvariableinfo)
                             {
                                 std::cout << "##############" << std::endl;
@@ -616,6 +831,23 @@ void parse(std::vector<line> lines)
                                 std::cout << std::endl;
                                 std::cout << std::endl;
                             }
+                            currentScope->variables.push_back(var);
+                            t = L.nextToken();
+                            switch(t.type)
+                            {
+                                case(3)://operator
+                                {
+                                    line tmpLine = L;
+                                    tmpLine.stripTokens(attribs.size()+1);
+                                    std::vector<line> tmpLines;
+                                    tmpLines.push_back(tmpLine);
+                                    parse(tmpLines);
+                                    break;
+                                }
+                                case(1):
+                                    std::cout << "token text: \"" << t.text <<"\""<<std::endl;
+                                    break;
+                            }
                         }
                         
                         break;
@@ -623,7 +855,6 @@ void parse(std::vector<line> lines)
                     case(10):
                     {
                         //do smth with variable
-
                         break;
                     }
                     case(11):
@@ -632,11 +863,51 @@ void parse(std::vector<line> lines)
                         break;
                     }
                 }
-            break;
+                break;
+            case(10):
+            {
+                //do smth with variable
+                std::string name = t.text;
+                variable* arg1 = getVariable(t.text);
+                t = L.nextToken();
+                switch(t.type)
+                {
+                    case(3):
+                        std::string functionName;
+                        if(t.text == "=")
+                            functionName = "operator=";
+                        
+                        t = L.nextToken();
+                        variable* arg2 = resolve(t);
+                        if(arg2 == nullptr)
+                        {
+                            std::cout << "wtf?" << std::endl;
+                        }
+                        else
+                        {
+                            std::vector<variable*> args;
+                            args.push_back(arg1);
+                            args.push_back(arg2);
+                            function* func = getFunction(functionName,args);
+                            if(func != nullptr)
+                            {
+                                if(options::asmVerbose >= 3)
+                                    currentScope->func->code.push_back(getIndent()+"# "+L.text);
+                                call(func,args);
+                            }
+                        }
+                }
+                break;
+            }
+            case(11):
+            {
+                //function call
+                break;
+            }
         }
 
         ERRORENDLINE:;
-        if(i++ >= lines.size())
+        if(++i >= lines.size())
             break;
     }
 }

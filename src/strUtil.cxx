@@ -89,6 +89,13 @@ bool strContains(char* buff, char c)
     return 0;
 }
 
+void stripExt(std::string& str)
+{
+    size_t lastindex = str.find_last_of(".");
+    if(lastindex != std::string::npos)
+        str = str.substr(0, lastindex); 
+}
+
 uint64_t roundUp(uint64_t numToRound, uint64_t multiple)
 {
     if (multiple == 0)

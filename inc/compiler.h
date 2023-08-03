@@ -40,10 +40,21 @@
 #include <function.h>
 #include <class_scope.h>
 
+extern std::vector<std::string> DataCode;
+extern std::vector<std::string> RoDataCode;
+extern std::vector<std::string> TextCode;
+extern std::vector<std::string> BssCode;
+extern std::vector<std::string> MiscCode;
+
 variable* resolve(token& t);
 variable* resolveIMM(char* token);
 
+std::string getIndent();
+
 type* getType(std::string name);
+variable* getVariable(std::string name);
+function* getFunction(std::string name);
+function* getFunction(std::string name, std::vector<variable*> args);
 uint64_t tokenType(std::string& s);
 std::string manglePseudoName(std::string& s);
 std::string mangleTypeName(std::string& s);

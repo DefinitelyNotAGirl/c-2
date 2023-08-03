@@ -29,74 +29,34 @@
  */
 
 #include <compiler.h>
+#include "master.h"
 #include <util.h>
 
-static void genFunctionEpilogueSysV64(scope* sc)
+static void genFunctionEpilogueSysV64(std::vector<std::string>& lines, scope* sc)
 {
     using enum __register__;
-    std::vector<std::string> lines;
 
-    lines.push_back(sc->name+"epilogue:");
+    lines.push_back(getIndent()+sc->name+"epilogue:");
 
-    lines.push_back("    add $"+std::to_string(sc->fstore->stackSize)+", %rsp");
+    lines.push_back(getIndent()+"add $"+std::to_string(sc->fstore->stackSize)+", %rsp");
 
-    if(sc->fstore->registerStatus(rbx) == 1)
-    {
-        lines.push_back("    pop %rbx");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # restore rbx as mandated by the SystemV amd64 ABI");
-    }
-    if(sc->fstore->registerStatus(rsp) == 1) 
-    {
-        lines.push_back("    pop %rsp");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # restore rsp as mandated by the SystemV amd64 ABI");
-    }
-    if(sc->fstore->registerStatus(rbp) == 1)
-    {
-        lines.push_back("    pop %rbp");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # restore rbp as mandated by the SystemV amd64 ABI");
-    }
-    if(sc->fstore->registerStatus(r12) == 1)
-    {
-        lines.push_back("    pop %r12");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # restore r12 as mandated by the SystemV amd64 ABI");
-    }
-    if(sc->fstore->registerStatus(r13) == 1)
-    {
-        lines.push_back("    pop %r13");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # restore r13 as mandated by the SystemV amd64 ABI");
-    }
-    if(sc->fstore->registerStatus(r14) == 1) 
-    {
-        lines.push_back("    pop %r14");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # restore r14 as mandated by the SystemV amd64 ABI");
-    }
-    if(sc->fstore->registerStatus(r15) == 1)
-    {
-        lines.push_back("    pop %r15");
-        if(options::asmVerbose == 3)
-            lines.back().append(" # restore r15 as mandated by the SystemV amd64 ABI");
-    }
+    restoreRegisters();
+    popRegSave();
 
-    lines.push_back("    ret");
-    for(std::string& line : lines)
-    {
-        std::cout << line << std::endl;
-    }
+    lines.push_back(getIndent()+"ret");
+    //for(std::string& line : lines)
+    //{
+    //    std::cout << line << std::endl;
+    //}
 }
 
-void genFunctionEpilogue(scope* sc)
+void genFunctionEpilogue(std::vector<std::string>& lines, scope* sc)
 {
     //generate epilogue
     switch(sc->fstore->ABI)
     {
         case(1):
-            genFunctionEpilogueSysV64(sc);
+            genFunctionEpilogueSysV64(lines,sc);
             break;
     }
 }

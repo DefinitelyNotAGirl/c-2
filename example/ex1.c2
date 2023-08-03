@@ -61,11 +61,12 @@ void main(u64 test, u32 arg):
     test*=5000;
     test2 = test%250;
     test %= 250;
+    arg = 999;
 
-ABI-MICROSOFTx64 void EFIentry(u64 a,u32 b):
+/*ABI-MICROSOFTx64*/ void EFIentry(u64 a,u32 b):
     main(a,b);
 
-u64 largeFunc(u64 a,u64 b,u64 c):
+u64 largeFunc(u64 a,u64 b,u64 c, u256 d):
     u64 i = 512;
     u64 _1  = i++;
     u64 _2  = i++;
@@ -86,11 +87,9 @@ u64 largeFunc(u64 a,u64 b,u64 c):
     u64 _17 = i++;
 
 char* strtest = "Hello, world!";
-u64 malloc(u64 size)
-{
+u64 malloc(u64 size):
     u64 nsize = 2MiB;
     return nsize;
-}
 
 u64 calloc(u64 size):
     u64 ksize;

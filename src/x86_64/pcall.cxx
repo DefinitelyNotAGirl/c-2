@@ -1,8 +1,8 @@
-/**
- * Created Date: Tuesday July 25th 2023
+/*
+ * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 12:57:50 am
+ * Last Modified: Thursday August 3rd 2023 6:12:54 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,25 +27,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
 
-#include <common.h>
+#include "master.h"
 
-class token;
-
-class line
+variable* primitiveCall(function* func,std::vector<variable*> args)
 {
-private:
-    uint64_t tpos = 0;
-    
-public:
-    uint64_t lineNum;
-    std::string file;
-    
-    std::string text;
+    variable* ret;
+    if(func->primitiveInPlace)
+    {
+        if(args.size() != 2)
+        {
+            std::cout << "ERROR: invalid number of arguments to in place primitive function" << std::endl;
+        }
+        else
+        {
+            ret = args[0];
+        }
+    }
+    else
+    {
+        ret = new variable;
+    }
 
-    uint64_t leadingSpaces;
-
-    token nextToken();
-    void stripTokens(uint64_t n);
-};
+    if(!func->primitiveFloat)
+    {
+        switch(func->op)
+        {
+            case(primitiveOP::assign):
+                if(args.size() != 2)
+                    std::cout << "ERROR: invalid number of arguments to in place primitive function" << std::endl;
+                else
+                    mov(args[1],ret);
+                break;
+            default:
+                std::cout << "blub" << std::endl;
+        }
+    }
+    else
+    {
+        std::cout << "blub (2)" << std::endl;
+    }
+    return ret;
+}

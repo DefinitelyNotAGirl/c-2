@@ -36,10 +36,13 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <util.h>
 
 void cliOptions(int argc, char **argv);
 std::vector<line> getLines(std::string fname);
 void parse(std::vector<line> lines);
+void genOutput(std::string& i);
 
 void HANDLER_SIGSEGV(int sig) {
     void *array[10];
@@ -68,6 +71,7 @@ int main(int argc, char** argv)
     {
         std::vector<line> lines = getLines(i);
         parse(lines);
+        genOutput(i);
         //reset compiler
     }
     return 0;

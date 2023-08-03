@@ -1,8 +1,8 @@
 /**
- * Created Date: Tuesday July 25th 2023
+ * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 12:57:50 am
+ * Last Modified: Thursday August 3rd 2023 2:01:37 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -29,23 +29,15 @@
  */
 #pragma once
 
-#include <common.h>
+#include <compiler.h>
+#include "pops.h"
 
-class token;
+extern std::vector<std::string>* code;
+extern functionStorage* fstore;
 
-class line
-{
-private:
-    uint64_t tpos = 0;
-    
-public:
-    uint64_t lineNum;
-    std::string file;
-    
-    std::string text;
+variable* primitiveCall(function* func,std::vector<variable*> args);
 
-    uint64_t leadingSpaces;
-
-    token nextToken();
-    void stripTokens(uint64_t n);
-};
+void saveRegister(__register__ reg);
+void restoreRegisters();
+void pushRegSave();
+void popRegSave();

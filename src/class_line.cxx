@@ -80,6 +80,17 @@ uint64_t tokenType(std::string& s)
     }
     //storage flags (ex. (rax) or (+28))
     else if(s.front() == '(' && s.back() == ')')return 25;
+    //operators
+    else if(s[0] == '=')return 3;
+    else if(s[0] == '+')return 3;
+    else if(s[0] == '-')return 3;
+    else if(s[0] == '*')return 3;
+    else if(s[0] == '/')return 3;
+    else if(s[0] == '%')return 3;
+    else if(s[0] == '>')return 3;
+    else if(s[0] == '<')return 3;
+    else if(s[0] == '|')return 3;
+    else if(s[0] == '&')return 3;
     //keywords
     else if(s == "if")return 8;
     else if(s == "else")return 8;
@@ -118,10 +129,12 @@ uint64_t tokenType(std::string& s)
     else if(s == "ABI-SYSTEMVamd64")return 21;
     //primitive functions
     else if(s == "primitiveInPlace")return 22;
+    else if(s == "primitiveFloat")return 22;
     else if(s == "primitiveAdd")return 22;
     else if(s == "primitiveSub")return 22;
     else if(s == "primitiveMul")return 22;
     else if(s == "primitiveDiv")return 22;
+    else if(s == "primitiveMod")return 22;
     else if(s == "primitiveEqual")return 22;
     else if(s == "primitiveNotEqual")return 22;
     else if(s == "primitiveGreater")return 22;
@@ -148,6 +161,10 @@ uint64_t tokenType(std::string& s)
         //some identifier
         if(getType(s) != nullptr)
             return 9;//typename
+        if(getVariable(s) != nullptr)
+            return 10;//variable
+        if(getFunction(s) != nullptr)
+            return 11;//function
 
         //new identifier
         return 1;//identifier
@@ -226,4 +243,17 @@ token line::nextToken()
     }
 
     return t;
+}
+
+void line::stripTokens(uint64_t n)
+{
+    for(uint64_t i = 0;i<n;i++)
+    {
+        this->tpos = 0;
+        token t = this->nextToken();
+        //std::cout << "stripping token: " << t.text << std::endl;
+        //std::cout << "before: \"" << this->text << "\"" << std::endl;
+        this->text = this->text.substr(t.text.length()+1,this->text.length());
+        //std::cout << "after: \"" << this->text << "\"" << std::endl;
+    }
 }

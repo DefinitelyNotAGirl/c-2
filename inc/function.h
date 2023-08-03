@@ -31,6 +31,29 @@
 
 #include <compiler.h>
 
+enum class primitiveOP : uint64_t
+{
+    invalid = 0,
+    add,
+    sub,
+    mul,
+    div,
+    mod,
+    assign,
+    _or,
+    _xor,
+    _and,
+    equal,
+    NotEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+    Not,
+    Inc,
+    Dec
+};
+
 class function
 {
 public:
@@ -39,6 +62,13 @@ public:
 
     type* returnType;
     std::vector<type*> parameters;
+    std::vector<std::string> code;
+    functionStorage* fstore;
+
+    bool isPrimitive = false;
+    primitiveOP op = primitiveOP::invalid;
+    bool primitiveInPlace = false;
+    bool primitiveFloat = false;
 
     bool ignoreCall = false;
 };

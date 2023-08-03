@@ -121,6 +121,7 @@ class variable
 public:
     type* dataType = nullptr;
     std::string name;
+    std::string symbol;
     uint64_t immediateValue;
     //storage
     storageType storage = storageType::INVALID;

@@ -31,5 +31,7 @@
 
 #include <compiler.h>
 
-void genFunctionEpilogue(scope* sc);
-void genFunctionPrologue(scope* sc);
+void genFunctionEpilogue(std::vector<std::string>& lines, scope* sc);
+void genFunctionPrologue(std::vector<std::string>& lines, scope* sc);
+
+variable* call(function* func,std::vector<variable*> args);

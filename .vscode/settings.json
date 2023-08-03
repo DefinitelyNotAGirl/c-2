@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.s": "asm-intel-x86-generic",
         "*.x86": "asm-intel-x86-generic",
         "*.make": "makefile",
         "STI": "c",
@@ -95,7 +96,8 @@
         "cfenv": "cpp",
         "bitset": "cpp",
         "forward_list": "cpp",
-        "stdfloat": "cpp"
+        "stdfloat": "cpp",
+        "stack": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled",
     "psi-header.variables": [

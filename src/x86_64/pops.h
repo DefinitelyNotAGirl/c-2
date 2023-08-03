@@ -1,8 +1,8 @@
 /**
- * Created Date: Tuesday July 25th 2023
+ * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 12:57:50 am
+ * Last Modified: Thursday August 3rd 2023 1:55:22 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -29,23 +29,28 @@
  */
 #pragma once
 
-#include <common.h>
+#include "master.h"
 
-class token;
-
-class line
+class location
 {
-private:
-    uint64_t tpos = 0;
-    
 public:
-    uint64_t lineNum;
-    std::string file;
-    
-    std::string text;
+    location(__register__ base, uint64_t offset);
+    location(uint64_t offset);
+    __register__ base;
+    uint64_t offset;
 
-    uint64_t leadingSpaces;
-
-    token nextToken();
-    void stripTokens(uint64_t n);
+    std::string expr();
 };
+
+void mov(__register__ src,__register__ dst);
+void mov(uint64_t src,__register__ dst);
+void mov(uint64_t src,location dst);
+void mov(location src, location dst);
+void mov(location src, __register__ dst);
+void mov(__register__ src, location dst);
+void mov(variable* src, __register__ dst);
+void mov(__register__ src, variable* dst);
+void mov(variable* src, variable* dst);
+void mov(variable* src, __register__ dst);
+void mov(location src,variable* dst);
+void mov(variable* src,location dst);

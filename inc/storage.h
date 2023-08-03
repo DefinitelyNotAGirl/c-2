@@ -46,11 +46,15 @@ public:
 
     uint8_t ABI = 0;
     
-    //return codes:
+    //status codes:
     //0: free
     //1: used
     //2: unavailable
     uint64_t registerStatus(__register__);
     void registerStatus(__register__ reg,uint64_t value);
+
+    __register__ getFreeRegister();
+
     void setStorage(variable* var);
+    void setArgumentStorage(variable* var);
 };

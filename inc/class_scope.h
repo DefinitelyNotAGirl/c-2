@@ -43,7 +43,7 @@ public:
     uint64_t leadingSpace = 0;
     std::vector<variable*> variables;
     scopeType t = scopeType::GLOBAL;
-    //std::vector<function*> functions;
+    std::vector<function*> functions;
     scope* parent = nullptr;
     function* func = nullptr;
     functionStorage* fstore = nullptr;//this should only be filled if t==scopeType::FUNCTION

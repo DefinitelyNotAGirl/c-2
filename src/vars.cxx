@@ -51,6 +51,9 @@ char c_cariagereturn        = 0x0D;
 char c_horizontaltab        = 0x09;
 char c_verticaltab          = 0x0B;
 
+std::string objOut = "";
+std::string asmOut = "";
+
 namespace options
 {
     //-f******
@@ -66,6 +69,7 @@ namespace options
 
     //-m******
     bool mnortti = false;
+    bool mnorodata = false;
 
     //-d******
     bool dprintTokens = false;
@@ -75,4 +79,6 @@ namespace options
     std::string SysRoot = defaultSysRoot;
     bool MD = false;
     bool C = false;
+    bool as = false;
+    std::string output = "";
 }
