@@ -47,6 +47,7 @@ primitiveMul u64 operator*(u64,u64);
 primitiveDiv u64 operator/(u64,u64);
 primitiveSub u64 operator-(u64,u64);
 primitiveAdd u64 operator+(u64,u64);
+primitiveMod u64 operator%(u64,u64);
 
 primitiveAssign primitiveInPlace void operator=(u64,u64);
 
@@ -54,6 +55,7 @@ primitiveMul primitiveInPlace void operator*=(u64,u64);
 primitiveDiv primitiveInPlace void operator/=(u64,u64);
 primitiveSub primitiveInPlace void operator-=(u64,u64);
 primitiveAdd primitiveInPlace void operator+=(u64,u64);
+primitiveMod primitiveInPlace void operator%=(u64,u64);
 
 primitiveEqual bool operator==(u64,u64);
 

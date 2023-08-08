@@ -38,3 +38,4 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <buildinfo.h>

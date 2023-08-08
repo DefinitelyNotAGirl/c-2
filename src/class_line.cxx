@@ -62,6 +62,7 @@ uint64_t tokenType(std::string& s)
         return 0;
     else if(s == "#include")return 5;
     else if(s == "#define")return 5;
+    else if(s == "#pragma")return 5;
     else if(s.back() == '"')
     {
         if(s.front() == '"')
@@ -124,6 +125,7 @@ uint64_t tokenType(std::string& s)
     else if(s == "const")return 20;
     else if(s == "extern")return 20;
     else if(s == "noop")return 21;
+    else if(s == "deprecated")return 21;
     //ABIs
     else if(s == "ABI-MICROSOFTx64")return 21;
     else if(s == "ABI-SYSTEMVamd64")return 21;

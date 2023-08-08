@@ -38,6 +38,13 @@ std::vector<type*> types;
 std::vector<litop*> litops;
 scope* globalScope = new scope;
 scope* currentScope = globalScope;
+#ifdef ASMDEBUG
+    #pragma error test
+    bool asmDebugComments = true;
+#else
+    #pragma error test2
+    bool asmDebugComments = false;
+#endif
 uint64_t defaultNumberBase = 10;
 uint64_t tabLength = 4;
 uint64_t defaultABI = 1;//default to SystemV amd64 ABI
@@ -65,7 +72,7 @@ namespace options
     bool ffunctioninfo = false;
     bool fvariableinfo = false;
     int fcpl = 3;
-    int asmVerbose = 3;
+    int asmVerbose = 0;
 
     //-m******
     bool mnortti = false;

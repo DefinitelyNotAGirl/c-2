@@ -69,6 +69,7 @@ public:
     primitiveOP op = primitiveOP::invalid;
     bool primitiveInPlace = false;
     bool primitiveFloat = false;
+    bool isDeprecated;
 
     bool ignoreCall = false;
 };

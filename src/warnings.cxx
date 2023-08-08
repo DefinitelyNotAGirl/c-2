@@ -1,8 +1,8 @@
-/**
- * Created Date: Tuesday July 25th 2023
+/*
+ * Created Date: Monday August 7th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 1:24:45 am
+ * Last Modified: Monday August 7th 2023 7:55:53 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,44 +27,57 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
 
-#include <common.h>
-#include <options.h>
-#include <class_line.h>
-#include <class_token.h>
-#include <class_type.h>
-#include <class_litop.h>
-#include <class_variable.h>
-#include <storage.h>
-#include <function.h>
-#include <class_scope.h>
-#include <stack>
-#include <warning.h>
+#include <compiler.h>
 
-extern std::vector<std::string> DataCode;
-extern std::vector<std::string> RoDataCode;
-extern std::vector<std::string> TextCode;
-extern std::vector<std::string> BssCode;
-extern std::vector<std::string> MiscCode;
+std::vector<warning*> warnings;
+std::stack<std::vector<warning*>> pragmaStackWarnings;
 
-variable* resolve(token& t);
-variable* resolveIMM(char* token);
+void enableWarning(std::string name,std::string enabler)
+{
+    warning* w = getWarning(name);
+    if(w != nullptr)
+    {
+        w->enabled = true;
+        w->enablers.push_back(enabler);
+    }
+    else
+    {
+        //warning, unknown warning
+    }
+}
 
-std::string getIndent();
+void disableWarning(std::string name)
+{
+    warning* w = getWarning(name);
+    if(w != nullptr)
+    {
+        w->enabled = false;
+    }
+    else
+    {
+        //warning, unknown warning
+    }
+}
 
-type* getType(std::string name);
-variable* getVariable(std::string name);
-function* getFunction(std::string name);
-function* getFunction(std::string name, std::vector<variable*> args);
-uint64_t tokenType(std::string& s);
-std::string manglePseudoName(std::string& s);
-std::string mangleTypeName(std::string& s);
+warning* getWarning(std::string name)
+{
+    for(warning* i : warnings)
+        if(i->name == name)
+            return i;
+    return nullptr;
+}
 
-std::string getNewName();
+warning::warning(std::string name,std::string link, bool enabled, bool error)
+    :name(name),link(link),enabled(enabled),error(error)
+    {
+        if(enabled)
+            this->enablers.push_back(name);
+    }
 
-extern scope* globalScope;
-extern scope* currentScope;
-
-extern std::vector<type*> types;
-extern std::vector<litop*> litops;
+warning::warning(std::string name, bool enabled, bool error)
+    :name(name),enabled(enabled),error(error)
+    {
+        if(enabled)
+            this->enablers.push_back(name);
+    }

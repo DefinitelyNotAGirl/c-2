@@ -38,10 +38,10 @@ static void genFunctionEpilogueSysV64(std::vector<std::string>& lines, scope* sc
 
     lines.push_back(getIndent()+sc->name+"epilogue:");
 
-    lines.push_back(getIndent()+"add $"+std::to_string(sc->fstore->stackSize)+", %rsp");
-
     restoreRegisters();
     popRegSave();
+
+    add(sc->fstore->stackSize,__register__::rsp);
 
     lines.push_back(getIndent()+"ret");
     //for(std::string& line : lines)

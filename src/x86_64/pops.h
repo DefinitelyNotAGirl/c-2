@@ -54,3 +54,13 @@ void mov(variable* src, variable* dst);
 void mov(variable* src, __register__ dst);
 void mov(location src,variable* dst);
 void mov(variable* src,location dst);
+
+void add(__register__ src, __register__ dst);
+void add(uint64_t src, __register__ dst);
+
+void mul(variable* dst, variable* right, variable* left);
+
+void mod(variable* dst, variable* right, variable* left);
+
+void sub(__register__ src, __register__ dst);
+void sub(uint64_t src, __register__ dst);

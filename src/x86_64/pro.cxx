@@ -49,12 +49,14 @@ static void genFunctionPrologueSysV64(std::vector<std::string>& lines, scope* sc
     lines.back() += (")");
 
     lines.push_back(sc->func->symbol+":");
+    
+    sub(sc->fstore->stackSize,__register__::rsp);
 
     pushRegSave();
     if(sc->fstore->registerStatus(rbx) == 1)
         saveRegister(rbx);
-    if(sc->fstore->registerStatus(rsp) == 1) 
-        saveRegister(rsp);
+    //if(sc->fstore->registerStatus(rsp) == 1) 
+    //    saveRegister(rsp);
     if(sc->fstore->registerStatus(rbp) == 1)
         saveRegister(rbp);
     if(sc->fstore->registerStatus(r12) == 1)
@@ -66,8 +68,6 @@ static void genFunctionPrologueSysV64(std::vector<std::string>& lines, scope* sc
     if(sc->fstore->registerStatus(r15) == 1)
         saveRegister(r15);
 
-    lines.push_back(getIndent()+"sub $"+std::to_string(sc->fstore->stackSize)+", %rsp");
-
     //for(std::string& line : lines)
     //{
     //    std::cout << line << std::endl;
@@ -77,6 +77,7 @@ static void genFunctionPrologueSysV64(std::vector<std::string>& lines, scope* sc
 void genFunctionPrologue(std::vector<std::string>& lines, scope* sc)
 {
     //generate prologue
+    code = &lines;
     sc->fstore->stackSize = roundUp(sc->fstore->stackSize, 16);
     if(options::ffunctioninfo)
     {

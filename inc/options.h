@@ -36,6 +36,7 @@ extern std::list<std::string> sourceFiles;
 extern uint64_t defaultNumberBase;
 extern uint64_t tabLength;
 extern uint64_t defaultABI;
+extern bool asmDebugComments;
 extern char c_alert;
 extern char c_backspace;
 extern char c_escape;

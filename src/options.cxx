@@ -31,6 +31,7 @@
 #include <libCargparse.hxx>
 #include <util.h>
 #include <options.h>
+#include <compiler.h>
 
 bool strToBool(std::string str)
 {
@@ -57,9 +58,26 @@ bool strToBool(std::string str)
         dir.pop_back();\
     options::optname = dir;\
 }
+#define CARGHANDLER_STRING(optname) void cargHandler_path_ ## optname (CARGPARSE_HANDLER_ARGS){\
+}
 #define CARGHANDLER_INT(optname) void cargHandler_int_ ## optname (CARGPARSE_HANDLER_ARGS){\
     options::optname = atoi(args.front().c_str());\
 }
+
+void CARGHANDLER_WNO(CARGPARSE_HANDLER_ARGS)
+{
+    std::string WID = args.front();
+    disableWarningSet(WID);
+}
+void CARGHANDLER_W(CARGPARSE_HANDLER_ARGS)
+{
+    std::string WID = args.front();
+    enableWarningSet(WID);
+}
+
+void CARGHANDLER_V(CARGPARSE_HANDLER_ARGS){options::asmVerbose = 1;}
+void CARGHANDLER_VV(CARGPARSE_HANDLER_ARGS){options::asmVerbose = 2;}
+void CARGHANDLER_VVV(CARGPARSE_HANDLER_ARGS){options::asmVerbose = 3;}
 
 CARGHANDLER_BOOLEAN(MD)
 CARGHANDLER_BOOLEAN(C)
@@ -109,6 +127,16 @@ void cargHandler_unknown(CARGPARSE_UNKOWNHANDLER_ARGS)
     sourceFiles.push_back(arg);
 }
 
+void CARGHANDLER_VERSION(CARGPARSE_HANDLER_ARGS)
+{
+    std::cout << "c+=2 compiler reference implementation." << std::endl;
+    std::cout << "version: 0" << std::endl;
+    std::cout << "branch: development" << std::endl;
+    std::cout << "source: https://github.com/DefinitelyNotAGirl/c-2" << std::endl;
+
+    exit(0);
+}
+
 void cliOptions(int argc, char **argv) 
 {
     cargparse::instance carg;
@@ -134,6 +162,16 @@ void cliOptions(int argc, char **argv)
     //d
     CARGHANDLER_BOOLEAN_CA0(dprintTokens);
     CARGHANDLER_BOOLEAN_CA0(ddebug);
+
+    carg.addParameter(0,1,"-Wno-",&CARGHANDLER_WNO);
+    carg.addParameter(0,1,"-W",&CARGHANDLER_W);
+
+    carg.addParameter(0,0,"-VVV",&CARGHANDLER_VVV);
+    carg.addParameter(0,0,"-VV",&CARGHANDLER_VV);
+    carg.addParameter(0,0,"-V",&CARGHANDLER_V);
+
+    carg.addParameter(0,0,"-version",&CARGHANDLER_VERSION);
+    carg.addParameter(0,0,"-v",&CARGHANDLER_VERSION);
 
     carg.unknownHandler = &cargHandler_unknown;
 

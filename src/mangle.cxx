@@ -84,6 +84,9 @@ std::string manglePseudoName(std::string& s)
             case('&'):
                 res+="AND";
                 break;
+            case('^'):
+                res+="EXP";
+                break;
             default:
                 res.push_back(i);
         }

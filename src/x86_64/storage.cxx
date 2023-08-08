@@ -102,6 +102,8 @@ functionStorage::functionStorage()
 
 void functionStorage::registerStatus(__register__ reg,uint64_t value)
 {
+    if(options::ddebug)
+        std::cout << "setting status of " << registerNAME(reg) << " to " << value << std::endl;
     switch(reg)
     {
         case(__register__::rax):
@@ -420,14 +422,7 @@ void functionStorage::setStorage(variable* var)
             //64 bit primitive
 
             //scratch registers
-            if(this->registerStatus(rax)==0)
-            {
-                var->storage = storageType::REGISTER;
-                var->reg = rax;
-                this->registerStatus(rax,1);
-                return;
-            }
-            else if(this->registerStatus(rdi) == 0)
+            if(this->registerStatus(rdi) == 0)
             {
                 var->storage = storageType::REGISTER;
                 var->reg = rdi;
@@ -533,6 +528,13 @@ void functionStorage::setStorage(variable* var)
                 this->registerStatus(r15,1);
                 return;
             }
+            else if(this->registerStatus(rax)==0)
+            {
+                var->storage = storageType::REGISTER;
+                var->reg = rax;
+                this->registerStatus(rax,1);
+                return;
+            }
         }
 
         //no registers aviable, store in stack
@@ -547,14 +549,7 @@ void functionStorage::setStorage(variable* var)
         //Microsoft x64 ABI
         if(var->dataType->members.size() == 0 && var->dataType->size <= 8)
         {
-            if(this->registerStatus(rax) == 0)
-            {
-                var->storage = storageType::REGISTER;
-                var->reg = rax;
-                this->registerStatus(rax,1);
-                return;
-            }
-            else if(this->registerStatus(rcx) == 0)
+            if(this->registerStatus(rcx) == 0)
             {
                 var->storage = storageType::REGISTER;
                 var->reg = rcx;
@@ -658,7 +653,14 @@ void functionStorage::setStorage(variable* var)
                 var->reg = r15;
                 this->registerStatus(r15,1);
                 return;
-            }	
+            }
+            else if(this->registerStatus(rax) == 0)
+            {
+                var->storage = storageType::REGISTER;
+                var->reg = rax;
+                this->registerStatus(rax,1);
+                return;
+            }
         }
 
         //no registers aviable, store in stack
@@ -677,9 +679,7 @@ void functionStorage::setStorage(variable* var)
 __register__ functionStorage::getFreeRegister()
 {
     using enum __register__;
-    if(this->registerStatus(rax) == 0)
-        return rax;
-    else if(this->registerStatus(rcx) == 0)
+    if(this->registerStatus(rcx) == 0)
         return rcx;
     else if(this->registerStatus(rdx) == 0)
         return rdx;
@@ -709,6 +709,8 @@ __register__ functionStorage::getFreeRegister()
         return r14;
     else if(this->registerStatus(r15) == 0)
         return r15;
+    else if(this->registerStatus(rax) == 0)
+        return rax;
     else
         return invalid;
 }

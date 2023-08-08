@@ -1,8 +1,8 @@
-/**
- * Created Date: Tuesday July 25th 2023
+/*
+ * Created Date: Monday August 7th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 1:24:45 am
+ * Last Modified: Monday August 7th 2023 9:50:24 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,44 +27,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
 
-#include <common.h>
-#include <options.h>
-#include <class_line.h>
-#include <class_token.h>
-#include <class_type.h>
-#include <class_litop.h>
-#include <class_variable.h>
-#include <storage.h>
-#include <function.h>
-#include <class_scope.h>
-#include <stack>
-#include <warning.h>
+#include <compiler.h>
 
-extern std::vector<std::string> DataCode;
-extern std::vector<std::string> RoDataCode;
-extern std::vector<std::string> TextCode;
-extern std::vector<std::string> BssCode;
-extern std::vector<std::string> MiscCode;
+void initWarnings()
+{
+    //cpl
+    warnings.push_back(new warning("cpl-registers",true,true));
 
-variable* resolve(token& t);
-variable* resolveIMM(char* token);
+    //memory
+    warnings.push_back(new warning("memory-absolute",true,false));
 
-std::string getIndent();
+    //unused
+    warnings.push_back(new warning("unused-variable",true,false));
+    warnings.push_back(new warning("unused-class",true,false));
 
-type* getType(std::string name);
-variable* getVariable(std::string name);
-function* getFunction(std::string name);
-function* getFunction(std::string name, std::vector<variable*> args);
-uint64_t tokenType(std::string& s);
-std::string manglePseudoName(std::string& s);
-std::string mangleTypeName(std::string& s);
+    //return
+    warnings.push_back(new warning("missing-return",true,false));
+    warnings.push_back(new warning("unexpected-return",true,false));
 
-std::string getNewName();
-
-extern scope* globalScope;
-extern scope* currentScope;
-
-extern std::vector<type*> types;
-extern std::vector<litop*> litops;
+    //misc
+    warnings.push_back(new warning("deprecated",true,false));
+}

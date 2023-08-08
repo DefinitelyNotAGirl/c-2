@@ -43,6 +43,7 @@ void cliOptions(int argc, char **argv);
 std::vector<line> getLines(std::string fname);
 void parse(std::vector<line> lines);
 void genOutput(std::string& i);
+void initWarnings();
 
 void HANDLER_SIGSEGV(int sig) {
     void *array[10];
@@ -61,6 +62,8 @@ int main(int argc, char** argv)
 {
     signal(SIGSEGV, HANDLER_SIGSEGV);   // install our handler
     signal(SIGABRT, HANDLER_SIGSEGV);   // install our handler
+
+    initWarnings();
 
     cliOptions(argc, argv);
 

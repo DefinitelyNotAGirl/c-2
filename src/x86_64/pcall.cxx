@@ -32,6 +32,7 @@
 
 variable* primitiveCall(function* func,std::vector<variable*> args)
 {
+    using enum __register__;
     variable* ret;
     if(func->primitiveInPlace)
     {
@@ -59,8 +60,36 @@ variable* primitiveCall(function* func,std::vector<variable*> args)
                 else
                     mov(args[1],ret);
                 break;
+            case(primitiveOP::mul):
+                std::cout << "multiply!" << std::endl;
+                if(func->primitiveInPlace)
+                {
+                    mul(args[0],args[0],args[1]);
+                }
+                else
+                {
+                    ret->dataType = args[0]->dataType;
+                    ret->name = getNewName();
+                    fstore->setStorage(ret);
+                    mul(ret,args[0],args[1]);
+                }
+                break;
+            case(primitiveOP::mod):
+                std::cout << "modulo!" << std::endl;
+                if(func->primitiveInPlace)
+                {
+                    mod(args[0],args[0],args[1]);
+                }
+                else
+                {
+                    ret->dataType = args[0]->dataType;
+                    ret->name = getNewName();
+                    fstore->setStorage(ret);
+                    mod(ret,args[0],args[1]);
+                }
+                break;
             default:
-                std::cout << "blub" << std::endl;
+                std::cout << "blub ("<<func->name<<")" << std::endl;
         }
     }
     else

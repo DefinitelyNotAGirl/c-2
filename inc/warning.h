@@ -1,8 +1,8 @@
 /**
- * Created Date: Tuesday July 25th 2023
+ * Created Date: Monday August 7th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 1:24:45 am
+ * Last Modified: Monday August 7th 2023 7:56:39 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -29,42 +29,27 @@
  */
 #pragma once
 
-#include <common.h>
-#include <options.h>
-#include <class_line.h>
-#include <class_token.h>
-#include <class_type.h>
-#include <class_litop.h>
-#include <class_variable.h>
-#include <storage.h>
-#include <function.h>
-#include <class_scope.h>
-#include <stack>
-#include <warning.h>
+#include <compiler.h>
 
-extern std::vector<std::string> DataCode;
-extern std::vector<std::string> RoDataCode;
-extern std::vector<std::string> TextCode;
-extern std::vector<std::string> BssCode;
-extern std::vector<std::string> MiscCode;
+class warning
+{
+public:
+    warning(std::string name,std::string link, bool enabled, bool error);
+    warning(std::string name, bool enabled, bool error);
+    std::string name;
+    std::vector<std::string> enablers;
+    std::string link;//link to documentation page
+    bool enabled = false;
+    bool error = false;
+};
 
-variable* resolve(token& t);
-variable* resolveIMM(char* token);
-
-std::string getIndent();
-
-type* getType(std::string name);
-variable* getVariable(std::string name);
-function* getFunction(std::string name);
-function* getFunction(std::string name, std::vector<variable*> args);
-uint64_t tokenType(std::string& s);
-std::string manglePseudoName(std::string& s);
-std::string mangleTypeName(std::string& s);
-
-std::string getNewName();
-
-extern scope* globalScope;
-extern scope* currentScope;
-
-extern std::vector<type*> types;
-extern std::vector<litop*> litops;
+extern std::vector<warning*> warnings;
+extern std::stack<std::vector<warning*>> pragmaStackWarnings;
+bool warn(warning* w,token* t, std::string message);
+bool warn(warning* w,line* l, std::string message);
+warning* getWarning(std::string name);
+void disableWarning(std::string name);
+void enableWarning(std::string name,std::string enabler);
+void enableWarningSet(std::string name);
+void disableWarningSet(std::string name);
+void note(std::string msg);

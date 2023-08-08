@@ -43,7 +43,10 @@ void mov(location src, location dst)
 
 void mov(uint64_t src, __register__ dst)
 {
-    code->push_back(getIndent()+"mov $"+std::to_string(src)+", %"+registerNAME(dst));
+    if(src != 0)
+        code->push_back(getIndent()+"mov $"+std::to_string(src)+", %"+registerNAME(dst));
+    else
+        code->push_back(getIndent()+"xor %"+registerNAME(dst)+", %"+registerNAME(dst));
 }
 
 void mov(location src, __register__ dst)

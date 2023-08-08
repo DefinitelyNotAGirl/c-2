@@ -226,6 +226,48 @@ void parse(std::vector<line> lines)
                             break;
                     }
                 }
+                else if(t.text == "#pragma")
+                {
+                    t = L.nextToken();
+                    if(t.text == "push")
+                    {
+                        //warnings
+                        pragmaStackWarnings.push(warnings);
+                        for(warning*& i : warnings)
+                            i = new warning(*i);
+                    }
+                    else if(t.text == "pop")
+                    {
+                        //warnings
+                        for(warning* i : warnings)
+                            delete i;
+                        warnings = pragmaStackWarnings.top();
+                        pragmaStackWarnings.pop();
+                    }
+                    else if(t.text == "warning")
+                    {
+                        t = L.nextToken();
+                        if(t.text == "enable")
+                        {
+                            t = L.nextToken();
+                            enableWarningSet(t.text);
+                        }
+                        else if(t.text == "disable")
+                        {
+                            t = L.nextToken();
+                            disableWarningSet(t.text);
+                        }
+                    }
+                    else if(t.text == "cpl")
+                    {
+                        t = L.nextToken();
+                        options::fcpl = atoi(t.text.c_str());
+                    }
+                    else
+                    {
+                        errorCompilerBug;
+                    }
+                }
                 break;
             case(8)://keyword
                 if(t.text == "class")
@@ -445,6 +487,7 @@ void parse(std::vector<line> lines)
                             bool isExtern = false;
                             bool isConst = false;
                             bool isNoop = false;
+                            bool isDeprecated = false;
                             bool isPrimitive = false;
                             bool primitiveFloat = false;
                             bool primitiveInPlace = false;
@@ -469,6 +512,8 @@ void parse(std::vector<line> lines)
                                     isExtern = true;
                                 else if(attr.text == "noop")
                                     isNoop = true;
+                                else if(attr.text == "deprecated")
+                                    isDeprecated = true;
                                 else if(attr.text.substr(0, 4) == "ABI-")
                                 {
                                     std::string abiName = attr.text.substr(4);
@@ -627,6 +672,7 @@ void parse(std::vector<line> lines)
                             func->returnType = returnType;
                             func->fstore = new functionStorage;
                             func->fstore->ABI = ABI;
+                            func->isDeprecated = isDeprecated;
                             func->isPrimitive = isPrimitive;
                             func->primitiveFloat = primitiveFloat;
                             func->primitiveInPlace = primitiveInPlace;
@@ -791,6 +837,28 @@ void parse(std::vector<line> lines)
                                 }
                                 currentScope->func->code.push_back(comment);
                             }
+                            if(currentScope->t == scopeType::FUNCTION)
+                            {
+                                if(var->storage == storageType::REGISTER)
+                                    currentScope->fstore->registerStatus(var->reg,1);
+                            }
+                            if(var->storage == storageType::REGISTER)
+                            {
+                                if(((uint64_t)var->reg & 0x000000FF00) < options::fcpl)
+                                {
+                                    if(warn(getWarning("cpl-registers"),&L,"insufficient privilege level to access register \""+registerNAME(var->reg)+"\""))
+                                    {
+                                        note("required privilege level: "+std::to_string((uint64_t)var->reg & 0x000000FF00)+" or lower.");
+                                        note("current privilege level: "+std::to_string(options::fcpl));
+                                        note("use --fcpl <some number> to set the privilege level.");
+                                    }
+                                }
+                            }
+                            else if(var->storage == storageType::MEMORY_ABSOLUTE)
+                            {
+                                if(warn(getWarning("memory-absolute"),&L,"saving variable at an absolute address may be unintentional"))
+                                    note("use an explicit sign (+ or -) to specifiy a relative address");
+                            }
                             if(options::fvariableinfo)
                             {
                                 std::cout << "##############" << std::endl;
@@ -875,7 +943,46 @@ void parse(std::vector<line> lines)
                     case(3):
                         std::string functionName;
                         if(t.text == "=")
-                            functionName = "operator=";
+                            functionName = "operator"+t.text;
+                        else if(t.text == "+=")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "-=")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "*=")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "/=")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "%=")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "==")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "|=")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "&=")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "^=")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "!=")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "*")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "+")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "-")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "/")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "++")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "--")
+                            functionName = "operator"+t.text;
+                        else if(t.text == "^")
+                            functionName = "operator"+t.text;
+                        else
+                        {
+                            //unkown operator
+                            std::cout << "unknown operator: " << t.text << std::endl;
+                        }
                         
                         t = L.nextToken();
                         variable* arg2 = resolve(t);
@@ -891,6 +998,8 @@ void parse(std::vector<line> lines)
                             function* func = getFunction(functionName,args);
                             if(func != nullptr)
                             {
+                                if(func->isDeprecated)
+                                    warn(getWarning("deprecated"),&L,"call to deprecated function \""+func->name+"\"");
                                 if(options::asmVerbose >= 3)
                                     currentScope->func->code.push_back(getIndent()+"# "+L.text);
                                 call(func,args);

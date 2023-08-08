@@ -31,9 +31,12 @@
 #include "master.h"
 #include <util.h>
 #include <stack>
+#include <options.h>
 
 std::stack<std::vector<__register__>> savedRegisters;
 std::stack<std::vector<uint64_t>> savedRegisterOffsets;
+std::stack<std::vector<uint64_t>> savedRegisterDebug;
+uint64_t regSaveDebugCounter = 0;
 std::vector<std::string>* code = nullptr;
 functionStorage* fstore = nullptr;
 
@@ -41,16 +44,21 @@ void pushRegSave()
 {
     savedRegisters.push(std::vector<__register__>());
     savedRegisterOffsets.push(std::vector<uint64_t>());
+    if(asmDebugComments)
+        savedRegisterDebug.push(std::vector<uint64_t>());
 }
 
 void popRegSave()
 {
     savedRegisters.pop();
     savedRegisterOffsets.pop();
+    if(asmDebugComments)
+        savedRegisterDebug.pop();
 }
 
 void saveRegister(__register__ reg)
 {
+    //std::cout << "SAVE!!!!!!!!!!!!!!!!!!!!!!!!! " << registerNAME(reg) << std::endl;
     savedRegisters.top().push_back(reg);
     switch(reg)
     {
@@ -89,16 +97,29 @@ void saveRegister(__register__ reg)
         case(__register__::cr15):
             mov(reg,location(__register__::rsp,fstore->stackSize));
             savedRegisterOffsets.top().push_back(fstore->stackSize);
+            if(asmDebugComments)
+            {
+                code->back().append(" # save @"+std::to_string(regSaveDebugCounter));
+                savedRegisterDebug.top().push_back(regSaveDebugCounter++);
+            }
             fstore->stackSize+=8;
             break;
     }
 }
 void restoreRegisters()
 {
+    //std::cout << "RESTORE!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
     for(uint64_t i = 0;i<savedRegisters.top().size();i++)
+    {
         mov(location(__register__::rsp,savedRegisterOffsets.top()[i]),savedRegisters.top()[i]);
+        if(asmDebugComments)
+            code->back().append(" # restore @"+std::to_string(savedRegisterDebug.top()[i]));
+    }
     savedRegisters.top().clear();
     savedRegisterOffsets.top().clear();
+    #ifdef ASMDEBUG
+        savedRegisterDebug.top().clear();
+    #endif
 }
 
 variable* call_SysVAmd64_SysVAmd64(function* func,std::vector<variable*> args)

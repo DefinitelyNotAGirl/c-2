@@ -38,14 +38,22 @@
 
 #include "example/ex1.h2"
 
+#pragma blub
+
+#pragma cpl 0
+
+#pragma push
+#pragma warning disable memory-absolute
 volatile noalloc (6MiB) u64 bootInfo;
+volatile noalloc (4MiB) u64 primePageTable;
+#pragma pop
 
 void main(u64 test, u32 arg):
     //operator tests
     volatile (rcx) u64 test = 1;
     (rbx) u64 test2 = 3;
     (+12) u32 test3 = 0;
-    (rsp) const u32 rsp;
+    (rsp) volatile const u64 rsp;
     (-8) u64 belowStack = 512;
     (EFER) u64 EFER;
     test2 = test+500;
@@ -63,7 +71,7 @@ void main(u64 test, u32 arg):
     test %= 250;
     arg = 999;
 
-/*ABI-MICROSOFTx64*/ void EFIentry(u64 a,u32 b):
+/*ABI-MICROSOFTx64 */void EFIentry(u64 a,u32 b):
     main(a,b);
 
 u64 largeFunc(u64 a,u64 b,u64 c, u256 d):

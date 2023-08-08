@@ -34,6 +34,7 @@
 
 namespace error
 {
+    void compilerBug(std::string file, int line);
     void noSuchType(token& t);
     void noSuchLitop(token& t, uint64_t offset = 0);
     void expectedNewUnique(token& t);
@@ -42,3 +43,5 @@ namespace error
     void invalidVariableAttribute(token& t);
     void expectedTypename(token& t);
 }
+
+#define errorCompilerBug error::compilerBug(__FILE__,__LINE__)

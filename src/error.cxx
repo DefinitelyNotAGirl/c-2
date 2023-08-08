@@ -43,6 +43,19 @@ static void genericErrorDisplay(token& t,uint64_t offset = 0)
     std::cout << "\033[31m^\033[0m" << std::endl;
 }
 
+void compilerBug(std::string file, int line)
+{
+    std::cout << "\033[31mERROR:\033[0m this is a bug, please open an issue at https://github.com/DefinitelyNotAGirl/c-2/issues and pass on the following information." << std::endl;
+    std::cout << "##### debug information start #####" << std::endl;;
+    std::cout << "file: " << file << std::endl;
+    std::cout << "line: " << line << std::endl;
+    std::cout << "head: " << buildCOMMIT << std::endl;
+    std::cout << "date: " << buildDATE << std::endl;
+    std::cout << "branch: " << buildBRANCH << std::endl;
+    std::cout << "##### debug information end   #####" << std::endl;
+    note("please tag the issue as \"bug\", thanks!");
+}
+
 void noSuchType(token& t)
 {
     std::cout << "\033[31mERROR:\033[0m \"" << t.text << "\" does not name a type" << std::endl;
