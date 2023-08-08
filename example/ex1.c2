@@ -30,15 +30,9 @@
 
 #include "example/std.h2"
 
-#define test3 500
-#sym testsym
-#add test2 1
-
 #define test4 void pasted(u64 arg, u16 arg2);
 
 #include "example/ex1.h2"
-
-#pragma blub
 
 #pragma cpl 0
 
@@ -110,6 +104,3 @@ u64 calloc(u64 size):
 noop void zalloc (u64 size);
 
 ABI-SYSTEMVamd64 u64 error(u64 ec);
-
-#cmp test2 600
-#je testsym

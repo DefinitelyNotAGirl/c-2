@@ -231,18 +231,11 @@ void parse(std::vector<line> lines)
                     t = L.nextToken();
                     if(t.text == "push")
                     {
-                        //warnings
-                        pragmaStackWarnings.push(warnings);
-                        for(warning*& i : warnings)
-                            i = new warning(*i);
+                        pragma::push();
                     }
                     else if(t.text == "pop")
                     {
-                        //warnings
-                        for(warning* i : warnings)
-                            delete i;
-                        warnings = pragmaStackWarnings.top();
-                        pragmaStackWarnings.pop();
+                        pragma::pop();
                     }
                     else if(t.text == "warning")
                     {
@@ -262,10 +255,6 @@ void parse(std::vector<line> lines)
                     {
                         t = L.nextToken();
                         options::fcpl = atoi(t.text.c_str());
-                    }
-                    else
-                    {
-                        errorCompilerBug;
                     }
                 }
                 break;

@@ -31,7 +31,6 @@
 #include <compiler.h>
 
 std::vector<warning*> warnings;
-std::stack<std::vector<warning*>> pragmaStackWarnings;
 
 void enableWarning(std::string name,std::string enabler)
 {

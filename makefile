@@ -45,8 +45,12 @@ build/%.o: src/%.c
 clean:
 	@-rm -r build/*.o
 	$(info  	DELETE	build/*.o)
+	@-rm -r build/x86_64/*.o
+	$(info  	DELETE	build/x86_64/*.o)
 	@-rm -r build/*.d
 	$(info  	DELETE	build/*.d)
+	@-rm -r build/x86_64/*.d
+	$(info  	DELETE	build/x86_64/*.d)
 
 compiler:  $(OBJECTS_asm_asm) $(OBJECTS_asm_s) $(OBJECTS_cpp_cxx) $(OBJECTS_cpp_cpp) $(OBJECTS_c_c)
 	@$(LD) -g -rdynamic $(OBJECTS_asm_asm) $(OBJECTS_asm_s) $(OBJECTS_cpp_cxx) $(OBJECTS_cpp_cpp) $(OBJECTS_c_c) -Llib/ -lc -lstdc++ -lcargparse -o cp2

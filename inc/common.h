@@ -39,3 +39,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <buildinfo.h>
+
+namespace pragma{
+    void pop();
+    void push();
+}

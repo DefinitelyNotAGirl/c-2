@@ -50,10 +50,6 @@ extern std::string asmOut;
 
 namespace options
 {
-    //-w*******
-
-    //-wno-****
-
     //-f*******
     extern bool ffreestanding;
     extern bool fnostdlib;
