@@ -38,7 +38,8 @@ content = ""
 
 repo = git.Repo(search_parent_directories=False)
 commitID = repo.head.commit.hexsha
-commitDATE = repo.head.commit.committed_datetime.strftime("%d.%m.%Y %H:%M:%S-%Z")
+#commitDATE = repo.head.commit.committed_datetime.strftime("%d.%m.%Y %H:%M:%S %Z")
+commitDATE = repo.head.commit.committed_datetime
 commitBRANCH = repo.active_branch
 
 content+="#define buildCOMMIT \""+str(commitID)+"\"\n"
