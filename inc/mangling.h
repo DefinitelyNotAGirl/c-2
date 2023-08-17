@@ -1,11 +1,11 @@
 /**
- * Created Date: Monday July 10th 2023
+ * Created Date: Thursday August 17th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 6:09:28 am
+ * Last Modified: Thursday August 17th 2023 8:15:19 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -29,33 +29,23 @@
  */
 #pragma once
 
-#include <string>
-#include <common.h>
+#include <compiler.h>
 
-void strToLower(std::string& str);
-
-bool isDigit(char);
-bool isLatinChar(char);
-
-uint64_t roundUp(uint64_t numToRound, uint64_t multiple);
-
-void stripExt(std::string& str);
-
-template<typename T>
-void inject(std::vector<T>& src, std::vector<T>& dst, uint64_t offset)
+class mangler
 {
-    std::vector<T> old = dst;
+public:
+    std::string name;
+    void(*mangleFunction)(function* func);
+    void(*mangleVariable)(variable* var);
+    void(*mangleType)(type* t);
 
-    dst.clear();
+    void mangle(function* func);
+    void mangle(variable* var);
+    void mangle(type* t);
+};
 
-    for(uint64_t i = 0;i<offset;i++)
-        dst.push_back(old[i]);
+mangler* getMangler(std::string name);
 
-    for(T& i : src)
-        dst.push_back(i);
-    
-    for(uint64_t i = offset;i<old.size();i++)
-        dst.push_back(old[i]);
-}
+extern mangler* defaultMangler;
 
-void fileOut(std::string content, std::string path);
+extern std::vector<mangler*> manglers;

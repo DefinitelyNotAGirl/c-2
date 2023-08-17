@@ -41,31 +41,31 @@ class wchar : primitive16;
 class u128 : primitive64,primitive64;
 class u256 : u128,u128;
 
-primitiveMul u256 operator*(u128,u128);
+nodoc primitiveMul u256 operator*(u128,u128);
 
-primitiveMul u64 operator*(u64,u64);
-primitiveDiv u64 operator/(u64,u64);
-primitiveSub u64 operator-(u64,u64);
-primitiveAdd u64 operator+(u64,u64);
-primitiveMod u64 operator%(u64,u64);
+nodoc primitiveMul u64 operator*(u64,u64);
+nodoc primitiveDiv u64 operator/(u64,u64);
+nodoc primitiveSub u64 operator-(u64,u64);
+nodoc primitiveAdd u64 operator+(u64,u64);
+nodoc primitiveMod u64 operator%(u64,u64);
 
-primitiveAssign primitiveInPlace void operator=(u64,u64);
+nodoc primitiveAssign primitiveInPlace void operator=(u64,u64);
 
-primitiveMul primitiveInPlace void operator*=(u64,u64);
-primitiveDiv primitiveInPlace void operator/=(u64,u64);
-primitiveSub primitiveInPlace void operator-=(u64,u64);
-primitiveAdd primitiveInPlace void operator+=(u64,u64);
-primitiveMod primitiveInPlace void operator%=(u64,u64);
+nodoc primitiveMul primitiveInPlace void operator*=(u64,u64);
+nodoc primitiveDiv primitiveInPlace void operator/=(u64,u64);
+nodoc primitiveSub primitiveInPlace void operator-=(u64,u64);
+nodoc primitiveAdd primitiveInPlace void operator+=(u64,u64);
+nodoc primitiveMod primitiveInPlace void operator%=(u64,u64);
 
-primitiveEqual bool operator==(u64,u64);
+nodoc primitiveEqual bool operator==(u64,u64);
 
-primitiveInc void operator++(u64);
-primitiveDec void operator--(u64);
+nodoc primitiveInc void operator++(u64);
+nodoc primitiveDec void operator--(u64);
 
-primitiveAssign void u64(u64);
-primitiveAssign void u64(u32);
-primitiveAssign void u64(u16);
-primitiveAssign void u64(u8);
+nodoc primitiveAssign void u64(u64);
+nodoc primitiveAssign void u64(u32);
+nodoc primitiveAssign void u64(u16);
+nodoc primitiveAssign void u64(u8);
 
 class string
 {

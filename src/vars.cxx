@@ -30,7 +30,22 @@
 
 #include <common.h>
 #include <compiler.h>
+#include <miscout.h>
+#include <mangling.h>
 
+uint64_t moClassID = 0;
+uint64_t moFunctionID = 0;
+uint64_t moVariableID = 0;
+uint64_t moScopeID = 0;
+
+std::vector<mangler*> manglers;
+mangler* defaultMangler = nullptr;
+
+std::vector<format> formats;
+std::vector<format> ClassesOutformats;
+std::vector<format> FunctionsOutformats;
+std::vector<format> VariablesOutformats;
+std::vector<format> ScopesOutformats;
 std::list<std::string> sourceFiles;
 std::list<std::string> dependencies;
 std::vector<type*> types;

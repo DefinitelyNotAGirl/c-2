@@ -1,11 +1,11 @@
 /**
- * Created Date: Monday July 10th 2023
+ * Created Date: Tuesday August 15th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 6:09:28 am
+ * Last Modified: Tuesday August 15th 2023 10:55:25 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -29,33 +29,25 @@
  */
 #pragma once
 
-#include <string>
-#include <common.h>
+#include <miscout.h>
+#include <util.h>
 
-void strToLower(std::string& str);
-
-bool isDigit(char);
-bool isLatinChar(char);
-
-uint64_t roundUp(uint64_t numToRound, uint64_t multiple);
-
-void stripExt(std::string& str);
-
-template<typename T>
-void inject(std::vector<T>& src, std::vector<T>& dst, uint64_t offset)
+namespace geosdoc
 {
-    std::vector<T> old = dst;
-
-    dst.clear();
-
-    for(uint64_t i = 0;i<offset;i++)
-        dst.push_back(old[i]);
-
-    for(T& i : src)
-        dst.push_back(i);
+    class __class__
+    {
+    public:
+        type* t = nullptr;
+        std::vector<function*> functions;
+    };
     
-    for(uint64_t i = offset;i<old.size();i++)
-        dst.push_back(old[i]);
+    struct formatFile
+    {
+        uint64_t fID;
+        //data
+        std::string lastPath = "";
+        std::vector<__class__*> classes;
+        std::vector<function*> functions;
+        std::vector<variable*> variables;
+    };
 }
-
-void fileOut(std::string content, std::string path);

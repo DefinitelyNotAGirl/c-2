@@ -122,6 +122,7 @@ public:
     type* dataType = nullptr;
     std::string name;
     std::string symbol;
+    bool doExport = false;
     uint64_t immediateValue;
     //storage
     storageType storage = storageType::INVALID;

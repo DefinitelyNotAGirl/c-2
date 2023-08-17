@@ -107,3 +107,20 @@ uint64_t roundUp(uint64_t numToRound, uint64_t multiple)
 
     return numToRound + multiple - remainder;
 }
+
+void fileOut(std::string content, std::string path)
+{
+    FILE* f;
+    int results = 0;
+    f = fopen(path.c_str(),"w");
+    if(f == NULL)
+    {
+        std::cout << "ERROR: could not open file \"" << path << "\"" << std::endl;
+    }
+    results = fwrite(content.c_str(),content.length(),1,f);
+    if (results == EOF)
+    {
+        std::cout << "ERROR: could write to file \"" << path << "\"" << std::endl;
+    }
+    fclose(f);
+}

@@ -38,6 +38,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <util.h>
+#include <miscout.h>
+#include <unordered_set>
+#include <filesystem>
+#include <mangling.h>
 
 void cliOptions(int argc, char **argv);
 std::vector<line> getLines(std::string fname);
@@ -70,11 +74,46 @@ int main(int argc, char** argv)
     if(options::fcpl != 3)
         std::cout << "cpu privilege level: " << options::fcpl << std::endl;
 
+    moClassID = 1;
+    moFunctionID = 1;
+    moVariableID = 1;
+    moScopeID = 1;
+    std::unordered_set<format*> oFormats;
+    for(format& f : ClassesOutformats)
+        oFormats.insert(&f);
+    for(format& f : FunctionsOutformats)
+        oFormats.insert(&f);
+    for(format& f : VariablesOutformats)
+        oFormats.insert(&f);
+    for(format& f : ScopesOutformats)
+        oFormats.insert(&f);
+    for(format* f : oFormats)
+        if(f->newFile() != 1)
+            std::cout << "Fault format: " << f->name << std::endl;
+
+    //get default mangler (c+=2)
+    defaultMangler = getMangler("c+=2");
+    if(defaultMangler == nullptr)
+    {
+        std::cout << "ERROR: could not find default mangler, aborting!" << std::endl;
+        exit(-1);
+    }
+
     for(std::string i : sourceFiles)
     {
         std::vector<line> lines = getLines(i);
         parse(lines);
+        std::string rname = i;
+        stripExt(rname);
+        rname = rname.substr(rname.find_first_of('/'),rname.length());
         genOutput(i);
+        std::filesystem::create_directories("./documentation");
+        for(format* f : oFormats)
+        {
+            std::string oname = "./documentation/"+rname+"."+f->extension;
+            std::cout << "outputting: " << oname << std::endl;
+            f->write(1,oname);
+        }
         //reset compiler
     }
     return 0;

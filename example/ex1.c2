@@ -38,16 +38,25 @@
 
 #pragma push
 #pragma warning disable memory-absolute
+/**
+    @desc
+*/
 volatile noalloc (6MiB) u64 bootInfo;
-volatile noalloc (4MiB) u64 primePageTable;
+volatile noalloc (0x400000) u64 primePageTable;
 #pragma pop
 
+/**
+    @param test doc comment for "u64 test"
+    @param arg doc comment for u32 test
+    @desc entry point to the program
+*/
 void main(u64 test, u32 arg):
     //operator tests
     volatile (rcx) u64 test = 1;
     (rbx) u64 test2 = 3;
     (+12) u32 test3 = 0;
     (rsp) volatile const u64 rsp;
+    (rbp) u64 rbp;
     (-8) u64 belowStack = 512;
     (EFER) u64 EFER;
     test2 = test+500;
@@ -68,7 +77,7 @@ void main(u64 test, u32 arg):
 /*ABI-MICROSOFTx64 */void EFIentry(u64 a,u32 b):
     main(a,b);
 
-u64 largeFunc(u64 a,u64 b,u64 c, u256 d):
+ABI-SYSTEMVamd64 u64 largeFunc(u64 a,u64 b,u64 c, u256 d):
     u64 i = 512;
     u64 _1  = i++;
     u64 _2  = i++;
@@ -89,11 +98,11 @@ u64 largeFunc(u64 a,u64 b,u64 c, u256 d):
     u64 _17 = i++;
 
 char* strtest = "Hello, world!";
-u64 malloc(u64 size):
+mangling-c u64 malloc(u64 size):
     u64 nsize = 2MiB;
     return nsize;
 
-u64 calloc(u64 size):
+mangling-c++ u64 calloc(u64 size):
     u64 ksize;
     if(size > 0):
         ksize = 32KiB;

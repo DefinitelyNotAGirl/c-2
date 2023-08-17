@@ -63,6 +63,11 @@ std::string mangleTypeName(std::string& s);
 
 std::string getNewName();
 
+extern uint64_t moClassID;
+extern uint64_t moFunctionID;
+extern uint64_t moVariableID;
+extern uint64_t moScopeID;
+
 extern scope* globalScope;
 extern scope* currentScope;
 

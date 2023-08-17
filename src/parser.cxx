@@ -41,6 +41,8 @@
 #include <rstack.h>
 #include <codegen.h>
 #include <sstream>
+#include <miscout.h>
+#include <mangling.h>
 
 std::vector<std::string> DataCode;
 std::vector<std::string> RoDataCode;
@@ -180,7 +182,6 @@ void parse(std::vector<line> lines)
                 if(L.leadingSpaces < ts->leadingSpace)
                 {
                     if(options::ddebug)std::cout << "body ended" << std::endl;
-
                     if(ts->t == scopeType::FUNCTION)
                     {
                         std::vector<std::string> lines;
@@ -192,7 +193,6 @@ void parse(std::vector<line> lines)
                             TextCode.push_back(i);
                     }
                     
-
                     ts = ts->parent;
                 }
                 else
@@ -211,7 +211,6 @@ void parse(std::vector<line> lines)
         {
             std::cout << "indentation error! (1)" << std::endl;
         }
-
         switch(t.type)
         {
             case(5)://directive
@@ -258,7 +257,23 @@ void parse(std::vector<line> lines)
                     }
                 }
                 break;
+            case(25):
+            case(22):
+            case(21):
+            case(20):
+                collectAttributes:;
+                while(t.type >= 20 && t.type < 30)
+                {
+                    attribs.push_back(t);
+                    t = L.nextToken();
+                }
+                //std::cout << "attributes: ";
+                //for(token& a : attribs)
+                //    std::cout << a.text << " ";
+                //std::cout << std::endl;
             case(8)://keyword
+            if(t.type == 8)
+            {
                 if(t.text == "class")
                 {
                     t = L.nextToken();
@@ -269,6 +284,7 @@ void parse(std::vector<line> lines)
                             break;}
                         case(1):{
                             type* ntype = new type;
+                            mangler* mangling = defaultMangler;
                             ntype->name = t.text;
                             ntype->size = 0;
                             t = L.nextToken();
@@ -324,21 +340,29 @@ void parse(std::vector<line> lines)
                                     }
                                     break;
                             }
-                            if(options::fclasslayout)
+                            for(token& attr : attribs)
                             {
-                                std::cout << "##############" << std::endl;
-                                std::cout << "class: " << ntype->name << std::endl;
-                                std::cout << "    size: " << ntype->size << std::endl;
-                                for(variable& m : ntype->members)
+                                if(attr.text == "nodoc")
+                                    ntype->nodoc = true;
+                                else if(attr.text == "deprecated")
+                                    ntype->deprecated = true;
+                                else if(attr.text.substr(0,strlen("mangling-")) == "mangling-")
                                 {
-                                    if(m.offset > 0)
-                                        std::cout << "    (+"<<m.offset<<")";
-                                    else
-                                        std::cout << "    ("<<m.offset<<")";
-                                    std::cout << " " << m.dataType->name << " " << m.name << std::endl;
+                                    std::string manglerName = attr.text.substr(strlen("mangling-"),attr.text.length());
+                                    mangling = getMangler(manglerName);
+                                    if(mangling == nullptr)
+                                    {
+                                        std::cout << "ERROR: mangler \"" << manglerName << "\" does not exist!" << std::endl;
+                                    }
                                 }
-                                std::cout << std::endl;
+                                else
+                                {
+                                    error::invalidClassAttribute(attr);
+                                    goto ERRORENDLINE;
+                                }
                             }
+                            mangling->mangle(ntype);
+                            mOUT(moClassID,ntype);
                             types.push_back(ntype);
                             break;}
                         default:
@@ -414,20 +438,7 @@ void parse(std::vector<line> lines)
                 {
                 }
                 break;
-            case(25):
-            case(22):
-            case(21):
-            case(20):
-                collectAttributes:;
-                while(t.type >= 20 && t.type < 30)
-                {
-                    attribs.push_back(t);
-                    t = L.nextToken();
-                }
-                //std::cout << "attributes: ";
-                //for(token& a : attribs)
-                //    std::cout << a.text << " ";
-                //std::cout << std::endl;
+            }
             case(9):
                 switch(t.type)
                 {
@@ -471,11 +482,13 @@ void parse(std::vector<line> lines)
                         }
                         if(isFunction)
                         {
+                            mangler* mangling = defaultMangler;
                             bool isStatic = false;
                             bool isInline = false;
                             bool isExtern = false;
                             bool isConst = false;
                             bool isNoop = false;
+                            bool nodoc = false;
                             bool isDeprecated = false;
                             bool isPrimitive = false;
                             bool primitiveFloat = false;
@@ -501,6 +514,8 @@ void parse(std::vector<line> lines)
                                     isExtern = true;
                                 else if(attr.text == "noop")
                                     isNoop = true;
+                                else if(attr.text == "nodoc")
+                                    nodoc = true;
                                 else if(attr.text == "deprecated")
                                     isDeprecated = true;
                                 else if(attr.text.substr(0, 4) == "ABI-")
@@ -510,6 +525,15 @@ void parse(std::vector<line> lines)
                                         ABI = 2;
                                     else if(abiName == "SYSTEMVamd64")
                                         ABI = 1;
+                                }
+                                else if(attr.text.substr(0,strlen("mangling-")) == "mangling-")
+                                {
+                                    std::string manglerName = attr.text.substr(strlen("mangling-"),attr.text.length());
+                                    mangling = getMangler(manglerName);
+                                    if(mangling == nullptr)
+                                    {
+                                        std::cout << "ERROR: mangler \"" << manglerName << "\" does not exist!" << std::endl;
+                                    }
                                 }
                                 else if(attr.text.substr(0,strlen("primitive")) == "primitive")
                                 {
@@ -594,7 +618,6 @@ void parse(std::vector<line> lines)
                                         if(arguments.size() != 0)
                                             if(arguments.back()->name == "")
                                                 arguments.back()->name = getNewName();
-
                                         arguments.push_back(new variable);
                                         arguments.back()->dataType = returnType;
                                         if(returnType == nullptr)
@@ -620,44 +643,14 @@ void parse(std::vector<line> lines)
                                 if(arguments.back()->name == "")
                                     arguments.back()->name = getNewName();
                             returnType = it;
-
+                            
                             if(ABI == 0)
                                 ABI = defaultABI;
-                            std::string symbol = currentScope->name + mangleTypeName(returnType->name) + "_" + manglePseudoName(name);
-                            for(type* p : paramTypes)
-                                symbol+="_"+mangleTypeName(p->name);
-
-                            if(options::ffunctioninfo)
-                            {
-                                std::cout << "##############" << std::endl;
-                                std::cout << "function: " << name << std::endl;
-                                std::cout << "symbol: " << symbol << std::endl;
-                                std::cout << "ABI: ";
-                                switch(ABI)
-                                {
-                                    case(1):
-                                        std::cout << "SystemV amd64" << std::endl;
-                                        break;
-                                    case(2):
-                                        std::cout << "Microsoft x64" << std::endl;
-                                        break;
-                                    default:
-                                        std::cout << "Unknown" << std::endl;
-                                }
-                                std::cout << "return type: " << returnType->name << std::endl;
-                                if(paramTypes.size() > 0)
-                                {
-                                    std::cout << "parameters: " << std::endl;
-                                    for(type* p : paramTypes)
-                                        std::cout << "        " << p->name << std::endl;
-                                }
-                                std::cout << std::endl;
-                            }
 
                             function* func = new function;
                             func->name = name;
-                            func->symbol = symbol;
                             func->parameters = paramTypes;
+                            func->vparams = arguments;
                             func->returnType = returnType;
                             func->fstore = new functionStorage;
                             func->fstore->ABI = ABI;
@@ -666,14 +659,17 @@ void parse(std::vector<line> lines)
                             func->primitiveFloat = primitiveFloat;
                             func->primitiveInPlace = primitiveInPlace;
                             func->op = op;
+                            func->noDoc = nodoc;
                             currentScope->functions.push_back(func);
+                            mangling->mangle(func);
+                            mOUT(1,func);
 
                             if(L.text.back() == ':')
                             {
                                 //indent based body
                                 scope* sc = new scope;
                                 sc->parent = currentScope;
-                                sc->name = symbol + "__";
+                                sc->name = func->symbol + "__";
                                 sc->leadingSpace = L.leadingSpaces+tabLength;
                                 sc->isIndentBased = true;
                                 sc->t = scopeType::FUNCTION;
@@ -710,19 +706,20 @@ void parse(std::vector<line> lines)
                                 }
                                 currentScope = sc;
                                 if(options::ddebug)std::cout << "body started" << std::endl;
-                                MiscCode.push_back("global "+symbol);
+                                MiscCode.push_back("global "+func->symbol);
                             }
                             else if(L.text.back() == ';')
                             {
                                 //function declaration
                                 if(!isPrimitive)
-                                    MiscCode.push_back("extern "+symbol);
+                                    MiscCode.push_back("extern "+func->symbol);
                             }
                         }
                         else
                         {
                             variable* var = new variable;
                             var->dataType = it;
+                            mangler* mangling = defaultMangler;
                             bool isStatic = false;
                             bool isExtern = false;
                             bool isConst = false;
@@ -772,6 +769,15 @@ void parse(std::vector<line> lines)
                                         var->reg = reg;
                                     }
                                 }
+                                else if(attr.text.substr(0,strlen("mangling-")) == "mangling-")
+                                {
+                                    std::string manglerName = attr.text.substr(strlen("mangling-"),attr.text.length());
+                                    mangling = getMangler(manglerName);
+                                    if(mangling == nullptr)
+                                    {
+                                        std::cout << "ERROR: mangler \"" << manglerName << "\" does not exist!" << std::endl;
+                                    }
+                                }
                                 else if(attr.text == "static")
                                     isStatic = true;
                                 else if(attr.text == "public")
@@ -800,9 +806,8 @@ void parse(std::vector<line> lines)
                                 if(currentScope->t == scopeType::FUNCTION)
                                     currentScope->fstore->setStorage(var);
                             }
-                            std::string symbol = currentScope->name + mangleTypeName(it->name) + "__" + manglePseudoName(name);
                             var->name = name;
-                            var->symbol = symbol;
+                            mangling->mangle(var);
                             if(options::asmVerbose >= 2 && currentScope->t == scopeType::FUNCTION)
                             {
                                 std::string comment = getIndent()+"# "+var->name+" is stored ";
@@ -848,46 +853,7 @@ void parse(std::vector<line> lines)
                                 if(warn(getWarning("memory-absolute"),&L,"saving variable at an absolute address may be unintentional"))
                                     note("use an explicit sign (+ or -) to specifiy a relative address");
                             }
-                            if(options::fvariableinfo)
-                            {
-                                std::cout << "##############" << std::endl;
-                                std::cout << "variable: " << name << std::endl;
-                                std::cout << "symbol: " << symbol << std::endl;
-                                std::cout << "type: " << var->dataType->name << std::endl;
-                                std::cout << "storage: ";
-                                if(currentScope->t == scopeType::FUNCTION)
-                                {
-                                    if(var->storage == storageType::MEMORY)
-                                    {
-                                        if(var->offset < 0)
-                                            std::cout << "SP";
-                                        else
-                                            std::cout << "SP+";
-                                        std::cout <<std::dec<< (int64_t)var->offset;
-                                    }
-                                    else if(var->storage == storageType::REGISTER)
-                                    {
-                                        std::cout << registerNAME(var->reg);
-                                    }
-                                    else if(var->storage == storageType::MEMORY_ABSOLUTE)
-                                    {
-                                        std::cout << "0x" << std::hex << var->offset;
-                                    }
-                                }
-                                else
-                                {
-                                    if(var->storage == storageType::REGISTER)
-                                    {
-                                        std::cout << registerNAME(var->reg);
-                                    }
-                                    else if(var->storage == storageType::MEMORY_ABSOLUTE)
-                                    {
-                                        std::cout << "0x" << std::hex << var->offset;
-                                    }
-                                }
-                                std::cout << std::endl;
-                                std::cout << std::endl;
-                            }
+                            mOUT(0,var);
                             currentScope->variables.push_back(var);
                             t = L.nextToken();
                             switch(t.type)
@@ -1003,7 +969,6 @@ void parse(std::vector<line> lines)
                 break;
             }
         }
-
         ERRORENDLINE:;
         if(++i >= lines.size())
             break;

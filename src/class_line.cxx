@@ -125,6 +125,7 @@ uint64_t tokenType(std::string& s)
     else if(s == "const")return 20;
     else if(s == "extern")return 20;
     else if(s == "noop")return 21;
+    else if(s == "nodoc")return 21;
     else if(s == "deprecated")return 21;
     //ABIs
     else if(s == "ABI-MICROSOFTx64")return 21;
@@ -158,6 +159,7 @@ uint64_t tokenType(std::string& s)
     else if(s == "primitive16")return 12;
     else if(s == "primitive8")return 12;
     else if(s == "primitive0")return 12;
+    else if(s.substr(0,strlen("mangling-")) == "mangling-")return 20;
     else
     {
         //some identifier

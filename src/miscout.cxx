@@ -1,11 +1,11 @@
-/**
- * Created Date: Monday July 10th 2023
+/*
+ * Created Date: Sunday August 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 6:09:28 am
+ * Last Modified: Sunday August 13th 2023 2:55:43 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -27,35 +27,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
 
-#include <string>
-#include <common.h>
+#include <compiler.h>
+#include <miscout.h>
 
-void strToLower(std::string& str);
+void defaultFormat_addScope(uint64_t fID, scope* sc){}
+void defaultFormat_addClass(uint64_t fID, type* t){}
+void defaultFormat_addFunction(uint64_t fID, function* func){}
+void defaultFormat_addVariable(uint64_t fID, variable* var){}
+void defaultFormat_write(uint64_t fID, std::string path){}
+uint64_t defaultFormat_newFile(){}
+void* defaultFormat_getDATA(uint64_t fID){return nullptr;}
 
-bool isDigit(char);
-bool isLatinChar(char);
-
-uint64_t roundUp(uint64_t numToRound, uint64_t multiple);
-
-void stripExt(std::string& str);
-
-template<typename T>
-void inject(std::vector<T>& src, std::vector<T>& dst, uint64_t offset)
+format* getFormat(std::string name)
 {
-    std::vector<T> old = dst;
-
-    dst.clear();
-
-    for(uint64_t i = 0;i<offset;i++)
-        dst.push_back(old[i]);
-
-    for(T& i : src)
-        dst.push_back(i);
-    
-    for(uint64_t i = offset;i<old.size();i++)
-        dst.push_back(old[i]);
+    for(format& i : formats)
+        if(i.name == name)
+            return &i;
+    return nullptr;
 }
 
-void fileOut(std::string content, std::string path);
+void mOUT(uint64_t fID, variable* var)
+{
+    for(format& i : VariablesOutformats)
+        i.addVariable(fID,var);
+}
+
+void mOUT(uint64_t fID, function* func)
+{
+    for(format& i : VariablesOutformats)
+        i.addFunction(fID,func);
+}
+void mOUT(uint64_t fID, type* t)
+{
+    for(format& i : VariablesOutformats)
+        i.addClass(fID,t);
+}
+
+void mOUT(uint64_t fID, scope* sc)
+{
+    for(format& i : VariablesOutformats)
+        i.addScope(fID,sc);
+}

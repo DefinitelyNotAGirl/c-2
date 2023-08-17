@@ -62,6 +62,11 @@ void noSuchType(token& t)
     error::genericErrorDisplay(t);
 }
 
+void invalidClassAttribute(token& t)
+{
+    std::cout << "\033[31mERROR:\033[0m attribute \"" << t.text << "\" is not valid for classes" << std::endl;
+    error::genericErrorDisplay(t);
+}
 void invalidFunctionAttribute(token& t)
 {
     std::cout << "\033[31mERROR:\033[0m attribute \"" << t.text << "\" is not valid for functions" << std::endl;

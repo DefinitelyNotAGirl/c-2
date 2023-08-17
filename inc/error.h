@@ -41,6 +41,7 @@ namespace error
     void expectedShortop(token& t);
     void invalidFunctionAttribute(token& t);
     void invalidVariableAttribute(token& t);
+    void invalidClassAttribute(token& t);
     void expectedTypename(token& t);
 }
 

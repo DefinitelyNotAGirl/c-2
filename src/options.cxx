@@ -32,6 +32,7 @@
 #include <util.h>
 #include <options.h>
 #include <compiler.h>
+#include <miscout.h>
 
 bool strToBool(std::string str)
 {
@@ -133,8 +134,122 @@ void CARGHANDLER_VERSION(CARGPARSE_HANDLER_ARGS)
     std::cout << "version: 0" << std::endl;
     std::cout << "branch: development" << std::endl;
     std::cout << "source: https://github.com/DefinitelyNotAGirl/c-2" << std::endl;
+    std::cout << "supported extra output formats:" << std::endl;
+    for(format& f : formats)
+        std::cout << "    " << f.name << std::endl;
 
     exit(0);
+}
+
+void CARGHANDLER_INFO(CARGPARSE_HANDLER_ARGS)
+{
+    char* data = args.front().c_str();
+    bool doClasses = false;
+    bool doFunctions = false;
+    bool doScopes = false;
+    bool doVariables = false;
+    std::string working = "";
+    while(*data != 0x00)
+    {
+        while(*data != 0x00 && *data != ',' && *data != ':')
+            working.push_back(*(data++));
+        if(working == "classes")doClasses = true;
+        else if(working == "variables")doVariables = true;
+        else if(working == "functions")doFunctions = true;
+        else if(working == "scopes")doScopes = true;
+        working = "";
+        switch(*data)
+        {
+            case(0x00):
+                goto doneCollecting;
+            case(':'):
+                data++;
+                goto collectFormats;
+        }
+        data++;
+    }
+    collectFormats:;
+    while(*data != 0x00)
+    {
+        while(*data != 0x00 && *data != ',' && *data != ':')
+            working.push_back(*(data++));
+        for(format& f : formats)
+        {
+            if(f.name == working)
+            {
+                if(doClasses)
+                {
+                    for(format& i : ClassesOutformats)
+                    {
+                        if(i.extension == f.extension)
+                            goto formatAlreadyUsed_1;
+                    }
+                    ClassesOutformats.push_back(f);
+                    formatAlreadyUsed_1:;
+                }
+                if(doFunctions)
+                {
+                    for(format& i : FunctionsOutformats)
+                    {
+                        if(i.extension == f.extension)
+                            goto formatAlreadyUsed_2;
+                    }
+                    FunctionsOutformats.push_back(f);
+                    formatAlreadyUsed_2:;
+                }
+                if(doVariables)
+                {
+                    for(format& i : VariablesOutformats)
+                    {
+                        if(i.extension == f.extension)
+                            goto formatAlreadyUsed_3;
+                    }
+                    VariablesOutformats.push_back(f);
+                    formatAlreadyUsed_3:;
+                }
+                if(doScopes)
+                {
+                    for(format& i : ScopesOutformats)
+                    {
+                        if(i.extension == f.extension)
+                            goto formatAlreadyUsed_4;
+                    }
+                    ScopesOutformats.push_back(f);
+                    formatAlreadyUsed_4:;
+                }
+            }
+        }
+        formatFound:;
+        working = "";
+        switch(*data)
+        {
+            case(0x00):
+                goto doneCollecting;
+        }
+        data++;
+    }
+    doneCollecting:;
+    if(options::ddebug)
+    {
+    std::cout << "info: " << std::endl;
+    std::cout << "    classes: " << doClasses << std::endl;
+    std::cout << "    functions: " << doFunctions << std::endl;
+    std::cout << "    variables: " << doVariables << std::endl;
+    std::cout << "    scopes: " << doScopes << std::endl;
+    std::cout << "    formats: " << std::endl;
+    std::cout << "        classes: " << std::endl;
+    for(format& f : ClassesOutformats)
+        std::cout << "            " << f.name << std::endl;
+    std::cout << "        functions: " << std::endl;
+    for(format& f : FunctionsOutformats)
+        std::cout << "            " << f.name << std::endl;
+    std::cout << "        variables: " << std::endl;
+    for(format& f : VariablesOutformats)
+        std::cout << "            " << f.name << std::endl;
+    std::cout << "        scopes: " << std::endl;
+    for(format& f : ScopesOutformats)
+        std::cout << "            " << f.name << std::endl;
+    }
 }
 
 void cliOptions(int argc, char **argv) 
@@ -172,6 +287,8 @@ void cliOptions(int argc, char **argv)
 
     carg.addParameter(0,0,"-version",&CARGHANDLER_VERSION);
     carg.addParameter(0,0,"-v",&CARGHANDLER_VERSION);
+
+    carg.addParameter(0,1,"--info",&CARGHANDLER_INFO);
 
     carg.unknownHandler = &cargHandler_unknown;
 

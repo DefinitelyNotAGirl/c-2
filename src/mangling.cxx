@@ -1,11 +1,11 @@
-/**
- * Created Date: Monday July 10th 2023
+/*
+ * Created Date: Thursday August 17th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 6:09:28 am
+ * Last Modified: Thursday August 17th 2023 8:22:24 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -27,35 +27,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
 
-#include <string>
-#include <common.h>
+#include <mangling.h>
 
-void strToLower(std::string& str);
-
-bool isDigit(char);
-bool isLatinChar(char);
-
-uint64_t roundUp(uint64_t numToRound, uint64_t multiple);
-
-void stripExt(std::string& str);
-
-template<typename T>
-void inject(std::vector<T>& src, std::vector<T>& dst, uint64_t offset)
+mangler* getMangler(std::string name)
 {
-    std::vector<T> old = dst;
-
-    dst.clear();
-
-    for(uint64_t i = 0;i<offset;i++)
-        dst.push_back(old[i]);
-
-    for(T& i : src)
-        dst.push_back(i);
-    
-    for(uint64_t i = offset;i<old.size();i++)
-        dst.push_back(old[i]);
+    for(mangler* i : manglers)
+        if(i->name == name)
+            return i;
+    return nullptr;
 }
 
-void fileOut(std::string content, std::string path);
+void mangler::mangle(function* func){this->mangleFunction(func);}
+void mangler::mangle(variable* var){this->mangleVariable(var);}
+void mangler::mangle(type* t){this->mangleType(t);}

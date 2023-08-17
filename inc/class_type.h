@@ -39,6 +39,11 @@ class type
 public:
     uint64_t size;
     std::string name;
+    std::string mangledName;
     std::vector<variable> members;
     std::vector<type*> supertypes;
+
+    bool nodoc = false;
+    bool deprecated = false;
+    bool doExport = false;
 };

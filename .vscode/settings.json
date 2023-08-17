@@ -233,5 +233,6 @@
     "makefile.makefilePath": "../../makefile",
     "makefile.makeDirectory": "../../",
     "makefile.configurations":[
-    ]
+    ],
+    "liveServer.settings.multiRootWorkspaceName": "c+=2"
 }

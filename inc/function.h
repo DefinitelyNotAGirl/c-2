@@ -62,6 +62,7 @@ public:
 
     type* returnType;
     std::vector<type*> parameters;
+    std::vector<variable*> vparams;
     std::vector<std::string> code;
     functionStorage* fstore;
 
@@ -69,7 +70,9 @@ public:
     primitiveOP op = primitiveOP::invalid;
     bool primitiveInPlace = false;
     bool primitiveFloat = false;
-    bool isDeprecated;
+    bool isDeprecated = false;
+    bool noDoc = false;
+    bool doExport = false;
 
     bool ignoreCall = false;
 };
