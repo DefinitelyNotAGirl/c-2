@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 12:57:38 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -53,16 +53,55 @@
 // 21 - attribute (function only)
 // 22 - attribute (function only primitive)
 // 25 - attribute (variable only)
+// 26 - attribute (class only)
 /**/
-// 30 - continue indexing here
+// 30 - round brackets
+// 31 - square brackets
+// 32 - angle brackets
+// 33 - curly brackets
+/**/
+// 40 - colon
+// 41 - semicolon
+// 42 - comma
+/**/
+// 50 - template arg type
+
+std::list<std::string>* placeHolders = nullptr;
+std::string resolvePlaceholder(std::string& s)
+{
+    if(placeHolders == nullptr)
+        return s;
+    for(std::string& ph : *placeHolders)
+        if(s == ph)
+            return ph;
+    return s;
+}
 
 uint64_t tokenType(std::string& s)
 {
     if(s.empty())
         return 0;
+    //brackets
+    else if(s == "(")return 30;
+    else if(s == ")")return 31;
+    else if(s == "[")return 32;
+    else if(s == "]")return 33;
+    else if(s == "<")return 34;
+    else if(s == ">")return 35;
+    else if(s == "{")return 36;
+    else if(s == "}")return 37;
+    //misc
+    else if(s == ":")return 40;
+    else if(s == ";")return 41;
+    else if(s == ",")return 42;
+    //directives
+    else if(s == "#cum")return 5;
+    else if(s == "#include")return 5;
     else if(s == "#include")return 5;
     else if(s == "#define")return 5;
     else if(s == "#pragma")return 5;
+    else if(s == "#autodecl")return 5;
+    else if(s == "#outcom")return 5;
     else if(s.back() == '"')
     {
         if(s.front() == '"')
@@ -105,9 +144,11 @@ uint64_t tokenType(std::string& s)
     else if(s == "case")return 8;
     else if(s == "default")return 8;
     else if(s == "class")return 8;
+    else if(s == "namespace")return 8;
     else if(s == "litop")return 8;
     else if(s == "enum")return 8;
     else if(s == "extends")return 8;
+    else if(s == "template")return 8;
     //short ops
     else if(s == "add")return 13;
     else if(s == "sub")return 13;
@@ -115,6 +156,7 @@ uint64_t tokenType(std::string& s)
     else if(s == "div")return 13;
     else if(s == "cast")return 13;
     //attributes
+    else if(s == "export")return 20;
     else if(s == "public")return 20;
     else if(s == "protected")return 20;
     else if(s == "private")return 20;
@@ -124,12 +166,18 @@ uint64_t tokenType(std::string& s)
     else if(s == "inline")return 21;
     else if(s == "const")return 20;
     else if(s == "extern")return 20;
+    else if(s == "iteratable")return 20;
+    else if(s == "stringifyable")return 20;
+    else if(s == "noreturn")return 21;
     else if(s == "noop")return 21;
     else if(s == "nodoc")return 21;
     else if(s == "deprecated")return 21;
-    //ABIs
-    else if(s == "ABI-MICROSOFTx64")return 21;
-    else if(s == "ABI-SYSTEMVamd64")return 21;
+    else if(s == "defaultUnsignedInt")return 26;
+    else if(s == "defaultSignedInt")return 26;
+    else if(s == "defaultChar")return 26;
+    else if(s == "defaultWchar")return 26;
+    else if(s == "defaultFloat")return 26;
+    else if(s == "defaultBool")return 26;
     //primitive functions
     else if(s == "primitiveInPlace")return 22;
     else if(s == "primitiveFloat")return 22;
@@ -159,7 +207,12 @@ uint64_t tokenType(std::string& s)
     else if(s == "primitive16")return 12;
     else if(s == "primitive8")return 12;
     else if(s == "primitive0")return 12;
+    //template arg types
+    else if(s == "integer")return 50;
+    else if(s == "typename")return 50;
+    else if(s == "float")return 50;
     else if(s.substr(0,strlen("mangling-")) == "mangling-")return 20;
+    else if(s.substr(0,strlen("ABI-")) == "ABI-")return 21;
     else
     {
         //some identifier
@@ -215,14 +268,23 @@ token line::nextToken()
                 }
                 endLoop2:;
                 break;
+            case('<'):
+            case('>'):
+                if(s == "operator")
+                    goto __default;
             case('('):
             case('{'):
             case('['):
-                s += this->text[tpos];
-                if(s.size() == 1)
-                    break;
+            case(')'):
+            case('}'):
+            case(']'):
+            case(':'):
             case(','):
             case(';'):
+                if(s.size() == 0)
+                    s += this->text[tpos];
+                else
+                    tpos--;
                 goto endLoop1;
             case(' '):
             case('\n'):
@@ -231,12 +293,14 @@ token line::nextToken()
                     goto endLoop1;
                 break;
             default:
+                __default:;
                 s += this->text[tpos];
         }
     }
     endLoop1:;
     tpos++;
 
+    s = resolvePlaceholder(s);
     t.type = tokenType(s);
     t.Line = this;
     t.text = s;
@@ -247,6 +311,11 @@ token line::nextToken()
     }
 
     return t;
+}
+
+std::string line::restText()
+{
+    return this->text.substr(this->tpos,this->text.length());
 }
 
 void line::stripTokens(uint64_t n)

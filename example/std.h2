@@ -2,7 +2,7 @@
  * Created Date: Sunday July 23rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday July 24th 2023 12:43:39 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,19 +27,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-class f64 extends primitiveFloat64;
-class f32 extends primitiveFloat32;
-class u64 extends primitive64;
-class u32 extends primitive32;
-class u16 extends primitive16;
-class u8 : primitive8;
-class void : primitive0;
-class bool : primitive8;
-class char : primitive8;
-class wchar : primitive16;
-//class long : nosuchtype;
-class u128 : primitive64,primitive64;
-class u256 : u128,u128;
+
+export class f64 extends primitiveFloat64;
+export class f32 extends primitiveFloat32;
+export class u64 extends primitive64;
+export class u32 extends primitive32;
+export class u16 extends primitive16;
+export class u8 extends primitive8;
+class void extends primitive0;
+class bool extends primitive8;
+class char extends primitive8;
+class wchar extends primitive16;
+export class u128 extends primitive64,primitive64;
+export class u256 extends u128,u128;
 
 nodoc primitiveMul u256 operator*(u128,u128);
 
@@ -67,9 +67,10 @@ nodoc primitiveAssign void u64(u32);
 nodoc primitiveAssign void u64(u16);
 nodoc primitiveAssign void u64(u8);
 
-class string
-{
+export class string:
     private char* m_data;
     private u64 m_size;
     public void operator+=(string);
-}
+
+namespace std::util:
+    bool hasBlubBlubGun;

@@ -30,10 +30,70 @@
 
 #include "pops.h"
 
+void writeMSR(__register__ src)
+{
+    std::cout << "wrmsr" << std::endl;
+    using enum __register__;
+    pushRegSave();
+    if(fstore->registerStatus(rcx) != 0)    
+        saveRegister(rcx);
+    if(fstore->registerStatus(rdx) != 0)    
+        saveRegister(rdx);
+    mov((uint64_t)0,rdx);
+    mov(getx86MSR(src),rcx);
+    code->push_back(getIndent()+"wrmsr");
+    restoreRegisters();
+}
+
+void readMSR(__register__ dst)
+{
+    std::cout << "rdmsr" << std::endl;
+    using enum __register__;
+    pushRegSave();
+    if(fstore->registerStatus(rcx) != 0)    
+        saveRegister(rcx);
+    mov(getx86MSR(dst),rcx);
+    code->push_back(getIndent()+"rdmsr");
+    restoreRegisters();
+}
+
 void mov(__register__ src,__register__ dst)
 {
-    if(src != dst)
-        code->push_back(getIndent()+"mov %"+registerNAME(src)+", %"+registerNAME(dst));
+    using enum __register__;
+    if(
+        ((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)src) == 0x00) 
+        && 
+        (((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x00) || ((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x02) || ((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x03)))
+    {
+        if(src != dst)
+            code->push_back(getIndent()+"mov %"+registerNAME(src)+", %"+registerNAME(dst));
+    }
+    else
+    {
+        if((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x0100000000)
+        {
+            pushRegSave();
+            if(fstore->registerStatus(rax) != 0)
+                saveRegister(rax);
+            if(fstore->registerStatus(rdx) != 0)
+                saveRegister(rdx);
+            mov((uint64_t)0,rdx);
+            mov(src,rax);
+            writeMSR(dst);
+            restoreRegisters();
+        }
+        else if((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)src) == 0x0100000000)
+        {
+            pushRegSave();
+            if(fstore->registerStatus(rax) != 0 && dst != rax)
+                saveRegister(rax);
+            if(fstore->registerStatus(rdx) != 0 && dst != rdx)
+                saveRegister(rdx);
+            readMSR(src);
+            mov(rax,dst);
+            restoreRegisters();
+        }
+    }
 }
 
 void mov(location src, location dst)
@@ -43,10 +103,23 @@ void mov(location src, location dst)
 
 void mov(uint64_t src, __register__ dst)
 {
-    if(src != 0)
-        code->push_back(getIndent()+"mov $"+std::to_string(src)+", %"+registerNAME(dst));
+    using enum __register__;
+    if((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x00)
+    {
+        if(src != 0)
+            code->push_back(getIndent()+"mov $"+std::to_string(src)+", %"+registerNAME(dst));
+        else
+            code->push_back(getIndent()+"xor %"+registerNAME(dst)+", %"+registerNAME(dst));
+    }
+    else if((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x0100000000)
+    {
+        mov(src,rax);
+        mov(rax,dst);
+    }
     else
-        code->push_back(getIndent()+"xor %"+registerNAME(dst)+", %"+registerNAME(dst));
+    {
+        std::cout << "register type: " << (uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) << std::endl;
+    }
 }
 
 void mov(location src, __register__ dst)
@@ -149,9 +222,9 @@ void mov(variable* src, variable* dst)
     }
     else if(src->storage == storageType::IMMEDIATE && dst->storage == storageType::MEMORY)
     {
-        PRINT_DEBUG
         //cant move directly
         //need intermediate register
+        pushRegSave();
         __register__ reg = fstore->getFreeRegister();
         bool rInvalid = false;
         if(reg == __register__::invalid)

@@ -185,11 +185,46 @@ variable* call_Microsoftx64_Microsoftx64(function* func,std::vector<variable*> a
     return nullptr;
 }
 
+void jump(function* func, std::string symbol)
+{
+    code = &func->code;
+    jmp(symbol);
+}
+
+void placeSymbol(function* func,std::string symbol)
+{
+    CodePlaceSymbol(symbol);
+}
+
+void codeGenUpdateFuction()
+{
+    switch(currentScope->t)
+    {
+        case(scopeType::FUNCTION):
+        case(scopeType::CONDITIONAL_BLOCK):
+            code = &currentScope->func->code;
+            fstore = currentScope->fstore;
+            break;
+    }
+}
+
+variable* call(function* func,std::vector<variable*> args)
+{
+    if(func->isPrimitive)
+        return primitiveCall(func,args);
+    //else
+    //    std::cout << func->name << " is not primitive" << std::endl;
+    //std::cout << "cs->func->abi: " << std::hex << (void*)currentScope->func->abi << std::endl;
+    //std::cout << "cs->func->abi->name: " << currentScope->func->abi->name << std::endl;
+    //std::cout << "cs->func->abi->call: " << std::hex << (void*)currentScope->func->abi->call << std::endl;
+    return currentScope->func->abi->call(func,args);
+}
+
+/*
 variable* call(function* func,std::vector<variable*> args)
 {
     scope* sc = currentScope;
-    fstore = sc->fstore;
-    if(sc->t != scopeType::FUNCTION)
+    if(sc->t != scopeType::FUNCTION && sc->t != scopeType::CONDITIONAL_BLOCK)
     {
         std::cout << "bruh :skull:" << std::endl;
     }
@@ -218,3 +253,4 @@ variable* call(function* func,std::vector<variable*> args)
     }
     return nullptr;
 }
+*/

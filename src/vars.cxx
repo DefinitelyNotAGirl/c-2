@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 18th 2023 4:48:23 pm
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -41,14 +41,20 @@ uint64_t moScopeID = 0;
 std::vector<mangler*> manglers;
 mangler* defaultMangler = nullptr;
 
+arch* currentArch = nullptr;
+std::vector<arch*> architectures;
+
+uint64_t ARCH_REGISTER_MASK = 0;
+
 std::vector<format> formats;
-std::vector<format> ClassesOutformats;
-std::vector<format> FunctionsOutformats;
-std::vector<format> VariablesOutformats;
-std::vector<format> ScopesOutformats;
+std::vector<format*> ClassesOutformats;
+std::vector<format*> FunctionsOutformats;
+std::vector<format*> VariablesOutformats;
+std::vector<format*> ScopesOutformats;
 std::list<std::string> sourceFiles;
 std::list<std::string> dependencies;
 std::vector<type*> types;
+std::vector<std::string> includeDirs;
 //std::vector<function*> functions;
 std::vector<litop*> litops;
 scope* globalScope = new scope;
@@ -62,7 +68,23 @@ scope* currentScope = globalScope;
 #endif
 uint64_t defaultNumberBase = 10;
 uint64_t tabLength = 4;
-uint64_t defaultABI = 1;//default to SystemV amd64 ABI
+ABI* defaultABI = nullptr;//default to SystemV amd64 ABI
+
+using enum __register__;
+std::vector<__register__> registers = {
+                rax,rbx,rcx,rdx,
+                rsi,rdi,
+                rbp,rsp,
+                r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,
+                rip,
+                cr0,cr1,cr2,cr3,cr4,cr5,cr6,cr7,cr8,cr9,cr10,cr11,cr12,cr13,cr14,cr15,
+                EFER,
+                DR0,DR1,DR2,DR3,DR6,DR7,
+                GDTR,IDTR,LDTR,
+                TR,CS,DS,SS,ES,FS,GS,
+                xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8,xmm9,xmm10,xmm11,xmm12,xmm13,xmm14,xmm15
+                };
+__register__ StackPointer = rsp;
 
 char c_alert                = 0x07;
 char c_backspace            = 0x08;
@@ -76,6 +98,20 @@ char c_verticaltab          = 0x0B;
 std::string objOut = "";
 std::string asmOut = "";
 
+uint64_t POINTER_SIZE = 8;
+
+type* defaultUnsignedIntegerType = nullptr;
+type* defaultSignedIntegerType = nullptr;
+type* defaultFloatType = nullptr;
+type* defaultCharType = nullptr;
+type* defaultWcharType = nullptr;
+type* defaultBooleanType = nullptr;
+
+std::vector<typeTemplate*> typeTemplates;
+std::vector<functionTemplate*> functionTemplates;
+
+std::vector<ABI*> ABIs;
+
 namespace options
 {
     //-f******
@@ -88,6 +124,7 @@ namespace options
     bool fvariableinfo = false;
     int fcpl = 3;
     int asmVerbose = 0;
+    bool keepComments = false;
 
     //-m******
     bool mnortti = false;
@@ -103,4 +140,7 @@ namespace options
     bool C = false;
     bool as = false;
     std::string output = "";
+
+    std::string buildDir = "build";
+    std::string docDir = "documentation";
 }

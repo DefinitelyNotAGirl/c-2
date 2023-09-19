@@ -36,14 +36,7 @@ variable* primitiveCall(function* func,std::vector<variable*> args)
     variable* ret;
     if(func->primitiveInPlace)
     {
-        if(args.size() != 2)
-        {
-            std::cout << "ERROR: invalid number of arguments to in place primitive function" << std::endl;
-        }
-        else
-        {
-            ret = args[0];
-        }
+        ret = args[0];
     }
     else
     {
@@ -55,13 +48,11 @@ variable* primitiveCall(function* func,std::vector<variable*> args)
         switch(func->op)
         {
             case(primitiveOP::assign):
-                if(args.size() != 2)
-                    std::cout << "ERROR: invalid number of arguments to in place primitive function" << std::endl;
-                else
-                    mov(args[1],ret);
+                //std::cout << "assign!" << std::endl;
+                mov(args[1],ret);
                 break;
             case(primitiveOP::mul):
-                std::cout << "multiply!" << std::endl;
+                //std::cout << "multiply!" << std::endl;
                 if(func->primitiveInPlace)
                 {
                     mul(args[0],args[0],args[1]);
@@ -70,12 +61,26 @@ variable* primitiveCall(function* func,std::vector<variable*> args)
                 {
                     ret->dataType = args[0]->dataType;
                     ret->name = getNewName();
-                    fstore->setStorage(ret);
+                    fstore->setStorage(func,ret);
                     mul(ret,args[0],args[1]);
                 }
                 break;
+            case(primitiveOP::div):
+                //std::cout << "divide!" << std::endl;
+                if(func->primitiveInPlace)
+                {
+                    div(args[0],args[0],args[1]);
+                }
+                else
+                {
+                    ret->dataType = args[0]->dataType;
+                    ret->name = getNewName();
+                    fstore->setStorage(func,ret);
+                    div(ret,args[0],args[1]);
+                }
+                break;
             case(primitiveOP::mod):
-                std::cout << "modulo!" << std::endl;
+                //std::cout << "modulo!" << std::endl;
                 if(func->primitiveInPlace)
                 {
                     mod(args[0],args[0],args[1]);
@@ -84,8 +89,66 @@ variable* primitiveCall(function* func,std::vector<variable*> args)
                 {
                     ret->dataType = args[0]->dataType;
                     ret->name = getNewName();
-                    fstore->setStorage(ret);
+                    fstore->setStorage(func,ret);
                     mod(ret,args[0],args[1]);
+                }
+                break;
+            case(primitiveOP::add):
+                //std::cout << "add!" << std::endl;
+                if(func->primitiveInPlace)
+                {
+                    add(args[0],args[0],args[1]);
+                }
+                else
+                {
+                    ret->dataType = args[0]->dataType;
+                    ret->name = getNewName();
+                    fstore->setStorage(func,ret);
+                    add(ret,args[0],args[1]);
+                }
+                break;
+            case(primitiveOP::sub):
+                //std::cout << "sub!" << std::endl;
+                if(func->primitiveInPlace)
+                {
+                    add(args[0],args[0],args[1]);
+                }
+                else
+                {
+                    ret->dataType = args[0]->dataType;
+                    ret->name = getNewName();
+                    fstore->setStorage(func,ret);
+                    add(ret,args[0],args[1]);
+                }
+                break;
+            case(primitiveOP::Inc):
+                //std::cout << "inc!" << std::endl;
+                if(func->primitiveInPlace)
+                {
+                    inc(args[0]);
+                }
+                else
+                {
+                    ret->dataType = args[0]->dataType;
+                    ret->name = getNewName();
+                    fstore->setStorage(func,ret);
+                    mov(args[0],ret);
+                    inc(ret);
+                }
+                break;
+            case(primitiveOP::Dec):
+                //std::cout << "dec!" << std::endl;
+                if(func->primitiveInPlace)
+                {
+                    dec(args[0]);
+                }
+                else
+                {
+                    ret->dataType = args[0]->dataType;
+                    ret->name = getNewName();
+                    fstore->setStorage(func,ret);
+                    mov(args[0],ret);
+                    dec(ret);
                 }
                 break;
             default:

@@ -2,7 +2,7 @@
  * Created Date: Tuesday August 15th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday August 15th 2023 11:08:11 pm
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -83,14 +83,14 @@ static uint64_t format_addFile()
         {
             std::unordered_set<format*> oFormats;
             bool hasGeosDoc = false;
-            for(format& f : ClassesOutformats)
-                oFormats.insert(&f);
-            for(format& f : FunctionsOutformats)
-                oFormats.insert(&f);
-            for(format& f : VariablesOutformats)
-                oFormats.insert(&f);
-            for(format& f : ScopesOutformats)
-                oFormats.insert(&f);
+            for(format* f : ClassesOutformats)
+                oFormats.insert(f);
+            for(format* f : FunctionsOutformats)
+                oFormats.insert(f);
+            for(format* f : VariablesOutformats)
+                oFormats.insert(f);
+            for(format* f : ScopesOutformats)
+                oFormats.insert(f);
             for(format* f : oFormats)
                 if(f->name == "geosdoc")
                     hasGeosDoc = true;
@@ -110,6 +110,7 @@ constructor static void format_init()
     format f;
     f.name = "html";
     f.extension = "html";
+    f.desc = "html interactive web documentation using the gdoc format";
     f.addClass = &format_addClass;
     f.addFunction = &format_addFunction;
     f.addScope = &format_addScope;

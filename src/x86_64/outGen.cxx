@@ -41,50 +41,8 @@
 
 void genOutput(std::string& i)
 {
-    FILE* f;
     int results;
-    std::string ogName = i;
-    //generate depedency make files
-    //get output destiations
-    stripExt(i);
-    if(options::output == "")
-    {
-        //no output destination specified
-        objOut = i+".o";
-        asmOut = i+".s";
-    }
-    else
-    {
-        struct stat s;
-        if(access(options::output.c_str(), F_OK) != 0)
-            goto outputIsFile;
-        if(stat(options::output.c_str(),&s) == 0)
-        {
-            if(s.st_mode & S_IFDIR)
-            {
-                // it's a directory
-                objOut = options::output+"/"+i+".o";
-                asmOut = options::output+"/"+i+".s";
-            }
-            else if(s.st_mode & S_IFREG)
-            {
-                // it's a file
-                outputIsFile:;
-                objOut = options::output;
-                stripExt(options::output);
-                asmOut = options::output+".s";
-            }
-            else
-            {
-                // something else
-            }
-        }
-        else
-        {
-            std::cout << "ERROR: could not access output destination \"" << options::output << "\"" << std::endl;
-            // error
-        }
-    }
+    FILE* f;
     //output
     std::string asmCode;
     asmCode+="# cpe2\n";

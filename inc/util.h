@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 6:09:28 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -59,3 +59,12 @@ void inject(std::vector<T>& src, std::vector<T>& dst, uint64_t offset)
 }
 
 void fileOut(std::string content, std::string path);
+
+template<typename t>
+bool contains(std::vector<t>& v,t& val)
+{
+    for(t& i : v)
+        if(i == val)
+            return 1;
+    return 0;
+}

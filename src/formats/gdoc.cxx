@@ -2,7 +2,7 @@
  * Created Date: Sunday August 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday August 13th 2023 3:49:01 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -37,8 +37,6 @@
 namespace formatGDOC
 {
 
-using geosdoc::__class__;
-
 static uint64_t fID = 0;
 
 static std::vector<geosdoc::formatFile*> files;
@@ -70,8 +68,9 @@ static void format_addClass(uint64_t fID, type* t)
     geosdoc::formatFile* f = getFile(fID);
     if(f == nullptr)
         return;
-    f->classes.push_back(new __class__);
-    f->classes.back()->t = t;
+    if(!t->nodoc)
+        if(!contains<type*>(f->classes,t))
+            f->classes.push_back(t);
 }
 
 static void format_addFunction(uint64_t fID, function* func)
@@ -80,7 +79,8 @@ static void format_addFunction(uint64_t fID, function* func)
     if(f == nullptr)
         return;
     if(!func->noDoc)
-        f->functions.push_back(func);
+        if(!contains<function*>(f->functions,func))
+            f->functions.push_back(func);
 }
 
 static void format_addVariable(uint64_t fID, variable* var)
@@ -88,7 +88,11 @@ static void format_addVariable(uint64_t fID, variable* var)
     geosdoc::formatFile* f = getFile(fID);
     if(f == nullptr)
         return;
-    f->variables.push_back(var);
+    if(currentScope->t == scopeType::CLASS || currentScope->t == scopeType::FUNCTION)
+        return;
+
+    if(!contains<variable*>(f->variables,var))
+        f->variables.push_back(var);
 }
 
 static void format_write(uint64_t fID, std::string path)
@@ -99,10 +103,17 @@ static void format_write(uint64_t fID, std::string path)
         return;
 
     out += "#title untitled\n";
-    for(__class__* c : ff->classes)
+    for(type* t : ff->classes)
     {
         out += "<class>\n";
-        out += "    <name>"+c->t->name+"</name>\n";
+        out += "    <name>"+t->name+"</name>\n";
+        for(variable& var : t->members)
+        {
+            out += "    <member>\n";
+            out += "        <name>"+var.name+"</name>\n";
+            out += "        <type><name>"+var.dataType->name+"</name></type>\n";
+            out += "    </member>\n";
+        }
         out += "</class>\n";
     }
 
@@ -113,12 +124,12 @@ static void format_write(uint64_t fID, std::string path)
         out += "    <attributes>";
         if(func->isDeprecated)
             out+="deprecated ";
-        out += "</attributes>\n";
+        out += "    </attributes>\n";
         out+="    <type><name>"+func->returnType->name+"</name></type>\n";
         for(variable* p : func->vparams)
         {
             out+="    <param>\n";
-            out+="        <name>"+p->name+"</name>";
+            out+="        <name>"+p->name+"</name>\n";
             out+="        <type><name>"+p->dataType->name+"</name></type>\n";
             out+="    </param>\n";
         }
@@ -133,6 +144,8 @@ static void format_write(uint64_t fID, std::string path)
         out += "</member>\n";
     }
 
+    stripExt(path);
+    path+=".gdoc";
     fileOut(out,path);
 
     system(std::string("gdoc "+path+" -o "+path+".gdml").c_str());
@@ -147,6 +160,7 @@ constructor static void format_init()
     format f;
     f.name = "geosdoc";
     f.extension = "gdoc";
+    f.desc = "geosdoc code for further proccessing";
     f.addClass = &format_addClass;
     f.addFunction = &format_addFunction;
     f.addVariable = &format_addVariable;

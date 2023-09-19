@@ -2,7 +2,7 @@
  * Created Date: Tuesday August 15th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday August 15th 2023 10:55:25 pm
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -33,20 +33,13 @@
 #include <util.h>
 
 namespace geosdoc
-{
-    class __class__
-    {
-    public:
-        type* t = nullptr;
-        std::vector<function*> functions;
-    };
-    
+{   
     struct formatFile
     {
         uint64_t fID;
         //data
         std::string lastPath = "";
-        std::vector<__class__*> classes;
+        std::vector<type*> classes;
         std::vector<function*> functions;
         std::vector<variable*> variables;
     };

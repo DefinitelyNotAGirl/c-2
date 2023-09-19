@@ -38,6 +38,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <bits.h>
 #include <buildinfo.h>
 
 namespace pragma{

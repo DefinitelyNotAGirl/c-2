@@ -2,7 +2,7 @@
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday July 30th 2023 4:53:27 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -35,7 +35,10 @@
 namespace error
 {
     void compilerBug(std::string file, int line);
+    void incompleteType(token& t);
+    void noSuchFile(token& t);
     void noSuchType(token& t);
+    void noSuchABI(token& t);
     void noSuchLitop(token& t, uint64_t offset = 0);
     void expectedNewUnique(token& t);
     void expectedShortop(token& t);
@@ -43,6 +46,7 @@ namespace error
     void invalidVariableAttribute(token& t);
     void invalidClassAttribute(token& t);
     void expectedTypename(token& t);
+    void expectedTemplateArg(token& t);
 }
 
 #define errorCompilerBug error::compilerBug(__FILE__,__LINE__)

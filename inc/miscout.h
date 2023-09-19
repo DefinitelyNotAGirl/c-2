@@ -2,7 +2,7 @@
  * Created Date: Sunday August 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday August 13th 2023 3:00:01 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -44,6 +44,7 @@ class format
 public:
     std::string name = "errorFormat";
     std::string extension = "errorFormat";
+    std::string desc = "errorDescription";
 
     void(*addClass)(uint64_t,type*) = &defaultFormat_addClass;
     void(*addFunction)(uint64_t,function*) = &defaultFormat_addFunction;
@@ -62,7 +63,7 @@ void mOUT(uint64_t fID, scope* sc);
 format* getFormat(std::string name);
 
 extern std::vector<format> formats;
-extern std::vector<format> ClassesOutformats;
-extern std::vector<format> FunctionsOutformats;
-extern std::vector<format> VariablesOutformats;
-extern std::vector<format> ScopesOutformats;
+extern std::vector<format*> ClassesOutformats;
+extern std::vector<format*> FunctionsOutformats;
+extern std::vector<format*> VariablesOutformats;
+extern std::vector<format*> ScopesOutformats;

@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 10:49:38 pm
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -33,6 +33,7 @@
 
 class variable;
 class member;
+class function;
 
 class type
 {
@@ -41,9 +42,14 @@ public:
     std::string name;
     std::string mangledName;
     std::vector<variable> members;
+    std::vector<function> functions;
     std::vector<type*> supertypes;
+    type* valueType = nullptr; //this is for pointers, for char* this would point to char for example
+    uint64_t regMode = 1;//0: do not store in register, 1: integer registers, 2: floating point registers
 
     bool nodoc = false;
     bool deprecated = false;
     bool doExport = false;
+    bool iteratable = false;
+    bool incomplete = false;
 };

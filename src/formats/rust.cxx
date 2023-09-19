@@ -2,7 +2,7 @@
  * Created Date: Sunday August 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 8:41:27 pm
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -85,6 +85,7 @@ constructor static void format_init()
     format f;
     f.name = "rust";
     f.extension = "r";
+    f.desc = "rust modules";
     f.addClass = &format_addClass;
     f.addFunction = &format_addFunction;
     f.addVariable = &format_addVariable;

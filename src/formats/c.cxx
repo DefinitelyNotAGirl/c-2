@@ -2,7 +2,7 @@
  * Created Date: Sunday August 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 8:41:32 pm
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -29,6 +29,7 @@
  */
 
 #include <miscout.h>
+#include <util.h>
 
 #define constructor __attribute__ ((constructor))
 
@@ -38,11 +39,15 @@ struct formatFile
     uint64_t fID;
     //data
     std::string content;
+    bool includesStdInt = false;
 };
 static std::vector<formatFile*> files;
 
 static std::string getExportTypeName(type* t)
 {
+    if(t == nullptr)
+        std::cout << "wtf?" << std::endl;
+    return t->name;
 }
 
 static formatFile* getFile(uint64_t fID)
@@ -55,17 +60,106 @@ static formatFile* getFile(uint64_t fID)
 
 static void format_addClass(uint64_t fID, type* t)
 {
+    if(!t->doExport)
+        return;
     std::string& content = getFile(fID)->content;
+
+    if(t->members.size() == 0)
+    {
+        if(!getFile(fID)->includesStdInt)
+        {
+            content+="#include <stdint>\n";
+            getFile(fID)->includesStdInt = true;
+        }
+
+        if(t->size == 0)
+            content+="typedef void "+t->name+";\n";
+        else if(t->size == 1)
+            content+="typedef uint8_t "+t->name+";\n";
+        else if(t->size == 2)
+            content+="typedef uint16_t "+t->name+";\n";
+        else if(t->size == 4)
+            content+="typedef uint32_t "+t->name+";\n";
+        else if(t->size == 8)
+            content+="typedef uint64_t "+t->name+";\n";
+    }
+    else
+    {
+        uint64_t cop = 0;//current offset position
+        uint64_t pn = 0;//padding number
+        content+="struct "+t->name+"\n{\n";
+        for(variable& m : t->members)
+        {
+            if(cop < m.offset)
+            {
+                if(!getFile(fID)->includesStdInt)
+                {
+                    content+="#include <stdint>\n";
+                    getFile(fID)->includesStdInt = true;
+                }
+
+                content+="private:\n";
+                uint64_t diff = m.offset-cop;
+                while(diff != 0)
+                {
+                    if(diff >= 8){
+                        content+="    uint64_t __cpe2Padding_"+std::to_string(pn++)+";\n";
+                        diff-=8;}
+                    else if(diff >= 4){
+                        content+="    uint32_t __cpe2Padding_"+std::to_string(pn++)+";\n";
+                        diff-=4;}
+                    else if(diff >= 2){
+                        content+="    uint16_t __cpe2Padding_"+std::to_string(pn++)+";\n";
+                        diff-=2;}
+                    else if(diff >= 1){
+                        content+="    uint8_t __cpe2Padding_"+std::to_string(pn++)+";\n";
+                        diff--;}
+                }
+            }
+            content+="    "+getExportTypeName(m.dataType)+" "+m.name+";\n";
+            cop = m.offset + m.dataType->size;
+        }
+        content+="};\ntypedef struct "+t->name+" "+t->name+";\n";
+    }
 }
 
 static void format_addFunction(uint64_t fID, function* func)
 {
+    if(!func->doExport)
+        return;
     std::string& content = getFile(fID)->content;
+    content+="extern ";
+    content+=getExportTypeName(func->returnType)+" "+func->symbol+"(";
+    for(variable* p : func->vparams)
+        content+=getExportTypeName(p->dataType)+" "+p->name+",";
+    if(func->vparams.size() > 0)
+        content.pop_back();
+    content+=");\n";
+    content+="inline ";
+    content+=getExportTypeName(func->returnType)+" "+func->name+"(";
+    for(variable* p : func->vparams)
+        content+=getExportTypeName(p->dataType)+" "+p->name+",";
+    if(func->vparams.size() > 0)
+        content.pop_back();
+    content+="){"+func->symbol+"(";
+    for(variable* p : func->vparams)
+        content+=p->name+",";
+    if(func->vparams.size() > 0)
+        content.pop_back();
+    content+=");}\n";
 }
 
 static void format_addVariable(uint64_t fID, variable* var)
 {
+    if(!var->doExport)
+        return;
     std::string& content = getFile(fID)->content;
+    content+=getExportTypeName(var->dataType)+" "+var->name+";\n";
+}
+
+static void format_write(uint64_t fID, std::string path)
+{
+    fileOut(getFile(fID)->content,path);
 }
 
 static uint64_t format_addFile()
@@ -85,10 +179,12 @@ constructor static void format_init()
     format f;
     f.name = "c";
     f.extension = "h";
+    f.desc = "c header files";
     f.addClass = &format_addClass;
     f.addFunction = &format_addFunction;
     f.addVariable = &format_addVariable;
     f.newFile = &format_addFile;
+    f.write = &format_write;
 
     formats.push_back(f);
 }

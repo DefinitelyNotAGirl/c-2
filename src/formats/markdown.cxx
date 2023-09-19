@@ -2,7 +2,7 @@
  * Created Date: Sunday August 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday August 13th 2023 3:49:04 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -85,6 +85,7 @@ constructor static void format_init()
     format f;
     f.name = "markdown";
     f.extension = "md";
+    f.desc = "markdown documentation using the gdoc format";
     f.addClass = &format_addClass;
     f.addFunction = &format_addFunction;
     f.addScope = &format_addScope;

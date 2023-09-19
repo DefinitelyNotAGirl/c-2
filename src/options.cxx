@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 18th 2023 4:48:23 pm
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -85,6 +85,8 @@ CARGHANDLER_BOOLEAN(C)
 CARGHANDLER_BOOLEAN(as)
 CARGHANDLER_PATH(SysRoot)
 CARGHANDLER_PATH(output)
+CARGHANDLER_PATH(buildDir)
+CARGHANDLER_PATH(docDir)
 CARGHANDLER_BOOLEAN(fclasslayout)
 CARGHANDLER_BOOLEAN(ffunctioninfo)
 CARGHANDLER_BOOLEAN(fvariableinfo)
@@ -92,6 +94,7 @@ CARGHANDLER_BOOLEAN(ffreestanding)
 CARGHANDLER_BOOLEAN(fnoautoinclude)
 CARGHANDLER_BOOLEAN(fnostdlib)
 CARGHANDLER_BOOLEAN(fnolibc)
+CARGHANDLER_BOOLEAN(keepComments)
 CARGHANDLER_BOOLEAN(mnortti)
 CARGHANDLER_BOOLEAN(mnorodata)
 CARGHANDLER_BOOLEAN(dprintTokens)
@@ -99,7 +102,7 @@ CARGHANDLER_BOOLEAN(ddebug)
 CARGHANDLER_INT(fcpl)
 
 #define name_MD "-MD"
-#define name_C "-C"
+#define name_C "-c"
 #define name_output "-o"
 #define name_as "-S"
 #define name_fclasslayout "--fclassinfo"
@@ -115,6 +118,9 @@ CARGHANDLER_INT(fcpl)
 #define name_ddebug "--ddebug"
 #define name_SysRoot "--isysroot"
 #define name_fcpl "--fcpl"
+#define name_buildDir "-B"
+#define name_docDir "-D"
+#define name_keepComments "--keepComments"
 
 #define CARGHANDLER_BOOLEAN_N(optname) cargHandler_bool_ ## optname
 #define CARGHANDLER_PATH_N(optname) cargHandler_path_ ## optname
@@ -140,6 +146,14 @@ void CARGHANDLER_VERSION(CARGPARSE_HANDLER_ARGS)
 
     exit(0);
 }
+
+void CARGHANDLER_INCLUDE(CARGPARSE_HANDLER_ARGS)
+{
+    includeDirs.push_back(args.front());
+}
+
+void CARGHANDLER_HELP(CARGPARSE_HANDLER_ARGS);
+void CARGHANDLER_HELP_PRAGMA(CARGPARSE_HANDLER_ARGS);
 
 void CARGHANDLER_INFO(CARGPARSE_HANDLER_ARGS)
 {
@@ -179,42 +193,42 @@ void CARGHANDLER_INFO(CARGPARSE_HANDLER_ARGS)
             {
                 if(doClasses)
                 {
-                    for(format& i : ClassesOutformats)
+                    for(format* i : ClassesOutformats)
                     {
-                        if(i.extension == f.extension)
+                        if(i->extension == f.extension)
                             goto formatAlreadyUsed_1;
                     }
-                    ClassesOutformats.push_back(f);
+                    ClassesOutformats.push_back(&f);
                     formatAlreadyUsed_1:;
                 }
                 if(doFunctions)
                 {
-                    for(format& i : FunctionsOutformats)
+                    for(format* i : FunctionsOutformats)
                     {
-                        if(i.extension == f.extension)
+                        if(i->extension == f.extension)
                             goto formatAlreadyUsed_2;
                     }
-                    FunctionsOutformats.push_back(f);
+                    FunctionsOutformats.push_back(&f);
                     formatAlreadyUsed_2:;
                 }
                 if(doVariables)
                 {
-                    for(format& i : VariablesOutformats)
+                    for(format* i : VariablesOutformats)
                     {
-                        if(i.extension == f.extension)
+                        if(i->extension == f.extension)
                             goto formatAlreadyUsed_3;
                     }
-                    VariablesOutformats.push_back(f);
+                    VariablesOutformats.push_back(&f);
                     formatAlreadyUsed_3:;
                 }
                 if(doScopes)
                 {
-                    for(format& i : ScopesOutformats)
+                    for(format* i : ScopesOutformats)
                     {
-                        if(i.extension == f.extension)
+                        if(i->extension == f.extension)
                             goto formatAlreadyUsed_4;
                     }
-                    ScopesOutformats.push_back(f);
+                    ScopesOutformats.push_back(&f);
                     formatAlreadyUsed_4:;
                 }
             }
@@ -231,24 +245,24 @@ void CARGHANDLER_INFO(CARGPARSE_HANDLER_ARGS)
     doneCollecting:;
     if(options::ddebug)
     {
-    std::cout << "info: " << std::endl;
-    std::cout << "    classes: " << doClasses << std::endl;
-    std::cout << "    functions: " << doFunctions << std::endl;
-    std::cout << "    variables: " << doVariables << std::endl;
-    std::cout << "    scopes: " << doScopes << std::endl;
-    std::cout << "    formats: " << std::endl;
-    std::cout << "        classes: " << std::endl;
-    for(format& f : ClassesOutformats)
-        std::cout << "            " << f.name << std::endl;
-    std::cout << "        functions: " << std::endl;
-    for(format& f : FunctionsOutformats)
-        std::cout << "            " << f.name << std::endl;
-    std::cout << "        variables: " << std::endl;
-    for(format& f : VariablesOutformats)
-        std::cout << "            " << f.name << std::endl;
-    std::cout << "        scopes: " << std::endl;
-    for(format& f : ScopesOutformats)
-        std::cout << "            " << f.name << std::endl;
+        std::cout << "info: " << std::endl;
+        std::cout << "    classes: " << doClasses << std::endl;
+        std::cout << "    functions: " << doFunctions << std::endl;
+        std::cout << "    variables: " << doVariables << std::endl;
+        std::cout << "    scopes: " << doScopes << std::endl;
+        std::cout << "    formats: " << std::endl;
+        std::cout << "        classes: " << std::endl;
+        for(format* f : ClassesOutformats)
+            std::cout << "            " << f->name << std::endl;
+        std::cout << "        functions: " << std::endl;
+        for(format* f : FunctionsOutformats)
+            std::cout << "            " << f->name << std::endl;
+        std::cout << "        variables: " << std::endl;
+        for(format* f : VariablesOutformats)
+            std::cout << "            " << f->name << std::endl;
+        std::cout << "        scopes: " << std::endl;
+        for(format* f : ScopesOutformats)
+            std::cout << "            " << f->name << std::endl;
     }
 }
 
@@ -260,6 +274,8 @@ void cliOptions(int argc, char **argv)
     CARGHANDLER_BOOLEAN_CA0(C);
     CARGHANDLER_BOOLEAN_CA0(as);
     CARGHANDLER_PATH_CA1(output);
+    CARGHANDLER_PATH_CA1(buildDir);
+    CARGHANDLER_PATH_CA1(docDir);
     CARGHANDLER_PATH_CA1(SysRoot);
     //f
     CARGHANDLER_BOOLEAN_CA0(fclasslayout);
@@ -270,6 +286,7 @@ void cliOptions(int argc, char **argv)
     CARGHANDLER_BOOLEAN_CA0(fnostdlib);
     CARGHANDLER_BOOLEAN_CA0(fnostdlib);
     CARGHANDLER_BOOLEAN_CA0(fnolibc);
+    CARGHANDLER_BOOLEAN_CA0(keepComments);
     CARGHANDLER_INT_CA1(fcpl);
     //m
     CARGHANDLER_BOOLEAN_CA0(mnortti);
@@ -290,7 +307,21 @@ void cliOptions(int argc, char **argv)
 
     carg.addParameter(0,1,"--info",&CARGHANDLER_INFO);
 
+    carg.addParameter(0,1,"-I",&CARGHANDLER_INCLUDE);
+
+    carg.addParameter(1,0,"-h",&CARGHANDLER_HELP);
+    carg.addParameter(1,0,"-H",&CARGHANDLER_HELP);
+    carg.addParameter(1,0,"-help",&CARGHANDLER_HELP);
+    carg.addParameter(1,0,"-Help",&CARGHANDLER_HELP);
+    carg.addParameter(1,0,"--help",&CARGHANDLER_HELP);
+    carg.addParameter(1,0,"--Help",&CARGHANDLER_HELP);
+
+    carg.addParameter(1,0,"--help-pragma",&CARGHANDLER_HELP_PRAGMA);
+
     carg.unknownHandler = &cargHandler_unknown;
 
     carg.parse(argc,argv);
+
+    if(options::ddebug)
+        std::cout << "asm verbosity: " <<std::dec<< options::asmVerbose << std::endl;
 }

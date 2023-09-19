@@ -2,7 +2,7 @@
  * Created Date: Sunday August 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday August 13th 2023 2:55:43 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -49,23 +49,25 @@ format* getFormat(std::string name)
 
 void mOUT(uint64_t fID, variable* var)
 {
-    for(format& i : VariablesOutformats)
-        i.addVariable(fID,var);
+    for(format* i : VariablesOutformats)
+        i->addVariable(fID,var);
 }
 
 void mOUT(uint64_t fID, function* func)
 {
-    for(format& i : VariablesOutformats)
-        i.addFunction(fID,func);
+    for(format* i : FunctionsOutformats)
+    {
+        i->addFunction(fID,func);
+    }
 }
 void mOUT(uint64_t fID, type* t)
 {
-    for(format& i : VariablesOutformats)
-        i.addClass(fID,t);
+    for(format* i : ClassesOutformats)
+        i->addClass(fID,t);
 }
 
 void mOUT(uint64_t fID, scope* sc)
 {
-    for(format& i : VariablesOutformats)
-        i.addScope(fID,sc);
+    for(format* i : ScopesOutformats)
+        i->addScope(fID,sc);
 }

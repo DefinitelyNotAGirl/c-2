@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 1:24:45 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -29,6 +29,8 @@
  */
 #pragma once
 
+class ABI;
+
 #include <common.h>
 #include <options.h>
 #include <class_line.h>
@@ -41,6 +43,10 @@
 #include <class_scope.h>
 #include <stack>
 #include <warning.h>
+#include <section.h>
+#include <template.h>
+#include <arch.h>
+#include <ABI.h>
 
 extern std::vector<std::string> DataCode;
 extern std::vector<std::string> RoDataCode;
@@ -63,6 +69,10 @@ std::string mangleTypeName(std::string& s);
 
 std::string getNewName();
 
+ABI* getABI(std::string name);
+
+void resetScope();
+
 extern uint64_t moClassID;
 extern uint64_t moFunctionID;
 extern uint64_t moVariableID;
@@ -70,6 +80,13 @@ extern uint64_t moScopeID;
 
 extern scope* globalScope;
 extern scope* currentScope;
+
+extern type* defaultUnsignedIntegerType;
+extern type* defaultSignedIntegerType;
+extern type* defaultFloatType;
+extern type* defaultCharType;
+extern type* defaultWcharType;
+extern type* defaultBooleanType;
 
 extern std::vector<type*> types;
 extern std::vector<litop*> litops;

@@ -1,0 +1,291 @@
+#title untitled
+<class>
+    <name>f64</name>
+</class>
+<class>
+    <name>f32</name>
+</class>
+<class>
+    <name>u64</name>
+</class>
+<class>
+    <name>u32</name>
+</class>
+<class>
+    <name>u16</name>
+</class>
+<class>
+    <name>u8</name>
+</class>
+<class>
+    <name>void</name>
+</class>
+<class>
+    <name>bool</name>
+</class>
+<class>
+    <name>char</name>
+</class>
+<class>
+    <name>wchar</name>
+</class>
+<class>
+    <name>u128</name>
+</class>
+<class>
+    <name>u256</name>
+</class>
+<class>
+    <name>string</name>
+    <member>
+        <name>m_data</name>
+        <type><name>char*</name></type>
+    </member>
+    <member>
+        <name>m_size</name>
+        <type><name>u64</name></type>
+    </member>
+</class>
+<class>
+    <name>__ACPITABLES__</name>
+    <member>
+        <name>MADT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>BERT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>CPEP</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>DSDT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>ECDT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>EINJ</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>ERST</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>FADT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>FACS</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>HEST</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>MSCT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>MPST</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>PMTT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>PSDT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>RASF</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>RSDT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>SBST</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>SLIT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>SRAT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>SSDT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>XSDT</name>
+        <type><name>void&</name></type>
+    </member>
+    <member>
+        <name>MCFG</name>
+        <type><name>void&</name></type>
+    </member>
+</class>
+<class>
+    <name>__bootinfo__</name>
+    <member>
+        <name>mmap_base</name>
+        <type><name>u64</name></type>
+    </member>
+    <member>
+        <name>mmap_size</name>
+        <type><name>u64</name></type>
+    </member>
+    <member>
+        <name>mmap_esize</name>
+        <type><name>u8</name></type>
+    </member>
+    <member>
+        <name>stack_base</name>
+        <type><name>u64</name></type>
+    </member>
+    <member>
+        <name>stack_size</name>
+        <type><name>u64</name></type>
+    </member>
+    <member>
+        <name>VirtualMemoryMAX</name>
+        <type><name>u64</name></type>
+    </member>
+    <member>
+        <name>funcGet</name>
+        <type><name>u64</name></type>
+    </member>
+    <member>
+        <name>ACPI_REVISION</name>
+        <type><name>u8</name></type>
+    </member>
+    <member>
+        <name>ACPIT</name>
+        <type><name>__ACPITABLES__</name></type>
+    </member>
+</class>
+<function>
+    <name>operator+=</name>
+    <attributes>    </attributes>
+    <type><name>void</name></type>
+    <param>
+        <name>__cpe2InternalName_32__</name>
+        <type><name>string</name></type>
+    </param>
+</function>
+<function>
+    <name>malloc</name>
+    <attributes>    </attributes>
+    <type><name>u64</name></type>
+    <param>
+        <name>size</name>
+        <type><name>u64</name></type>
+    </param>
+</function>
+<function>
+    <name>main</name>
+    <attributes>    </attributes>
+    <type><name>void</name></type>
+    <param>
+        <name>test</name>
+        <type><name>u64</name></type>
+    </param>
+    <param>
+        <name>arg</name>
+        <type><name>u32</name></type>
+    </param>
+</function>
+<function>
+    <name>EFIentry</name>
+    <attributes>    </attributes>
+    <type><name>void</name></type>
+    <param>
+        <name>a</name>
+        <type><name>u64</name></type>
+    </param>
+    <param>
+        <name>b</name>
+        <type><name>u32</name></type>
+    </param>
+</function>
+<function>
+    <name>largeFunc</name>
+    <attributes>    </attributes>
+    <type><name>u64</name></type>
+    <param>
+        <name>a</name>
+        <type><name>u64</name></type>
+    </param>
+    <param>
+        <name>b</name>
+        <type><name>u64</name></type>
+    </param>
+    <param>
+        <name>c</name>
+        <type><name>u64</name></type>
+    </param>
+    <param>
+        <name>d</name>
+        <type><name>u256</name></type>
+    </param>
+</function>
+<function>
+    <name>malloc</name>
+    <attributes>    </attributes>
+    <type><name>u64</name></type>
+    <param>
+        <name>size</name>
+        <type><name>u64</name></type>
+    </param>
+</function>
+<function>
+    <name>calloc</name>
+    <attributes>    </attributes>
+    <type><name>u64</name></type>
+    <param>
+        <name>size</name>
+        <type><name>u64</name></type>
+    </param>
+</function>
+<function>
+    <name>zalloc</name>
+    <attributes>    </attributes>
+    <type><name>void</name></type>
+    <param>
+        <name>size</name>
+        <type><name>u64</name></type>
+    </param>
+</function>
+<function>
+    <name>error</name>
+    <attributes>    </attributes>
+    <type><name>u64</name></type>
+    <param>
+        <name>ec</name>
+        <type><name>u64</name></type>
+    </param>
+</function>
+<member>
+    <name>bootInfo</name>
+    <type><name>__bootinfo__</name></type>
+</member>
+<member>
+    <name>primePageTable</name>
+    <type><name>u64</name></type>
+</member>
+<member>
+    <name>strtest</name>
+    <type><name>char*</name></type>
+</member>

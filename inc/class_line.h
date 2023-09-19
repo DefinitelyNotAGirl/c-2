@@ -35,6 +35,7 @@ class token;
 
 class line
 {
+    friend void parse(std::vector<line> lines);
 private:
     uint64_t tpos = 0;
     
@@ -47,5 +48,6 @@ public:
     uint64_t leadingSpaces;
 
     token nextToken();
+    std::string restText();
     void stripTokens(uint64_t n);
 };

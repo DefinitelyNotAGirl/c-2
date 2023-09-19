@@ -32,7 +32,7 @@
 
 enum class scopeType : uint64_t
 {
-    INVALID,GLOBAL,FUNCTION,CLASS
+    INVALID,GLOBAL,FUNCTION,CLASS,NAMESPACE,ENUM,CONDITIONAL_BLOCK
 };
 
 class scope
@@ -40,11 +40,28 @@ class scope
 public:
     std::string name;
     bool isIndentBased = false;
+    bool templateMode = false;
     uint64_t leadingSpace = 0;
     std::vector<variable*> variables;
     scopeType t = scopeType::GLOBAL;
     std::vector<function*> functions;
-    scope* parent = nullptr;
+    scope* parent = nullptr;//source parent
+    scope* lparent = nullptr;//logical parent
+    type* cl = nullptr;//only filled if t==scopeType::CLASS
     function* func = nullptr;
     functionStorage* fstore = nullptr;//this should only be filled if t==scopeType::FUNCTION
+    std::vector<token> attribs;//should only be present for namespaces
+    std::vector<std::vector<std::string>*> extraCodeBlocks;
+    //name-counters
+    uint64_t ifCounter = 0;
+    uint64_t elseIfCounter = 0;
+    uint64_t elseCounter = 0;
+    uint64_t caseCounter = 0;
+    uint64_t whileCounter = 0;
+    uint64_t forCounter = 0;
+    uint64_t switchCounter = 0;
+    uint64_t conditionalCounter = 0;
+    uint64_t booleanReturnCounter = 0;
+    //misc
+    std::string reentrySymbol = "";
 };

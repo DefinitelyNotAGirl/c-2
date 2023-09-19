@@ -36,3 +36,13 @@ std::string getNewName()
 {
     return "__cpe2InternalName_"+std::to_string(NewNameCount++)+"__";
 }
+
+uint64_t getx86MSR(__register__ reg)
+{
+    using enum __register__;
+    switch(reg)
+    {
+        case(EFER): return 0xc0000080;
+    }
+    return 0;
+};

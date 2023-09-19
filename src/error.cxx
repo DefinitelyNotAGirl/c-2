@@ -2,7 +2,7 @@
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday July 30th 2023 4:55:06 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -43,6 +43,18 @@ static void genericErrorDisplay(token& t,uint64_t offset = 0)
     std::cout << "\033[31m^\033[0m" << std::endl;
 }
 
+void incompleteType(token& t)
+{
+    std::cout << "\033[31mERROR:\033[0m cannot declare variable with incomplete type \"" << t.text << "\"" << std::endl;
+    genericErrorDisplay(t);
+}
+
+void noSuchFile(token& t)
+{
+    std::cout << "\033[31mERROR:\033[0m cannot find file \"" << t.text << "\"" << std::endl;
+    genericErrorDisplay(t);
+}
+
 void compilerBug(std::string file, int line)
 {
     std::cout << "\033[31mERROR:\033[0m this is a bug, please open an issue at https://github.com/DefinitelyNotAGirl/c-2/issues and pass on the following information." << std::endl;
@@ -54,6 +66,13 @@ void compilerBug(std::string file, int line)
     std::cout << "branch: " << buildBRANCH << std::endl;
     std::cout << "##### debug information end   #####" << std::endl;
     note("please tag the issue as \"bug\", thanks!");
+    note("feel free to attach the source code that triggered this bug!");
+}
+
+void noSuchABI(token& t)
+{
+    std::cout << "\033[31mERROR:\033[0m ABI \"" << t.text << "\" not found" << std::endl;
+    error::genericErrorDisplay(t);
 }
 
 void noSuchType(token& t)
@@ -104,6 +123,28 @@ static std::string getTokenTypename(token& t)
             return "variable name";
         case(1):
             return "new unique identifier";
+        case(30):
+            return "opening round bracket";
+        case(31):
+            return "closing round bracket";
+        case(32):
+            return "opening sqaure bracket";
+        case(33):
+            return "closing square bracket";
+        case(34):
+            return "opening angle bracket";
+        case(35):
+            return "closing angle bracket";
+        case(36):
+            return "opening curly bracket";
+        case(37):
+            return "closing curly bracket";
+        case(40):
+            return "colon";
+        case(41):
+            return "semicolon";
+        case(42):
+            return "comma";
     }
     return "INVALID TOKEN TYPE";
 }
@@ -118,6 +159,15 @@ void expectedNewUnique(token& t)
 }
 
 void expectedTypename(token& t)
+{
+    std::cout   << "\033[31mERROR:\033[0m expected type name instead of " 
+                << getTokenTypename(t) 
+                << " \"" << t.text << "\"" 
+                << std::endl;
+    error::genericErrorDisplay(t);
+}
+
+void expectedTemplateArg(token& t)
 {
     std::cout   << "\033[31mERROR:\033[0m expected type name instead of " 
                 << getTokenTypename(t) 

@@ -47,6 +47,41 @@ void add(uint64_t src, __register__ dst)
     else if(src == 1)
         code->push_back(getIndent()+"inc %"+registerNAME(dst));
 }
+void add(variable* dst, variable* a, variable* b)
+{
+    using enum __register__;
+    pushRegSave();
+    __register__ dstReg = dst->reg;
+    if(dst->storage != storageType::REGISTER)
+    {
+        dstReg = fstore->getFreeRegister();
+        if(dstReg == invalid)
+        {
+            dstReg = rax;
+            saveRegister(dstReg);
+        }
+        mov(dst,dstReg);
+    }
+    mov(a,dstReg);
+    switch(b->storage)
+    {
+        case(storageType::REGISTER):
+            code->push_back(getIndent()+"add %"+registerNAME(b->reg)+", %"+registerNAME(dstReg));
+            break;
+        case(storageType::MEMORY):
+            code->push_back(getIndent()+"add "+location(b->reg,b->offset).expr()+", %"+registerNAME(dstReg));
+            break;
+        case(storageType::MEMORY_ABSOLUTE):
+            code->push_back(getIndent()+"add "+location(b->offset).expr()+", %"+registerNAME(dstReg));
+            break;
+        case(storageType::IMMEDIATE):
+            code->push_back(getIndent()+"add $"+std::to_string(b->immediateValue)+", %"+registerNAME(dstReg));
+            break;
+    }
+
+    restoreRegisters();
+    popRegSave();
+}
 
 //
 //
@@ -64,6 +99,41 @@ void sub(uint64_t src, __register__ dst)
         code->push_back(getIndent()+"sub $"+std::to_string(src)+", %"+registerNAME(dst));
     else if(src == 1)
         code->push_back(getIndent()+"dec %"+registerNAME(dst));
+}
+void sub(variable* dst, variable* a, variable* b)
+{
+    using enum __register__;
+    pushRegSave();
+    __register__ dstReg = dst->reg;
+    if(dst->storage != storageType::REGISTER)
+    {
+        dstReg = fstore->getFreeRegister();
+        if(dstReg == invalid)
+        {
+            dstReg = rax;
+            saveRegister(dstReg);
+        }
+        mov(dst,dstReg);
+    }
+    mov(a,dstReg);
+    switch(b->storage)
+    {
+        case(storageType::REGISTER):
+            code->push_back(getIndent()+"sub %"+registerNAME(b->reg)+", %"+registerNAME(dstReg));
+            break;
+        case(storageType::MEMORY):
+            code->push_back(getIndent()+"sub "+location(b->reg,b->offset).expr()+", %"+registerNAME(dstReg));
+            break;
+        case(storageType::MEMORY_ABSOLUTE):
+            code->push_back(getIndent()+"sub "+location(b->offset).expr()+", %"+registerNAME(dstReg));
+            break;
+        case(storageType::IMMEDIATE):
+            code->push_back(getIndent()+"sub $"+std::to_string(b->immediateValue)+", %"+registerNAME(dstReg));
+            break;
+    }
+
+    restoreRegisters();
+    popRegSave();
 }
 
 //
@@ -237,4 +307,50 @@ void div(__register__ left, __register__ right)
 }
 void div(__register__ left, uint64_t right)
 {
+}
+void div(variable* dst, variable* right, variable* left)
+{
+}
+
+//
+//
+// inc/dec
+//
+//
+void inc(variable* target)
+{
+    switch(target->storage)
+    {
+        case(storageType::REGISTER):
+            code->push_back(getIndent()+"inc %"+registerNAME(target->reg));
+            break;
+        case(storageType::MEMORY):
+            code->push_back(getIndent()+"inc "+location(target->reg,target->offset).expr());
+            break;
+        case(storageType::MEMORY_ABSOLUTE):
+            code->push_back(getIndent()+"inc "+location(target->offset).expr());
+            break;
+        default:
+            std::cout << "tf this shit?" << std::endl;
+            break;
+    }
+}
+
+void dec(variable* target)
+{
+    switch(target->storage)
+    {
+        case(storageType::REGISTER):
+            code->push_back(getIndent()+"dec %"+registerNAME(target->reg));
+            break;
+        case(storageType::MEMORY):
+            code->push_back(getIndent()+"dec "+location(target->reg,target->offset).expr());
+            break;
+        case(storageType::MEMORY_ABSOLUTE):
+            code->push_back(getIndent()+"dec "+location(target->offset).expr());
+            break;
+        default:
+            std::cout << "tf this shit?" << std::endl;
+            break;
+    }
 }

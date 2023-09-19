@@ -2,7 +2,7 @@
  * Created Date: Thursday August 17th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 8:15:19 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -31,6 +31,10 @@
 
 #include <compiler.h>
 
+#ifndef CPE2_SYMBOL_SCOPE_SEP
+    #define CPE2_SYMBOL_SCOPE_SEP "."
+#endif
+
 class mangler
 {
 public:
@@ -49,3 +53,5 @@ mangler* getMangler(std::string name);
 extern mangler* defaultMangler;
 
 extern std::vector<mangler*> manglers;
+
+extern uint64_t POINTER_SIZE;

@@ -30,9 +30,14 @@
 
 #include <common.h>
 #include <compiler.h>
+#include <codegen.h>
 #include <error.h>
 #include <bits.h>
 #include <cmath>
+
+void printToken(token& t);
+
+std::string getFunctionExpression(std::string name,std::vector<variable*> args);
 
 litop* getLitop(std::string name)
 {
@@ -44,10 +49,20 @@ litop* getLitop(std::string name)
 
 variable* resolveIMM(token& t)
 {
+    if(options::ddebug)
+        std::cout << "resolveIMM: " << t.text << std::endl;
     uint64_t value = 0;
     uint64_t len = t.text.length();
     bool checkLitop = false;
     uint64_t i = 2;
+    if(t.text == "")
+    {
+        variable* ret = new variable;
+        ret->immediateValue = 0;
+        ret->storage = storageType::IMMEDIATE;
+        ret->dataType = defaultUnsignedIntegerType;
+        return ret;
+    }
     switch(t.text[0])
     {
         case('0'):
@@ -227,19 +242,70 @@ variable* resolveIMM(token& t)
                 }
                 break;
             }
-        case('"'):
+        case('"'):{
             //string
+            std::string strSym = getNewName();
+            DataCode.push_back(getIndent()+strSym+"_data:");
+            uint64_t tpos = 1;
+            while(1)
+            {
+                switch(t.text[tpos])
+                {
+                    case('"'):
+                        DataCode.push_back(getIndent()+"\t.byte 0");
+                        if(options::asmVerbose >= 2){
+                            DataCode.back()+=" # terminate string";
+                        }
+                        goto endLoop1;
+                    case('\\'):
+                        tpos++;
+                        switch(t.text[tpos])
+                        {
+                            case('"'):
+                                DataCode.push_back(getIndent()+"\t.byte "+std::to_string((uint8_t)t.text[tpos]));
+                                if(options::asmVerbose >= 2){
+                                    DataCode.back()+=" # '";
+                                    DataCode.back().push_back(t.text[tpos]);
+                                    DataCode.back()+="'";
+                                }
+                                tpos++;
+                                break;
+                        }
+                        break;
+                    case(0x00):
+                        goto endLoop1;
+                    default:
+                        DataCode.push_back(getIndent()+"\t.byte "+std::to_string((uint8_t)t.text[tpos]));
+                        if(options::asmVerbose >= 2){
+                            DataCode.back()+=" # '";
+                            DataCode.back().push_back(t.text[tpos]);
+                            DataCode.back()+="'";
+                        }
+                        tpos++;
+                }
+            }
+            endLoop1:;
+            variable* tvar = new variable;
+            tvar->storage = storageType::SYMBOL;
+            tvar->dataType = getType(defaultCharType->name+"*");
+            tvar->name = strSym;
+            tvar->symbol = strSym+"_data";
+            return tvar;
             break;
+            }
         default:
             if(isdigit(t.text[0]))
                 goto defFormatNumberRes;
+            else
+                return nullptr;
+            break;
 
         //
         // finish up numeric values
         //
         breakResNumeric:;
         {
-            type* vtype = getType("u64");
+            type* vtype = defaultUnsignedIntegerType;
             if(!checkLitop)
                 goto skipLitopCheck;
             {
@@ -303,18 +369,25 @@ void makeNewToken(std::string& working, uint64_t i, std::vector<token>& tokens,t
 
 variable* resolve(token& t)
 {
+    if(options::ddebug)
+    {
+        std::cout << "resolving token: " << t.text << std::endl;
+        printToken(t);
+    }
+    if(t.type == 6)
+    {
+        t.text = "\""+t.text+"\"";
+    }
     std::vector<token> tokens;
     std::string working = "";
-    if((t.text.back() >= 0x21 && t.text.back() <= 0x2F) || (t.text.back() >= 0x3c && t.text.back() <= 0x3e) || (t.text.back() == 0x5e))
+    token at = t.Line->nextToken();
+    token lt = t;
+    while(at.type != 0 && at.type != 41)
     {
-        token at;
-        appendNextToken:;
+        t.text += at.text;
+        //printToken(at);
+        lt = at;
         at = t.Line->nextToken();
-        if(at.type != 0)
-        {
-            t.text += at.text;
-            goto appendNextToken;
-        }
     }
 
     if(options::ddebug)
@@ -327,7 +400,32 @@ variable* resolve(token& t)
             case(0x00):
             case(')'):
                 goto endTokenCollector;
-
+            case('"'):
+                working.push_back(t.text[i++]);
+                while(1)
+                {
+                    switch(t.text[i])
+                    {
+                        case('"'):
+                            working.push_back(t.text[i++]);
+                            goto endLoop1;
+                        case('\\'):
+                            i++;
+                            switch(t.text[i])
+                            {
+                                case('"'):
+                                    working.push_back(t.text[i++]);
+                                    break;
+                            }
+                            break;
+                        case(0x00):
+                            goto endLoop1;
+                        default:
+                            working.push_back(t.text[i++]);
+                    }
+                }
+                endLoop1:;
+                break;
             case('+'):
                 switch(t.text[i+1])
                 {
@@ -535,23 +633,41 @@ variable* resolve(token& t)
                 break;
             case('('):{
                 //collect expression in parentheses
-                i++;
-                std::string expr;
-                while(t.text[i] != ')' && t.text[i]!= 0x00 && i<t.text.length())
+                //std::cout << "collecting parentheses" << std::endl;
+                function* func = getFunction(working);
+                if(func != nullptr)
                 {
-                    expr.push_back(t.text[i]);
-                    i++;
+                    std::string expr;
+                    //std::cout << "collecting function call" << std::endl;
+                    while(t.text[i] != ')' && t.text[i]!= 0x00 && i<t.text.length())
+                    {
+                        expr.push_back(t.text[i]);
+                        i++;
+                    }
+                    if(t.text[i] == ')')
+                        expr.push_back(')');
+                    working+=expr;
                 }
-                token et;
-                et.text = expr;
-                et.col = t.col;
-                et.Line = t.Line;
-                et.type = t.type;
-                variable* rv = resolve(et);
-                if(rv != nullptr)
+                else
                 {
-                    if(rv->storage == storageType::IMMEDIATE)
-                        working+=std::to_string(rv->immediateValue);
+                    i++;
+                    std::string expr;
+                    while(t.text[i] != ')' && t.text[i]!= 0x00 && i<t.text.length())
+                    {
+                        expr.push_back(t.text[i]);
+                        i++;
+                    }
+                    token et;
+                    et.text = expr;
+                    et.col = t.col;
+                    et.Line = t.Line;
+                    et.type = t.type;
+                    variable* rv = resolve(et);
+                    if(rv != nullptr)
+                    {
+                        if(rv->storage == storageType::IMMEDIATE)
+                            working+=std::to_string(rv->immediateValue);
+                    }
                 }
                 break;
             }
@@ -582,18 +698,83 @@ variable* resolve(token& t)
     variable* right = nullptr;
     for(uint64_t i=1;i<tokens.size()-1;i+=2)
     {
-        if(tokens[i].type == 3)
+        if(
+            tokens[i].type == 3
+            || tokens[i].type == 6
+            || tokens[i].type == 7
+            || tokens[i].type == 11
+            || tokens[i].type == 1
+        )
         {
+            token& __leftHand = tokens[i-1];
             if(left == nullptr)
             {
-                token& __leftHand = tokens[i-1];
+                __leftHand = tokens[i-1];
+                //std::cout << "lh: " << __leftHand.text << std::endl;
                 left = resolveIMM(__leftHand);
             }
             token& __rightHand = tokens[i+1];
+            //PRINT_DEBUG
             right = resolveIMM(__rightHand);
             if(left == nullptr || right == nullptr)
             {
                 //cant calculate at compile time
+                std::vector<variable*> args;
+                if(left == nullptr)
+                    left = getVariable(__leftHand.text);
+                if(left == nullptr)
+                {
+                    if(__leftHand.text.substr(__leftHand.text.size()-3,__leftHand.text.size()) == "++")
+                    {
+                        //TODO: shedule operator++ to be called
+                        left = getVariable(__leftHand.text.substr(0,__leftHand.text.size()-3));
+                    }
+                }
+                if(left == nullptr)
+                {
+                    if(__leftHand.text.back() == ')')
+                    {
+                        std::string fname = __leftHand.text.substr(0,__leftHand.text.find_first_of('(')-1);
+                        __leftHand.text = __leftHand.text.substr(__leftHand.text.find_first_of('('),__leftHand.text.size()-1);
+                        std::cout << "left over:"  << __leftHand.text << std::endl;
+                    }
+                }
+                if(left == nullptr)
+                    std::cout << "ERROR: cant resolve expression \"" << __leftHand.text << "\"" << std::endl;
+                if(right == nullptr)
+                {
+                    right = getVariable(__rightHand.text);
+                    if(right == nullptr)
+                    {
+                        if(__rightHand.text.substr(__rightHand.text.size()-3,__rightHand.text.size()) == "++")
+                        {
+                            //TODO: shedule operator++ to be called
+                            right = getVariable(__rightHand.text.substr(0,__rightHand.text.size()-3));
+                        }
+                    }
+                    if(right == nullptr)
+                        std::cout << "ERROR: cant resolve expression \"" << __rightHand.text << "\"" << std::endl;
+                }
+                if(options::ddebug) {
+                    std::cout << "left: " << std::hex << (void*)left << std::endl;
+                    std::cout << "right: " << std::hex << (void*)right << std::endl;
+                }
+                if(tokens[i].text != "++")
+                    args.push_back(right);
+                args.push_back(left);
+                function* func = getFunction("operator"+tokens[i].text, args);
+				if (func != nullptr) {
+					if (func->isDeprecated)
+						warn(getWarning("deprecated"), t.Line,
+							 "call to deprecated function \"" +
+								 func->name + "\"");
+					if (options::asmVerbose >= 3)
+						currentScope->func->code.push_back(
+							getIndent() + "# " + t.Line->text);
+                    if(options::ddebug)
+                        std::cout << "calling function " << getFunctionExpression(func->name,args) << std::endl;
+					left = call(func, args);
+				}
             }
             else
             {
@@ -628,10 +809,81 @@ variable* resolve(token& t)
         }
     }
     if(tokens.size() == 1)
-        left = resolveIMM(tokens[0]);
+    {
+        token& __leftHand = tokens[0];
+        //PRINT_DEBUG
+        //std::cout << "lefthand: " << __leftHand.text << std::endl;
+        left = resolveIMM(__leftHand);
+        if(left == nullptr)
+        {
+            if(__leftHand.text[0] == '\"')
+                left = resolveIMM(__leftHand);
+        }
+        if(left == nullptr)
+        {
+            left = getVariable(__leftHand.text);
+        }
+        if(left == nullptr)
+        {
+            if(__leftHand.text.back() == ')')
+            {
+                std::string fname = __leftHand.text.substr(0,__leftHand.text.find_first_of('('));
+                __leftHand.text = __leftHand.text.substr(__leftHand.text.find_first_of('(')+1,__leftHand.text.size());
+                __leftHand.text.pop_back();
+                std::vector<variable*> args;
+                //std::cout << "left over: "  << __leftHand.text << std::endl;
+                //std::cout << "fname: " << fname << std::endl;
+
+                std::string working;
+                for(char I : __leftHand.text)
+                {
+                    switch(I)
+                    {
+                        case(','):{
+                            token et;
+                            et.col = 0;
+                            et.Line = __leftHand.Line;
+                            et.text = working;
+                            args.push_back(resolve(et));
+                            working = "";
+                            break;
+                        }
+                        default:
+                            working.push_back(I);
+                            break;
+                    }
+                }
+                token et;
+                et.col = 0;
+                et.Line = __leftHand.Line;
+                et.text = working;
+                args.push_back(resolve(et));
+                function* func = getFunction(fname,args);
+                if(options::ddebug)
+                    std::cout << "calling function " << getFunctionExpression(fname,args) << std::endl;
+                left = call(func,args);
+                //std::cout << "left dt: " <<std::hex<<(void*) left->dataType << std::endl;
+            }
+        }
+        //std::cout << "blub blub immediate blub blub" << std::endl;
+    }
+    else
+    {
+        //std::cout << "\"cum!\" - viper" << std::endl;
+        //std::cout << "tokens size: " <<std::dec<< tokens.size() << std::endl;
+        //for(token& i : tokens)
+        //{
+        //    printToken(i);
+        //}
+    }
 
     if(options::ddebug)
-        std::cout << "result: " << left->immediateValue << std::endl;
+    {
+        //if(left != nullptr)
+        //    std::cout << "result: " << left->immediateValue << std::endl;
+        //else
+        //    std::cout << "no result, left == nullptr" << std::endl;
+    }
 
     return left;
 }

@@ -2,7 +2,7 @@
  * Created Date: Thursday August 17th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 7:46:56 pm
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -138,6 +138,9 @@ namespace __mangler__
             {
                 case('*'):
                     res+="POINTER";
+                    break;
+                case('&'):
+                    res+="R"+std::to_string(t->size);
                     break;
                 default:
                     res.push_back(i);

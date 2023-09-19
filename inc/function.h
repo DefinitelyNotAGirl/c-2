@@ -2,7 +2,7 @@
  * Created Date: Wednesday August 2nd 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday August 2nd 2023 2:57:40 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -64,6 +64,7 @@ public:
     std::vector<type*> parameters;
     std::vector<variable*> vparams;
     std::vector<std::string> code;
+    ABI* abi = nullptr;
     functionStorage* fstore;
 
     bool isPrimitive = false;
@@ -71,6 +72,7 @@ public:
     bool primitiveInPlace = false;
     bool primitiveFloat = false;
     bool isDeprecated = false;
+    bool noReturn = false;
     bool noDoc = false;
     bool doExport = false;
 

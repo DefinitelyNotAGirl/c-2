@@ -75,9 +75,11 @@ std::vector<line> getLines(std::string fname)
         std::cerr << "ERROR: could not open input file " << fname << std::endl;
         exit(-1);
     }
+    //PRINT_DEBUG
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
+    //PRINT_DEBUG
 
     char* content__ = malloc(fsize + 1);
     fread(content__, fsize, 1, f);
@@ -205,12 +207,12 @@ std::vector<line> getLines(std::string fname)
                 case('/'):
                     switch(__content[i+1])
                     {
-                        case('/'):
-                            i+=2;
-                            whitespace = 0;
-                            while(__content[i] != '\n' && __content[i] != 0x00)
-                                i++;
-                            break;
+                        //case('/'):
+                        //    i+=2;
+                        //    whitespace = 0;
+                        //    while(__content[i] != '\n' && __content[i] != 0x00)
+                        //        i++;
+                        //    break;
                         case('*'):
                             i+=2;
                             whitespace = 0;
@@ -253,7 +255,6 @@ std::vector<line> getLines(std::string fname)
     if(options::ddebug)
         std::cout << "lines: " << std::endl;
     std::vector<line> lines;
-
     {
         char terminatorSEMI;
         char terminatorLINE;
@@ -269,10 +270,22 @@ std::vector<line> getLines(std::string fname)
         terminatorCOLO = ':';
         terminatorSCOP = '{';
         terminatorSCCL = '}';
+        if(startsWith(content,"//"))
+            terminatorLINE = '\n';
         if(startsWith(content,"#"))
             terminatorLINE = '\n';
-        if(startsWith(content,"class"))
+        if(startsWith(content,"template"))
+            terminatorLINE = '\n';
+        if (content.find("class") != std::string::npos) 
+        {
             terminatorCOLO = ';';
+            terminatorLINE = '\n';
+        }
+        if (content.find("namespace") != std::string::npos) 
+        {
+            terminatorCOLO = ';';
+            terminatorLINE = '\n';
+        }
 
         std::string lineText;
         if(content[0] == '\n')
@@ -289,14 +302,20 @@ std::vector<line> getLines(std::string fname)
                 && content[i] != terminatorSCCL
                 && content[i] != 0x00)
             {
-                lineText.push_back(content[i]);
+                if(content[i] != '\n')
+                    lineText.push_back(content[i]);
+                else
+                    lineText.push_back(' ');
                 i++;
             }
             if(content[i] == 0x00)
                 loopExit = true;
             else
             {
-                lineText.push_back(content[i]);
+                if(content[i] != '\n')
+                    lineText.push_back(content[i]);
+                else
+                    lineText.push_back(' ');
                 i++;
             }
             strPopFront(content,lineText.length());
@@ -326,15 +345,33 @@ std::vector<line> getLines(std::string fname)
             line L;
             L.lineNum = Line;
             //std::cout << "leading space: " << leadingSpace << std::endl;
+
+            bool wasComment = false;
+            if(startsWith(lineText,"//"))
+            {
+                lineText = "#outcom " + lineText.substr(2,lineText.length()-3);
+                wasComment = true;
+            }
             L.text = lineText;
             L.file = fname;
             L.leadingSpaces = leadingSpace;
-            lines.push_back(L);
+            if(wasComment)
+            {
+                if(options::keepComments)
+                    lines.push_back(L);
+            }
+            else
+                lines.push_back(L);
         }
 
         if(!loopExit)
             goto loopStart;
     }
+
+    line endl;
+    endl.leadingSpaces = 0;
+    endl.text = "#cum";
+    lines.push_back(endl);
 
     return lines;
 }

@@ -30,12 +30,13 @@
 #pragma once
 
 #include <common.h>
+#include <compiler.h>
 #define defaultSysRoot "/usr/local"
 
 extern std::list<std::string> sourceFiles;
 extern uint64_t defaultNumberBase;
 extern uint64_t tabLength;
-extern uint64_t defaultABI;
+extern ABI* defaultABI;
 extern bool asmDebugComments;
 extern char c_alert;
 extern char c_backspace;
@@ -47,6 +48,7 @@ extern char c_horizontaltab;
 extern char c_verticaltab;
 extern std::string objOut;
 extern std::string asmOut;
+extern std::vector<std::string> includeDirs;
 
 namespace options
 {
@@ -60,6 +62,7 @@ namespace options
     extern bool fvariableinfo;
     extern int fcpl;
     extern int asmVerbose;
+    extern bool keepComments;
 
     //-m******
     extern bool mnortti;
@@ -75,4 +78,7 @@ namespace options
     extern bool as;
     extern std::string output;
     extern std::string SysRoot;
+
+    extern std::string buildDir;
+    extern std::string docDir;
 }

@@ -41,10 +41,10 @@ std::string location::expr()
     std::string res;
     if(this->base != __register__::invalid)
     {
-        res = "%"+registerNAME(this->base);
-        if(!EXPR_GETBIT_63(this->offset))
-            this->offset--;
-        this->offset^=-1;
+        res = "(%"+registerNAME(this->base);
+        //if(!EXPR_GETBIT_63(this->offset))
+        //    this->offset--;
+        //this->offset^=-1;
         if(EXPR_GETBIT_63(this->offset))
             res+="-";
         else
@@ -53,7 +53,7 @@ std::string location::expr()
         std::string num = std::to_string((int64_t)this->offset);
         if(num[0] == '-')
             num = num.substr(1,num.length());
-        res+=num;
+        res+=num+")";
     }
     else
         res+=std::to_string(this->offset);

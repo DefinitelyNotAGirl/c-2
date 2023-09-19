@@ -36,5 +36,3 @@ litop KiB mul 1024;
 litop G mul 1000000000;
 litop M mul 1000000;
 litop K mul 1000;
-litop fuk mul 100+500*600*(120+512/69);
-litop fuc mul 100+500*600*(120+512/69)*2;

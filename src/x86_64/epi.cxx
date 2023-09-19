@@ -31,12 +31,13 @@
 #include <compiler.h>
 #include "master.h"
 #include <util.h>
+#include <mangling.h>
 
 static void genFunctionEpilogueSysV64(std::vector<std::string>& lines, scope* sc)
 {
     using enum __register__;
 
-    lines.push_back(getIndent()+sc->name+"epilogue:");
+    lines.push_back(getIndent()+sc->name+CPE2_SYMBOL_SCOPE_SEP+"epilogue:");
 
     restoreRegisters();
     popRegSave();

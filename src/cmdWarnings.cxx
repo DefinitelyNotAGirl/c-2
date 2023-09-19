@@ -37,6 +37,14 @@ void enableWarningSet(std::string name)
         enableWarning("unused-variable",name);
         enableWarning("unused-class",name);
     }
+    else if(name == "stack")
+    {
+        disableWarningSet("stack-pointer");
+    }
+    else if(name == "stack-pointer")
+    {
+        disableWarning("stack-pointer-rsp-storage");
+    }
     else if(name == "cpl")
     {
         enableWarning("cpl-registers",name);
@@ -59,6 +67,14 @@ void disableWarningSet(std::string name)
     {
         disableWarning("unused-variable");
         disableWarning("unused-class");
+    }
+    else if(name == "stack")
+    {
+        disableWarningSet("stack-pointer");
+    }
+    else if(name == "stack-pointer")
+    {
+        disableWarning("stack-pointer-rsp-storage");
     }
     else if(name == "cpl")
     {

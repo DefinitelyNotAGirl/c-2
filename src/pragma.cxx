@@ -34,12 +34,12 @@
 std::stack<uint64_t> stack_defaultNumberBase;
 std::stack<uint64_t> stack_tabLength;
 std::stack<std::vector<warning*>> pragmaStackWarnings;
-std::stack<uint64_t> stack_defaultABI;
+std::stack<ABI*> stack_defaultABI;
 std::stack<bool> stack_fclasslayout;
 std::stack<bool> stack_ffunctioninfo;
 std::stack<bool> stack_fvariableinfo;
 std::stack<bool> stack_fcpl;
-std::stack<bool> stack_asmVerbose;
+std::stack<int> stack_asmVerbose;
 std::stack<bool> stack_mnortti;
 std::stack<bool> stack_mnorodata;
 std::stack<bool> stack_dprintTokens;

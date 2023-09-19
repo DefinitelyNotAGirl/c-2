@@ -2,7 +2,7 @@
  * Created Date: Sunday August 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday August 13th 2023 3:22:01 pm
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -50,6 +50,17 @@ static formatFile* getFile(uint64_t fID)
 
 static void format_addClass(uint64_t fID, type* t)
 {
+    std::cout << "##############" << std::endl;
+    std::cout << "class: " << t->name << std::endl;
+    std::cout << "mangled name: " << t->mangledName << std::endl;
+    std::cout << "size: " << t->size << std::endl;
+    if(t->members.size() > 0)
+    {
+        std::cout << "members: " << std::endl;
+        for(variable& m : t->members)
+            std::cout << "    " << m.dataType->name << " " << m.name << std::endl;
+    }
+    std::cout << std::endl;
 }
 
 static void format_addFunction(uint64_t fID, function* func)
@@ -57,18 +68,7 @@ static void format_addFunction(uint64_t fID, function* func)
     std::cout << "##############" << std::endl;
     std::cout << "function: " << func->name << std::endl;
     std::cout << "symbol: " << func->symbol << std::endl;
-    std::cout << "ABI: ";
-    switch(func->fstore->ABI)
-    {
-        case(1):
-            std::cout << "SystemV amd64" << std::endl;
-            break;
-        case(2):
-            std::cout << "Microsoft x64" << std::endl;
-            break;
-        default:
-            std::cout << "Unknown" << std::endl;
-    }
+    std::cout << "ABI: " << func->abi->name << std::endl;
     std::cout << "return type: " << func->returnType->name << std::endl;
     if(func->parameters.size() > 0)
     {
@@ -141,6 +141,7 @@ constructor static void format_init()
     format f;
     f.name = "stdout";
     f.extension = "stdout";
+    f.desc = "extensive information printed to stdout";
     f.addClass = &format_addClass;
     f.addFunction = &format_addFunction;
     f.addScope = &format_addScope;

@@ -2,7 +2,7 @@
  * Created Date: Thursday July 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 18th 2023 4:48:23 pm
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -33,16 +33,14 @@
 #define test4 void pasted(u64 arg, u16 arg2);
 
 #include "example/ex1.h2"
+#include "example/bootinfo.h2"
 
 #pragma cpl 0
 
 #pragma push
 #pragma warning disable memory-absolute
-/**
-    @desc
-*/
-volatile noalloc (6MiB) u64 bootInfo;
-volatile noalloc (0x400000) u64 primePageTable;
+export volatile noalloc (6MiB) __bootinfo__ bootInfo;
+export volatile noalloc (0x400000) u64 primePageTable;
 #pragma pop
 
 /**
@@ -98,16 +96,16 @@ ABI-SYSTEMVamd64 u64 largeFunc(u64 a,u64 b,u64 c, u256 d):
     u64 _17 = i++;
 
 char* strtest = "Hello, world!";
-mangling-c u64 malloc(u64 size):
+export mangling-c u64 malloc(u64 size):
     u64 nsize = 2MiB;
     return nsize;
 
-mangling-c++ u64 calloc(u64 size):
+export u64 calloc(u64 size):
     u64 ksize;
     if(size > 0):
         ksize = 32KiB;
     else:
-        ksize = 64KiB;
+        ksize = 64M;
     return ksize;
 
 noop void zalloc (u64 size);

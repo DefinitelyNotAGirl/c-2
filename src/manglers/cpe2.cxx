@@ -2,7 +2,7 @@
  * Created Date: Thursday August 17th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 8:13:39 am
+ * Last Modified: Thursday August 17th 2023 9:04:51 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -37,7 +37,11 @@ namespace __mangler__
 
     static void mangleFunction(function* func)
     {
-        std::string symbol = currentScope->name + func->returnType->mangledName + "_";
+        std::string symbol;
+        if(currentScope->parent != nullptr)
+            symbol = currentScope->name +CPE2_SYMBOL_SCOPE_SEP+ func->returnType->mangledName + "_";
+        else
+            symbol = func->returnType->mangledName + "_";
         for(char i : func->name)
         {
             switch(i)
@@ -86,7 +90,11 @@ namespace __mangler__
 
     static void mangleVariable(variable* var)
     {
-        std::string symbol = currentScope->name + var->dataType->mangledName + "_";
+        std::string symbol;
+        if(currentScope->parent != nullptr)
+            symbol = currentScope->name +CPE2_SYMBOL_SCOPE_SEP+ var->dataType->mangledName + "_";
+        else
+            symbol = var->dataType->mangledName + "_";
         for(char i : var->name)
         {
             switch(i)
@@ -139,7 +147,10 @@ namespace __mangler__
             switch(i)
             {
                 case('*'):
-                    res+="POINTER";
+                    res+="P"+std::to_string(t->size);
+                    break;
+                case('&'):
+                    res+="R"+std::to_string(t->size);
                     break;
                 default:
                     res.push_back(i);

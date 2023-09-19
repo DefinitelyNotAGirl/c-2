@@ -55,6 +55,6 @@ public:
 
     __register__ getFreeRegister();
 
-    void setStorage(variable* var);
+    void setStorage(function* func, variable* var);
     void setArgumentStorage(variable* var);
 };
