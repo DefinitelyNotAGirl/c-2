@@ -46,6 +46,10 @@ public:
     std::vector<type*> supertypes;
     type* valueType = nullptr; //this is for pointers, for char* this would point to char for example
     uint64_t regMode = 1;//0: do not store in register, 1: integer registers, 2: floating point registers
+    uint64_t dwarfID = 0;//DWARF type id
+    type* alias = nullptr;
+    std::string __declared_file;
+    uint64_t __declared_line;
 
     bool nodoc = false;
     bool deprecated = false;

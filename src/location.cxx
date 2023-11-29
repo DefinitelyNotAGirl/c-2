@@ -36,9 +36,36 @@ location::location(__register__ base, uint64_t offset)
     :base(base),offset(offset){}
 location::location(uint64_t offset)
     :base(__register__::invalid),offset(offset){}
+location::location(variable* v)
+    :v(v){}
+
+static std::string exprFV(variable* v)
+{
+    using enum storageType;
+    std::string expr;
+    //std::cout << "exprFV: " << v->name << std::endl;
+    switch(v->storage)
+    {
+        case(REGISTER):
+            return "%"+registerNAME(v->reg,v->dataType->size);
+        case(MEMORY):
+            if(v->offsetType == REGISTER)
+                //return registerNAME(v->offsetReg)+"(%"+registerNAME(v->reg)+")";
+                return "(%"+registerNAME(v->reg)+",%"+registerNAME(v->offsetReg)+")";
+            else if(v->offsetType == IMMEDIATE)
+                return intToString(v->offset)+"(%"+registerNAME(v->reg)+")";
+            break;
+        case(MEMORY_ABSOLUTE):
+            return intToString(v->offset);
+        case(SYMBOL):
+            return v->symbol;
+    }
+    return "INVALID EXPRESSION";
+}
 
 std::string location::expr()
 {
+    if(this->v)return exprFV(this->v);
     std::string res = "";
     if(this->base != __register__::invalid)
     {
@@ -50,13 +77,13 @@ std::string location::expr()
         //else
         //    res+="+";
         //res+="$";
-        std::string num = std::to_string((int64_t)this->offset);
+        std::string num = intToString((int64_t)this->offset);
         if(num[0] == '-')
             num = num.substr(1,num.length());
         res+=num;
         res+="(%"+registerNAME(this->base)+")";
     }
     else
-        res+=std::to_string(this->offset);
+        res+=intToString(this->offset);
     return res;
 }

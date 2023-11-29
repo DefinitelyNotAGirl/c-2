@@ -34,7 +34,7 @@
 #include <list>
 #include <iostream>
 #define packed __attribute__((packed))
-#define PRINT_DEBUG std::cout << __FILE__  << ":" <<std::dec<< __LINE__ << std::endl;
+#define PRINT_DEBUG std::cout << "\033[37m[DEBUG]\033[0m " __FILE__  << ":" <<std::dec<< __LINE__ << std::endl;
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>

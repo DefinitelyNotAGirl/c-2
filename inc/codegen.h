@@ -47,13 +47,18 @@ class location
 public:
     location(__register__ base, uint64_t offset);
     location(uint64_t offset);
-    __register__ base;
-    uint64_t offset;
+    location(variable* v);
+    __register__ base = __register__::invalid;
+    uint64_t offset = 0;
+    variable* v = nullptr;
 
     std::string expr();
 };
 
 extern arch* currentArch;
+extern int ANB;//assembly output number base
+void setANB(int n);
+void popANB();
 
 extern uint64_t ARCH_REGISTER_MASK;
 
@@ -64,11 +69,12 @@ void genFunctionPrologue(std::vector<std::string>& lines, scope* sc);
 
 void codeGenUpdateFuction();
 
-variable* call(function* func,std::vector<variable*> args);
+variable* call(function* func,std::vector<variable*>& args);
 inline variable* primitiveCall(function* func,std::vector<variable*> args){return currentArch->primitiveCall(func,args);}
 void placeSymbol(function* func,std::string symbol);
 void placeSymbol(std::string symbol);
 void jump(function* func, std::string symbol);
+void jump(std::string symbol);
 inline void CodePlaceSymbol(std::string symbol){currentArch->CodePlaceSymbol(symbol);}
 inline void jmp(std::string symbol){currentArch->jmp(symbol);}
 inline void putComment(std::string comment){currentArch->putComment(comment);}

@@ -32,7 +32,7 @@
 
 enum class scopeType : uint64_t
 {
-    INVALID,GLOBAL,FUNCTION,CLASS,NAMESPACE,ENUM,CONDITIONAL_BLOCK
+    INVALID,GLOBAL,FUNCTION,CLASS,NAMESPACE,ENUM,CONDITIONAL_BLOCK,LOGICAL,DUMMY
 };
 
 class scope
@@ -52,6 +52,7 @@ public:
     functionStorage* fstore = nullptr;//this should only be filled if t==scopeType::FUNCTION
     std::vector<token> attribs;//should only be present for namespaces
     std::vector<std::vector<std::string>*> extraCodeBlocks;
+    std::string lastReentrySym = "";
     //name-counters
     uint64_t ifCounter = 0;
     uint64_t elseIfCounter = 0;
@@ -62,6 +63,7 @@ public:
     uint64_t switchCounter = 0;
     uint64_t conditionalCounter = 0;
     uint64_t booleanReturnCounter = 0;
+    uint64_t strlenCounter = 0;
     //misc
     std::string reentrySymbol = "";
 };

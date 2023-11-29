@@ -3,12 +3,14 @@ ARCHDIR=architectures
 FORMATDIR=formats
 MANGLERDIR=manglers
 ABIDIR=ABIs
+SYSDIR=systems
 
 SOURCE_asm_asm=$(wildcard src/*.asm)
 SOURCE_asm_asm+=$(wildcard src/$(ARCHDIR)/*.asm)
 SOURCE_asm_asm+=$(wildcard src/$(FORMATDIR)/*.asm)
 SOURCE_asm_asm+=$(wildcard src/$(MANGLERDIR)/*.asm)
 SOURCE_asm_asm+=$(wildcard src/$(ABIDIR)/*.asm)
+SOURCE_asm_asm+=$(wildcard src/$(SYSDIR)/*.asm)
 OBJECTS_asm_asm=$(patsubst src/%.asm,build/%.o,$(SOURCE_asm_asm))
 DEPFILES_asm_asm=$(patsubst src/%.asm,build/%.d,$(SOURCE_asm_asm))
 SOURCE_asm_s=$(wildcard src/*.s)
@@ -16,6 +18,7 @@ SOURCE_asm_s+=$(wildcard src/$(ARCHDIR)/*.s)
 SOURCE_asm_s+=$(wildcard src/$(FORMATDIR)/*.s)
 SOURCE_asm_s+=$(wildcard src/$(MANGLERDIR)/*.s)
 SOURCE_asm_s+=$(wildcard src/$(ABIDIR)/*.s)
+SOURCE_asm_s+=$(wildcard src/$(SYSDIR)/*.s)
 OBJECTS_asm_s=$(patsubst src/%.s,build/%.o,$(SOURCE_asm_s))
 DEPFILES_asm_s=$(patsubst src/%.s,build/%.d,$(SOURCE_asm_s))
 SOURCE_cpp_cpp=$(wildcard src/*.cpp)
@@ -23,6 +26,7 @@ SOURCE_cpp_cpp+=$(wildcard src/$(ARCHDIR)/*.cpp)
 SOURCE_cpp_cpp+=$(wildcard src/$(FORMATDIR)/*.cpp)
 SOURCE_cpp_cpp+=$(wildcard src/$(MANGLERDIR)/*.cpp)
 SOURCE_cpp_cpp+=$(wildcard src/$(ABIDIR)/*.cpp)
+SOURCE_cpp_cpp+=$(wildcard src/$(SYSDIR)/*.cpp)
 OBJECTS_cpp_cpp=$(patsubst src/%.cpp,build/%.o,$(SOURCE_cpp_cpp))
 DEPFILES_cpp_cpp=$(patsubst src/%.cpp,build/%.d,$(SOURCE_cpp_cpp))
 SOURCE_cpp_cxx=$(wildcard src/*.cxx)
@@ -30,6 +34,7 @@ SOURCE_cpp_cxx+=$(wildcard src/$(ARCHDIR)/*.cxx)
 SOURCE_cpp_cxx+=$(wildcard src/$(FORMATDIR)/*.cxx)
 SOURCE_cpp_cxx+=$(wildcard src/$(MANGLERDIR)/*.cxx)
 SOURCE_cpp_cxx+=$(wildcard src/$(ABIDIR)/*.cxx)
+SOURCE_cpp_cxx+=$(wildcard src/$(SYSDIR)/*.cxx)
 OBJECTS_cpp_cxx=$(patsubst src/%.cxx,build/%.o,$(SOURCE_cpp_cxx))
 DEPFILES_cpp_cxx=$(patsubst src/%.cxx,build/%.d,$(SOURCE_cpp_cxx))
 SOURCE_c_c=$(wildcard src/*.c)
@@ -37,6 +42,7 @@ SOURCE_c_c+=$(wildcard src/$(ARCHDIR)/*.c)
 SOURCE_c_c+=$(wildcard src/$(FORMATDIR)/*.c)
 SOURCE_c_c+=$(wildcard src/$(MANGLERDIR)/*.c)
 SOURCE_c_c+=$(wildcard src/$(ABIDIR)/*.c)
+SOURCE_c_c+=$(wildcard src/$(SYSDIR)/*.c)
 OBJECTS_c_c=$(patsubst src/%.c,build/%.o,$(SOURCE_c_c))
 DEPFILES_c_c=$(patsubst src/%.c,build/%.d,$(SOURCE_c_c))
 
@@ -47,10 +53,10 @@ ASARGS=
 all: compiler
 
 build/%.o: src/%.asm
-	@$(AS) $(ASARGS) -M -MD -c -o $@ $<
+	@$(AS) $(ASARGS) -MD -c -o $@ $<
 	$(info  	$(AS)	$<)
 build/%.o: src/%.s
-	@$(AS) $(ASARGS) -M -MD -c -o $@ $<
+	@$(AS) $(ASARGS) -MD -c -o $@ $<
 	$(info  	$(AS)	$<)
 build/%.o: src/%.cpp
 	@$(CXX) -O0 $(CXXARGS) -std=c++20 -g -Wno-write-strings -rdynamic -pedantic -Wunreachable-code -Wno-literal-suffix -Wno-pointer-arith -MP -MD -fpermissive -Iinc/ -c -o $@ $<
@@ -98,4 +104,3 @@ listCodeFiles:
 -include $(DEPFILES_cpp_cpp)
 -include $(DEPFILES_cpp_cxx)
 -include $(DEPFILES_c_c)
-

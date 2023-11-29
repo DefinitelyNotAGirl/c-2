@@ -29,12 +29,31 @@
  */
 
 #include <compiler.h>
+#include <mangling.h>
 
 static uint64_t NewNameCount = 0;
 
 std::string getNewName()
 {
-    return "__cpe2InternalName_"+std::to_string(NewNameCount++)+"__";
+    std::string mfile;
+    for(char i : currentFile)
+    {
+        switch(i)
+        {
+            case('.'):
+                mfile+=CPE2_SYMBOL_SCOPE_SEP;
+                break;
+            case('\\'):
+                mfile.push_back('_');
+                break;
+            case('/'):
+                mfile.push_back('_');
+                break;
+            default:
+                mfile.push_back(i);
+        }
+    }
+    return "local"CPE2_SYMBOL_SCOPE_SEP+mfile+CPE2_SYMBOL_SCOPE_SEP+"unnamed"+std::to_string(NewNameCount++);
 }
 
 uint64_t getx86MSR(__register__ reg)

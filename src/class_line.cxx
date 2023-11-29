@@ -65,6 +65,10 @@
 // 42 - comma
 /**/
 // 50 - template arg type
+/**/
+// 60 - parameter (gets changed to 10 before return)
+
+extern std::string __reqFileVSTC;
 
 std::list<std::string>* placeHolders = nullptr;
 std::string resolvePlaceholder(std::string& s)
@@ -77,12 +81,27 @@ std::string resolvePlaceholder(std::string& s)
     return s;
 }
 
+void* ltobj = nullptr;
 uint64_t tokenType(std::string& s)
 {
     if(s.empty())
         return 0;
+    if(s == "__defuint")
+        s = defaultUnsignedIntegerType->name;
+    else if(s == "__defint")
+        s = defaultSignedIntegerType->name;
+    else if(s == "__defbool")
+        s = defaultBooleanType->name;
+    else if(s == "__defchar")
+        s = defaultCharType->name;
+    else if(s == "__defwchar")
+        s = defaultWcharType->name;
+    else if(s == "__deffloat")
+        s = defaultFloatType->name;
+    else if(s == "__defptr")
+        s = defaultPointerType->name;
     //brackets
-    else if(s == "(")return 30;
+    if(s == "(")return 30;
     else if(s == ")")return 31;
     else if(s == "[")return 32;
     else if(s == "]")return 33;
@@ -160,7 +179,7 @@ uint64_t tokenType(std::string& s)
     else if(s == "public")return 20;
     else if(s == "protected")return 20;
     else if(s == "private")return 20;
-    else if(s == "static")return 20;
+    else if(s == "local")return 20;
     else if(s == "volatile")return 25;
     else if(s == "noalloc")return 25;
     else if(s == "inline")return 21;
@@ -178,7 +197,13 @@ uint64_t tokenType(std::string& s)
     else if(s == "defaultWchar")return 26;
     else if(s == "defaultFloat")return 26;
     else if(s == "defaultBool")return 26;
+    else if(s == "defaultPointer")return 26;
     //primitive functions
+    else if(s == "primitiveSYSCALL")return 22;
+    else if(s == "primitivePRINTCHAR")return 22;
+    else if(s == "primitivePRINTSTR")return 22;
+    else if(s == "primitiveInterrupt")return 22;
+    else if(s == "primitiveArrayIndex")return 22;
     else if(s == "primitiveInPlace")return 22;
     else if(s == "primitiveFloat")return 22;
     else if(s == "primitiveAdd")return 22;
@@ -213,15 +238,30 @@ uint64_t tokenType(std::string& s)
     else if(s == "float")return 50;
     else if(s.substr(0,strlen("mangling-")) == "mangling-")return 20;
     else if(s.substr(0,strlen("ABI-")) == "ABI-")return 21;
+    else if(s.substr(0,strlen("SYMBOL-")) == "SYMBOL-")return 21;
     else
     {
         //some identifier
-        if(getType(s) != nullptr)
+        type* gt = getType(s);
+        if(gt != nullptr)
+        {
+            ltobj = gt;
             return 9;//typename
-        if(getVariable(s) != nullptr)
+        }
+        variable* gv = getVariable(s);
+        if(gv != nullptr)
+        {
+            ltobj = gv;
+            if(gv->isParameter)
+                return 60;
             return 10;//variable
-        if(getFunction(s) != nullptr)
+        }
+        function* gf = getFunction(s);
+        if(gf != nullptr)
+        {
+            ltobj = gf;
             return 11;//function
+        }
 
         //new identifier
         return 1;//identifier
@@ -233,8 +273,9 @@ token line::nextToken()
     token t;
     std::string s;
 
-    t.col = tpos;
-    
+    t.col = this->ccol+this->whitespace;
+    bool endedLineBreak = false;
+
     for(tpos = tpos;tpos < this->text.size();tpos++)
     {
         switch(this->text[tpos])
@@ -248,16 +289,16 @@ token line::nextToken()
                         case('"'):
                             s += this->text[tpos++];
                             goto endLoop1;
-                        case('\\'):
-                            tpos++;
-                            switch(this->text[tpos])
-                            {
-                                case('"'):
-                                    tpos++;
-                                    s += '"';
-                                    break;
-                            }
-                            break;
+                        //case('\\'):
+                        //    tpos++;
+                        //    switch(this->text[tpos])
+                        //    {
+                        //        case('"'):
+                        //            tpos++;
+                        //            s += '"';
+                        //            break;
+                        //    }
+                        //    break;
                         case(0x00):
                             tpos++;
                             goto endLoop1;
@@ -269,26 +310,58 @@ token line::nextToken()
                 endLoop2:;
                 break;
             case('<'):
+                if(s == "operator" || s.back() == '-' || s == "operator<")
+                    goto __default;
+                goto blublub;
             case('>'):
+                if(s == "operator" || s.back() == '-' || s == "operator>")
+                    goto __default;
+                goto blublub;
+            case('['):
                 if(s == "operator")
                     goto __default;
+                goto blublub;
+            case(']'):
+                if(s == "operator[")
+                    goto __default;
+                goto blublub;
             case('('):
             case('{'):
-            case('['):
             case(')'):
             case('}'):
-            case(']'):
             case(':'):
             case(','):
             case(';'):
+                blublub:;
                 if(s.size() == 0)
                     s += this->text[tpos];
                 else
                     tpos--;
                 goto endLoop1;
-            case(' '):
             case('\n'):
+                this->tline++;
+                if(s.size() != 0)
+                {
+                    endedLineBreak = true;
+                    goto endLoop1;
+                }
+                t.col = 0;
+                break;
+            case(' '):
+                if(tline > this->lineNum)
+                {
+                    this->whitespace++;
+                    t.col++;
+                }
+                if(s.size() != 0)
+                    goto endLoop1;
+                break;
             case('\t'):
+                if(tline > this->lineNum)
+                {
+                    this->whitespace += tabLength;
+                    t.col+=tabLength;
+                }
                 if(s.size() != 0)
                     goto endLoop1;
                 break;
@@ -298,14 +371,59 @@ token line::nextToken()
         }
     }
     endLoop1:;
+    if(!endedLineBreak)
+        this->whitespace++;
     tpos++;
 
     s = resolvePlaceholder(s);
     t.type = tokenType(s);
     t.Line = this;
     t.text = s;
+    t.lineNum = this->tline-endedLineBreak;
+    this->ccol += endedLineBreak ? 0 : t.col+t.text.length();
+    if(endedLineBreak)
+    {
+        this->whitespace = 0;
+    }
+    if(options::vstc && currentFile == __reqFileVSTC)
+    {
+        std::string ID = "0000";
+        std::string mdata = "";
+        switch(t.type)
+        {
+            case(9):
+                //typename
+                ID="0001";
+                mdata = "\x0c"+((type*)ltobj)->__declared_file+"\x0c"+std::to_string(((type*)ltobj)->__declared_line);
+                break;
+            case(10):
+                //variable name
+                ID="0002";
+                mdata = "\x0c"+((variable*)ltobj)->__declared_file+"\x0c"+std::to_string(((variable*)ltobj)->__declared_line)+"\x0c"+((variable*)ltobj)->dataType->name;
+                break;
+            case(11):
+                //function name
+                ID="0003";
+                mdata = "\x0c"+((function*)ltobj)->__declared_file+"\x0c"+std::to_string(((function*)ltobj)->__declared_line)+"\x0c"+((function*)ltobj)->returnType->name;
+                break;
+            case(60):
+                //parameter name
+                ID="0004";
+                mdata = "\x0c"+((variable*)ltobj)->__declared_file+"\x0c"+std::to_string(((variable*)ltobj)->__declared_line)+"\x0c"+((variable*)ltobj)->dataType->name;
+                break;
+            default:
+                goto VSTC_NOSEND;
+        }
+        std::cout << ID << '\x0c' << t.lineNum <<'\x0c'<< t.col+this->leadingSpaces <<'\x0c'<< t.text.length() <<'\x0c'<<t.text<<mdata<< '\n';
+        VSTC_NOSEND:;
+    }
+    if(t.type == 60)
+        t.type = 10;//change to variable name before returning to compiler
 
-    if(options::dprintTokens)
+    if(t.type == 6)
+        t.text = "\""+t.text+"\"";
+
+    if(options::ddebug)
     {
         std::cout << "Token: type: " << t.type << " \"" << t.text <<"\""<< std::endl;
     }

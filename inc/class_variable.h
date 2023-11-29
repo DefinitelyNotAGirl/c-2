@@ -144,11 +144,12 @@ extern __register__ StackPointer;
 uint64_t getx86MSR(__register__ reg);
 
 enum class storageType : uint8_t {
-    INVALID,REGISTER,MEMORY,MEMORY_ABSOLUTE,IMMEDIATE,SYMBOL
+    INVALID,REGISTER,MEMORY,MEMORY_ABSOLUTE,IMMEDIATE,SYMBOL,SYMBOL_ADDR
 };
 
 __register__ registerID(std::string name);
 std::string registerNAME(__register__ reg);
+std::string registerNAME(__register__ reg, uint8_t size);
 
 class variable
 {
@@ -157,6 +158,9 @@ public:
     std::string name;
     std::string symbol;
     bool doExport = false;
+    bool isParameter = false;//only tracked for vstc features
+    std::string __declared_file;
+    uint64_t __declared_line;
     int8_t access = 0;
     bool isStatic = false;
     bool usedAutoStorage = false;
@@ -165,8 +169,10 @@ public:
     variable* parent;//only present for child variables
     //storage
     storageType storage = storageType::INVALID;
-    __register__ reg;
-    int64_t offset;
+    storageType offsetType = storageType::IMMEDIATE;
+    __register__ offsetReg = __register__::invalid;
+    __register__ reg = __register__::invalid;
+    int64_t offset = 0;
     /*
         if the variable is inside a function this offset 
         is relative to rsp meaning that rsp-offset is the start of the variables data

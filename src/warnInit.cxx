@@ -50,5 +50,5 @@ void initWarnings()
     warnings.push_back(new warning("deprecated",true,false));
 
     //stack
-    warnings.push_back(new warning("stack-pointer-rsp-storage",true,false));
+    warnings.push_back(new warning("stack-pointer-storage",true,false));
 }

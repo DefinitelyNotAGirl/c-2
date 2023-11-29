@@ -31,7 +31,10 @@
 #include <compiler.h>
 #include <function.h>
 #include <codegen.h>
+#include <error.h>
 #include <mangling.h>
+
+void updateCurrentScope(scope* sc);
 
 namespace x86_64
 {
@@ -54,9 +57,104 @@ namespace x86_64
         {
             switch(func->op)
             {
+                case(primitiveOP::PRINTCHAR):
+                    csys->printChar(args[0]);
+                    break;
+                case(primitiveOP::PRINTSTR):
+                    csys->printStr(args[0]);
+                    break;
+                case(primitiveOP::Interrupt):
+                    //std::cout << "interrupt!" << std::endl;
+                    if(args[0]->storage == storageType::IMMEDIATE)
+                        code->push_back(getIndent()+"int $"+std::to_string(args[0]->immediateValue));
+                    else
+                        error::genericError(0x8664008);
+                    break;
+                case(primitiveOP::CPUid):
+                    //std::cout << "cpuid!" << std::endl;
+                    setANB(16);
+                    x86_64::mov(args[0],rax);
+                    code->push_back(getIndent()+"cpuid");
+                    popANB();
+                    break;
+                case(primitiveOP::SYSCALL):
+                    //std::cout << "syscall!" << std::endl;
+                    code->push_back(getIndent()+"syscall");
+                    break;
                 case(primitiveOP::assign):
                     //std::cout << "assign!" << std::endl;
-                    x86_64::mov(args[1],ret);
+                    if(currentScope->t != scopeType::GLOBAL && currentScope->t != scopeType::NAMESPACE)
+                    {
+                        x86_64::mov(args[1],ret);
+                    }
+                    else
+                    {
+                        if(args[1]->storage == storageType::IMMEDIATE)
+                        {
+                            DataCode.push_back(ret->symbol+":");
+                            switch(ret->dataType->size)
+                            {
+                                case(1):
+                                    DataCode.push_back("\t.byte "+intToString(args[1]->immediateValue));
+                                    break;
+                                case(2):
+                                    DataCode.push_back("\t.word "+intToString(args[1]->immediateValue));
+                                    break;
+                                case(4):
+                                    DataCode.push_back("\t.int "+intToString(args[1]->immediateValue));
+                                    break;
+                                case(8):
+                                    DataCode.push_back("\t.quad "+intToString(args[1]->immediateValue));
+                                    break;
+                            }
+                            ret->storage = storageType::SYMBOL;
+                        }
+                        else if(args[1]->storage == storageType::SYMBOL)
+                        {
+                            DataCode.push_back(ret->symbol+":");
+                            switch(ret->dataType->size)
+                            {
+                                case(1):
+                                    DataCode.push_back("\t.byte "+args[1]->symbol);
+                                    break;
+                                case(2):
+                                    DataCode.push_back("\t.word "+args[1]->symbol);
+                                    break;
+                                case(4):
+                                    DataCode.push_back("\t.int "+args[1]->symbol);
+                                    break;
+                                case(8):
+                                    DataCode.push_back("\t.quad "+args[1]->symbol);
+                                    break;
+                            }
+                            ret->storage = storageType::SYMBOL;
+                        }
+                        else if(args[1]->storage == storageType::SYMBOL_ADDR)
+                        {
+                            DataCode.push_back(ret->symbol+":");
+                            switch(args[1]->dataType->size)
+                            {
+                                case(1):
+                                    DataCode.push_back("\t.byte "+args[1]->symbol);
+                                    break;
+                                case(2):
+                                    DataCode.push_back("\t.word "+args[1]->symbol);
+                                    break;
+                                case(4):
+                                    DataCode.push_back("\t.int "+args[1]->symbol);
+                                    break;
+                                case(8):
+                                    DataCode.push_back("\t.quad "+args[1]->symbol);
+                                    break;
+                            }
+                            ret->storage = storageType::SYMBOL;
+                        }
+                        else
+                        {
+                            error::genericError(0x8664002);
+                            printVariable(ret);
+                        }
+                    }
                     break;
                 case(primitiveOP::mul):
                     //std::cout << "multiply!" << std::endl;
@@ -118,14 +216,14 @@ namespace x86_64
                     //std::cout << "sub!" << std::endl;
                     if(func->primitiveInPlace)
                     {
-                        x86_64::add(args[0],args[0],args[1]);
+                        x86_64::sub(args[0],args[0],args[1]);
                     }
                     else
                     {
                         ret->dataType = args[0]->dataType;
                         ret->name = getNewName();
                         fstore->setStorage(func,ret);
-                        x86_64::add(ret,args[0],args[1]);
+                        x86_64::sub(ret,args[0],args[1]);
                     }
                     break;
                 case(primitiveOP::Inc):
@@ -156,6 +254,37 @@ namespace x86_64
                         fstore->setStorage(func,ret);
                         x86_64::mov(args[0],ret);
                         x86_64::dec(ret);
+                    }
+                    break;
+                case(primitiveOP::Index):
+                    __register__ pointerReg;
+                    ret = new variable;
+                    if(args[0]->storage == storageType::REGISTER)
+                    {
+                        pointerReg = args[0]->reg;
+                        pointerRegSet:;
+                        ret->name = getNewName();
+                        ret->reg = pointerReg;
+                        ret->storage = storageType::MEMORY;
+                        ret->dataType = args[0]->dataType->valueType;
+                        if(args[1]->storage == storageType::REGISTER)
+                        {
+                            ret->offsetType = storageType::REGISTER;
+                            ret->offsetReg = args[1]->reg;
+                        }
+                        else if(args[1]->storage == storageType::IMMEDIATE)
+                        {
+                            ret->offsetType = storageType::IMMEDIATE;
+                            ret->offset = args[1]->immediateValue*ret->dataType->size;
+                        }
+                        else
+                            error::genericError(0x8664001);
+                    }
+                    else
+                    {
+                        x86_64::mov(args[0],rcx);
+                        pointerReg = rcx;
+                        goto pointerRegSet;
                     }
                     break;
                 case(primitiveOP::equal):
@@ -195,15 +324,23 @@ namespace x86_64
                     goto BOOLRET;
                 }
                 default:
-                    std::cout << "blub ("<<func->name<<")" << std::endl;
+                    errorCompilerBug;
                     break;
                 {
                     BOOLRET:;
                     std::vector<std::string>* codeBlock = new std::vector<std::string>;
                     std::string entSymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"boolRetConditional"+std::to_string(currentScope->booleanReturnCounter++);
                     std::string retSymbol = entSymbol+CPE2_SYMBOL_SCOPE_SEP"reentry";
-                    currentScope->extraCodeBlocks.push_back(codeBlock);
-                    std::vector<std::string>* currentCode = code;
+                    //currentScope->extraCodeBlocks.push_back(codeBlock);
+                    //std::vector<std::string>* currentCode = code;
+                    scope* sc = new scope;
+                    sc->fstore = new functionStorage;
+                    sc->func = new function;
+                    sc->parent = currentScope;
+                    sc->t = scopeType::DUMMY;
+                    *(sc->func) = *(currentScope->func);
+                    *(sc->fstore) = *(currentScope->fstore);
+                    sc->func->code = std::vector<std::string>();
                     //
                     ret->dataType = defaultBooleanType;
                     ret->name = getNewName();
@@ -211,16 +348,22 @@ namespace x86_64
                     //generate conditional jump code
                     boolRetCJmp(entSymbol);
                     //generate non conditional code
-                    x86_64::mov(getImmediateVariable(0),ret);
+                    //x86_64::mov(getImmediateVariable(0),ret);
+                    code->push_back(getIndent()+"clc");
                     //set return symbol
                     placeSymbol(retSymbol);
                     //generate conditinal code
-                    code = codeBlock;
+                    updateCurrentScope(sc);
                     placeSymbol(entSymbol);
-                    x86_64::mov(getImmediateVariable(1),ret);
+                    //x86_64::mov(getImmediateVariable(1),ret);
+                    code->push_back(getIndent()+"stc");
                     x86_64::jmp(retSymbol);
-                    //restore compiler state
-                    code = currentCode;
+                    //finish up
+                    //std::cout << "bret lines: " << std::endl;
+                    //for(std::string& i : sc->func->code)
+                    //    std::cout << i << std::endl;
+                    sc->parent->extraCodeBlocks.push_back(&sc->func->code);
+                    updateCurrentScope(sc->parent);
                     break;
                 }
             }

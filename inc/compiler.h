@@ -47,12 +47,23 @@ class ABI;
 #include <template.h>
 #include <arch.h>
 #include <ABI.h>
+#include <sstream>
+#include <system.h>
 
 extern std::vector<std::string> DataCode;
 extern std::vector<std::string> RoDataCode;
 extern std::vector<std::string> TextCode;
 extern std::vector<std::string> BssCode;
 extern std::vector<std::string> MiscCode;
+extern std::vector<std::string> DebugCode;
+extern std::vector<std::string> DebugAbbrevCode;
+extern uint64_t debugInfoSize;
+
+extern std::string currentFile;
+
+extern std::vector<std::string> startObjFiles;
+
+extern std::vector<std::string> dependencies;
 
 variable* resolve(token& t);
 variable* resolveIMM(char* token);
@@ -62,7 +73,8 @@ std::string getIndent();
 type* getType(std::string name);
 variable* getVariable(std::string name);
 function* getFunction(std::string name);
-function* getFunction(std::string name, std::vector<variable*> args);
+function* getFunction(const char* name, std::vector<variable*>& args);
+function* getFunction(std::string& name, std::vector<variable*>& args);
 uint64_t tokenType(std::string& s);
 std::string manglePseudoName(std::string& s);
 std::string mangleTypeName(std::string& s);
@@ -72,6 +84,10 @@ std::string getNewName();
 ABI* getABI(std::string name);
 
 void resetScope();
+
+void printVariable(variable* v);
+
+std::string intToString(uint64_t n);
 
 extern uint64_t moClassID;
 extern uint64_t moFunctionID;
@@ -87,6 +103,7 @@ extern type* defaultFloatType;
 extern type* defaultCharType;
 extern type* defaultWcharType;
 extern type* defaultBooleanType;
+extern type* defaultPointerType;
 
 extern std::vector<type*> types;
 extern std::vector<litop*> litops;

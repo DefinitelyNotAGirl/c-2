@@ -87,9 +87,7 @@ std::vector<line> getLines(std::string fname)
     content__[fsize] = 0x00;//terminate content__ string
     std::string __content = content__;
     memset(content__,0x00,fsize);
-
     uint64_t Line = 1;
-
     {
         //cut out comments
         uint64_t ii = 0;
@@ -109,40 +107,40 @@ std::vector<line> getLines(std::string fname)
                     {
                         switch(__content[i])
                         {
-                            case('\\'):
-                                switch(__content[++i])
-                                {
-                                    case('n'):
-                                        content__[ii++] = c_newline;
-                                        break;
-                                    case('t'):
-                                        content__[ii++] = c_horizontaltab;
-                                        break;
-                                    case('v'):
-                                        content__[ii++] = c_verticaltab;
-                                        break;
-                                    case('r'):
-                                        content__[ii++] = c_cariagereturn;
-                                        break;
-                                    case('a'):
-                                        content__[ii++] = c_alert;
-                                        break;
-                                    case('b'):
-                                        content__[ii++] = c_backspace;
-                                        break;
-                                    case('e'):
-                                        content__[ii++] = c_escape;
-                                        break;
-                                    case('f'):
-                                        content__[ii++] = c_formfeedpagebreak;
-                                        break;
-                                    case('0'):
-                                        content__[ii++] = '0';
-                                        break;
-                                }
-                                break;
-                            case('\n'):
-                                Line++;
+                            //case('\\'):
+                            //    switch(__content[++i])
+                            //    {
+                            //        case('n'):
+                            //            content__[ii++] = c_newline;
+                            //            break;
+                            //        case('t'):
+                            //            content__[ii++] = c_horizontaltab;
+                            //            break;
+                            //        case('v'):
+                            //            content__[ii++] = c_verticaltab;
+                            //            break;
+                            //        case('r'):
+                            //            content__[ii++] = c_cariagereturn;
+                            //            break;
+                            //        case('a'):
+                            //            content__[ii++] = c_alert;
+                            //            break;
+                            //        case('b'):
+                            //            content__[ii++] = c_backspace;
+                            //            break;
+                            //        case('e'):
+                            //            content__[ii++] = c_escape;
+                            //            break;
+                            //        case('f'):
+                            //            content__[ii++] = c_formfeedpagebreak;
+                            //            break;
+                            //        case('0'):
+                            //            content__[ii++] = '0';
+                            //            break;
+                            //    }
+                            //    break;
+                            //case('\n'):
+                            //    Line++;
                             default:
                                 content__[ii++] = __content[i];
                                 break;
@@ -162,40 +160,40 @@ std::vector<line> getLines(std::string fname)
                     {
                         switch(__content[i])
                         {
-                            case('\\'):
-                                switch(__content[++i])
-                                {
-                                    case('n'):
-                                        content__[ii++] = c_newline;
-                                        break;
-                                    case('t'):
-                                        content__[ii++] = c_horizontaltab;
-                                        break;
-                                    case('v'):
-                                        content__[ii++] = c_verticaltab;
-                                        break;
-                                    case('r'):
-                                        content__[ii++] = c_cariagereturn;
-                                        break;
-                                    case('a'):
-                                        content__[ii++] = c_alert;
-                                        break;
-                                    case('b'):
-                                        content__[ii++] = c_backspace;
-                                        break;
-                                    case('e'):
-                                        content__[ii++] = c_escape;
-                                        break;
-                                    case('f'):
-                                        content__[ii++] = c_formfeedpagebreak;
-                                        break;
-                                    case('0'):
-                                        content__[ii++] = '0';
-                                        break;
-                                }
-                                break;
+                            //case('\\'):
+                            //    switch(__content[++i])
+                            //    {
+                            //        case('n'):
+                            //            content__[ii++] = c_newline;
+                            //            break;
+                            //        case('t'):
+                            //            content__[ii++] = c_horizontaltab;
+                            //            break;
+                            //        case('v'):
+                            //            content__[ii++] = c_verticaltab;
+                            //            break;
+                            //        case('r'):
+                            //            content__[ii++] = c_cariagereturn;
+                            //            break;
+                            //        case('a'):
+                            //            content__[ii++] = c_alert;
+                            //            break;
+                            //        case('b'):
+                            //            content__[ii++] = c_backspace;
+                            //            break;
+                            //        case('e'):
+                            //            content__[ii++] = c_escape;
+                            //            break;
+                            //        case('f'):
+                            //            content__[ii++] = c_formfeedpagebreak;
+                            //            break;
+                            //        case('0'):
+                            //            content__[ii++] = '0';
+                            //            break;
+                            //    }
+                            //    break;
                             case('\n'):
-                                Line++;
+                                content__[ii++] = '\n';
                             default:
                                 content__[ii++] = __content[i];
                                 break;
@@ -217,7 +215,13 @@ std::vector<line> getLines(std::string fname)
                             i+=2;
                             whitespace = 0;
                             while(!(__content[i] == '*' && __content[i+1] == '/') && __content[i]!=0x00)
+                            {
+                                if(__content[i] == '\n')
+                                    content__[ii++] = '\n';
                                 i++;
+                            }
+                            if(__content[i] == '\n')
+                                content__[ii++] = '\n';
                             i++;
                             break;
                         default:
@@ -230,8 +234,8 @@ std::vector<line> getLines(std::string fname)
                 case('\t'):
                     whitespace+=tabLength;
                     break;
-                case('\n'):
-                    Line++;
+                //case('\n'):
+                //    Line++;
                 default:
                     defaultChar:;
                     while(whitespace > 0)
@@ -263,7 +267,9 @@ std::vector<line> getLines(std::string fname)
         char terminatorSCCL;
         bool loopExit = false;
         uint64_t i = 0;
+        uint64_t oldLine = 1;
         loopStart:;
+        oldLine = Line;
         i=0;
         terminatorSEMI = ';';
         terminatorLINE = ';';//this is on purpose
@@ -286,92 +292,107 @@ std::vector<line> getLines(std::string fname)
             terminatorCOLO = ';';
             terminatorLINE = '\n';
         }
-
         std::string lineText;
-        if(content[0] == '\n')
+        while(content[i] == '\n')
         {
-            strPopFront(content,1);
+            Line++;
+            i++;
+        }
+        while(
+            content[i] != terminatorLINE
+            && content[i] != terminatorSEMI
+            && content[i] != terminatorCOLO
+            && content[i] != terminatorSCOP
+            && content[i] != terminatorSCCL
+            && content[i] != 0x00)
+        {
+            if(content[i] == '\n')
+            {
+                lineText.push_back(content[i]);
+                Line++;
+            }
+            else
+                lineText.push_back(content[i]);
+            i++;
+        }
+        if(content[i] == 0x00)
+        {
+            loopExit = true;
+        }
+        else if(content[i] != '\n')
+        {
+            lineText.push_back(content[i]);
+            i++;
+        }
+        line L;
+        L.lineNum = oldLine;
+        L.tline = oldLine;
+        L.whitespace = 0;
+        while(content[i] == '\n')
+        {
+            Line++;
+            i++;
+        }
+        //strPopFront(content,lineText.length());
+        if(i > 0 && content.length() >= i)
+            strPopFront(content,i);
+        //for(uint64_t j = 0; j < lineText.length(); j++)
+        //{
+        //    if(lineText[j] == '\n')
+        //        lineText[j] = ' ';
+        //    else if(lineText[j] == '\t')
+        //        lineText[j] = ' ';
+        //    else if(lineText[j] == '\v')
+        //        lineText[j] = ' ';
+        //}
+        uint64_t leadingSpace = 0;
+        for(uint64_t j = 0; j < lineText.length(); j=0)
+        {
+            if(lineText[j] == ' ')
+            {
+                lineText = lineText.substr(1,lineText.length());
+                leadingSpace++;
+                j++;
+            }
+            else
+                break;
+        }
+        //std::cout << "leading space: " << leadingSpace << std::endl;
+        bool wasComment = false;
+        if(startsWith(lineText,"//"))
+        {
+            lineText = "#outcom " + lineText.substr(2,lineText.length()-3);
+            wasComment = true;
+        }
+        L.text = lineText;
+        L.file = fname;
+        L.leadingSpaces = leadingSpace;
+        if(wasComment)
+        {
+            if(options::keepComments)
+                lines.push_back(L);
         }
         else
         {
-            while(
-                content[i] != terminatorLINE
-                && content[i] != terminatorSEMI
-                && content[i] != terminatorCOLO
-                && content[i] != terminatorSCOP
-                && content[i] != terminatorSCCL
-                && content[i] != 0x00)
+            if(L.text == "")
             {
-                if(content[i] != '\n')
-                    lineText.push_back(content[i]);
-                else
-                    lineText.push_back(' ');
-                i++;
+                L.text = "#EOL";
+                L.leadingSpaces = 0;
             }
-            if(content[i] == 0x00)
-                loopExit = true;
-            else
-            {
-                if(content[i] != '\n')
-                    lineText.push_back(content[i]);
-                else
-                    lineText.push_back(' ');
-                i++;
-            }
-            strPopFront(content,lineText.length());
-            //for(uint64_t j = 0; j < lineText.length(); j++)
-            //{
-            //    if(lineText[j] == '\n')
-            //        lineText[j] = ' ';
-            //    else if(lineText[j] == '\t')
-            //        lineText[j] = ' ';
-            //    else if(lineText[j] == '\v')
-            //        lineText[j] = ' ';
-            //}
-            uint64_t leadingSpace = 0;
-            if(options::dprintTokens)
-                std::cout <<"line: "<< lineText << std::endl;
-            for(uint64_t j = 0; j < lineText.length(); j=0)
-            {
-                if(lineText[j] == ' ')
-                {
-                    lineText = lineText.substr(1,lineText.length());
-                    leadingSpace++;
-                    j++;
-                }
-                else
-                    break;
-            }
-            line L;
-            L.lineNum = Line;
-            //std::cout << "leading space: " << leadingSpace << std::endl;
-
-            bool wasComment = false;
-            if(startsWith(lineText,"//"))
-            {
-                lineText = "#outcom " + lineText.substr(2,lineText.length()-3);
-                wasComment = true;
-            }
-            L.text = lineText;
-            L.file = fname;
-            L.leadingSpaces = leadingSpace;
-            if(wasComment)
-            {
-                if(options::keepComments)
-                    lines.push_back(L);
-            }
-            else
-                lines.push_back(L);
+            lines.push_back(L);
         }
-
         if(!loopExit)
             goto loopStart;
     }
 
     line endl;
     endl.leadingSpaces = 0;
-    endl.text = "#cum";
+    endl.text = "#EOF";
     lines.push_back(endl);
+
+    if(options::ddebug)
+        for(line& i : lines)
+            std::cout << "line: " << i.text << std::endl;
 
     return lines;
 }

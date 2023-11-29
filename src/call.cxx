@@ -38,6 +38,7 @@ uint64_t regSaveDebugCounter = 0;
 std::vector<std::string>* code = nullptr;
 functionStorage* fstore = nullptr;
 function* codeGenFunc = nullptr;
+std::string getFunctionExpression(function* f, bool showVariableNames = false);
 
 void pushRegSave()
 {
@@ -59,21 +60,25 @@ void saveRegister(__register__ reg)
 {
     //std::cout << "SAVE!!!!!!!!!!!!!!!!!!!!!!!!! " << registerNAME(reg) << std::endl;
     savedRegisters.top().push_back(reg);
-    mov(reg,location(__register__::rsp,fstore->stackSize));
-    savedRegisterOffsets.top().push_back(fstore->stackSize);
+    mov(reg,location(StackPointer,fstore->stackOffset));
+    savedRegisterOffsets.top().push_back(fstore->stackOffset);
     if(asmDebugComments)
     {
         code->back().append(" # save @"+std::to_string(regSaveDebugCounter));
         savedRegisterDebug.top().push_back(regSaveDebugCounter++);
     }
-    fstore->stackSize+=8;
+    //std::cout << "BLUB BLUB SIZE: " <<std::hex<< ((((uint64_t)reg)&BITMASK_REGISTER_SIZE) / 0x1000000) << "("<<registerNAME(reg)<<")" << std::endl;
+    fstore->stackOffset+=((((uint64_t)reg)&BITMASK_REGISTER_SIZE) / 0x1000000);
+    if(fstore->stackOffset > fstore->stackSize)
+        fstore->stackSize = fstore->stackOffset;
 }
 void restoreRegisters()
 {
     //std::cout << "RESTORE!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
     for(uint64_t i = 0;i<savedRegisters.top().size();i++)
     {
-        mov(location(__register__::rsp,savedRegisterOffsets.top()[i]),savedRegisters.top()[i]);
+        mov(location(StackPointer,savedRegisterOffsets.top()[i]),savedRegisters.top()[i]);
+        fstore->stackOffset-=((((uint64_t)savedRegisters.top()[i])&BITMASK_REGISTER_SIZE) / 0x1000000);
         if(asmDebugComments)
             code->back().append(" # restore @"+std::to_string(savedRegisterDebug.top()[i]));
     }
@@ -87,6 +92,10 @@ void restoreRegisters()
 void jump(function* func, std::string symbol)
 {
     code = &func->code;
+    jmp(symbol);
+}
+void jump(std::string symbol)
+{
     jmp(symbol);
 }
 
@@ -105,6 +114,8 @@ void codeGenUpdateFuction()
     {
         case(scopeType::FUNCTION):
         case(scopeType::CONDITIONAL_BLOCK):
+        case(scopeType::LOGICAL):
+        case(scopeType::DUMMY):
             codeGenFunc = currentScope->func;
             code = &currentScope->func->code;
             fstore = currentScope->fstore;
@@ -112,8 +123,11 @@ void codeGenUpdateFuction()
     }
 }
 
-variable* call(function* func,std::vector<variable*> args)
+variable* call(function* func,std::vector<variable*>& args)
 {
+    //std::cout << "func: " <<std::hex<< (void*)func << std::endl;
+    if(options::ddebug)
+        std::cout << "calling: " << getFunctionExpression(func) << std::endl;
     if(func->isPrimitive)
         return primitiveCall(func,args);
     //else

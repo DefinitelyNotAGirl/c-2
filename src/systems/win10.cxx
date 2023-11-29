@@ -1,8 +1,8 @@
 /*
- * Created Date: Friday August 18th 2023
+ * Created Date: Saturday September 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Friday August 18th 2023 3:31:27 am
+ * Last Modified: Saturday September 30th 2023 11:39:37 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -28,43 +28,27 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-export class __ACPITABLES__:
-    void& MADT;
-    void& BERT;
-    void& CPEP;
-    void& DSDT;
-    void& ECDT;
-    void& EINJ;
-    void& ERST;
-    void& FADT;
-    void& FACS;
-    void& HEST;
-    void& MSCT;
-    void& MPST;
-    void& PMTT;
-    void& PSDT;
-    void& RASF;
-    void& RSDT;
-    void& SBST;
-    void& SLIT;
-    void& SRAT;
-    void& SSDT;
-    void& XSDT;
-    void& MCFG;
+#include <compiler.h>
+#include <codegen.h>
+#define constructor __attribute__ ((constructor))
 
-export class __bootinfo__:
-    //max struct size: 0x100000 bytes (1MiB)
-    //Memory Map 0x0000 - 0x1000
-    u64 mmap_base;//base map address
-    u64 mmap_size;//number of entries in the map
-    u8 mmap_esize;//size of each mmap entry
+namespace mswin10
+{
+    void printStr(variable* str)
+    {
+    }
 
-    //stack 0x1000 - 0x2000
-    (+0x1000) u64 stack_base;
-    u64 stack_size;
+    void printChar(variable* c)
+    {
+    }
 
-    //misc
-    (+0x2000) u64 VirtualMemoryMAX;
-    u64 funcGet;
-    u8 ACPI_REVISION;
-    __ACPITABLES__ ACPIT;
+    constructor void init()
+    {
+        _system* sys = new _system;
+        sys->name = "windows-10";
+        sys->printChar = &printChar;
+        sys->printStr = &printStr;
+
+        systems.push_back(sys);
+    }
+}

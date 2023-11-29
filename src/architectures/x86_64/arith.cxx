@@ -28,6 +28,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <compiler.h>
+
 namespace x86_64
 {
     //
@@ -75,10 +77,12 @@ namespace x86_64
                 code->push_back(getIndent()+"add "+location(b->offset).expr()+", %"+registerNAME(dstReg));
                 break;
             case(storageType::IMMEDIATE):
-                code->push_back(getIndent()+"add $"+std::to_string(b->immediateValue)+", %"+registerNAME(dstReg));
+                if(b->immediateValue == 1)
+                    code->push_back(getIndent()+"inc %"+registerNAME(dstReg));
+                else
+                    code->push_back(getIndent()+"add $"+std::to_string(b->immediateValue)+", %"+registerNAME(dstReg));
                 break;
         }
-
         restoreRegisters();
         popRegSave();
     }
@@ -229,71 +233,32 @@ namespace x86_64
     {
         using enum __register__;
         pushRegSave();
-        bool savedRDX = false;
-        if(fstore->registerStatus(rdx) != 0)
-        {
+        if(fstore->registerStatus(rdx) == 1)
             saveRegister(rdx);
-            savedRDX = true;
-        }
-        x86_64::mov((uint64_t)0,rdx);
-        fstore->registerStatus(rdx,1);
-        __register__ rreg = right->reg;
-        if(!(right->storage == storageType::REGISTER && right->reg == rax))
-        {
-            if(fstore->registerStatus(rax) != 0)
-                saveRegister(rax);
-            x86_64::mov(right,rax);
-            rreg = rax;
-        }
-        else if(right->storage == storageType::REGISTER)
-        {
-            rreg = right->reg;
-        }
-
+        if(fstore->registerStatus(rax) == 1)
+            saveRegister(rax);
+        x86_64::mov(right,rax);
         switch(left->storage)
         {
             case(storageType::REGISTER):
                 code->push_back(getIndent()+"div %"+registerNAME(left->reg));
                 break;
-            case(storageType::IMMEDIATE):
-                switch(left->immediateValue)
-                {
-                    case(0):
-                        //error, division by zero
-                        break;
-                    case(1):
-                        //division by 1 can simply be ignored
-                        break;
-                    default:
-                        __register__ tmp = fstore->getFreeRegister();
-                        if(options::ddebug)
-                        {
-                            std::cout << "free register: " << registerNAME(tmp) << std::endl;
-                            std::cout << "status: " << fstore->registerStatus(tmp) << std::endl;
-                        }
-                        if(tmp == invalid)
-                        {
-                            tmp = r8;
-                            if(fstore->registerStatus(r8) != 0)
-                                saveRegister(r8);
-                        }
-                        x86_64::mov(left->immediateValue,tmp);
-                        code->push_back(getIndent()+"div %"+registerNAME(tmp));
-                }
-                break;
             case(storageType::MEMORY):
-                code->push_back(getIndent()+"div "+location(rsp,left->offset).expr());
+                code->push_back(getIndent()+"div "+location(left->reg,left->offset).expr());
                 break;
             case(storageType::MEMORY_ABSOLUTE):
                 code->push_back(getIndent()+"div "+location(left->offset).expr());
                 break;
+            case(storageType::IMMEDIATE):
+                if(fstore->registerStatus(rcx) == 1)
+                    saveRegister(rcx);
+                x86_64::mov(left,rcx);
+                code->push_back(getIndent()+"div %"+registerNAME(rcx));
+                break;
         }
-
         x86_64::mov(rdx,dst);
         restoreRegisters();
         popRegSave();
-        if(!savedRDX)
-            fstore->registerStatus(rdx,0);
     }
 
     //
@@ -302,14 +267,36 @@ namespace x86_64
     //
     //
 
-    void div(__register__ left, __register__ right)
-    {
-    }
-    void div(__register__ left, uint64_t right)
-    {
-    }
     void div(variable* dst, variable* right, variable* left)
     {
+        using enum __register__;
+        pushRegSave();
+        if(fstore->registerStatus(rdx) == 1)
+            saveRegister(rdx);
+        if(fstore->registerStatus(rax) == 1)
+            saveRegister(rax);
+        x86_64::mov(left,rax);
+        switch(right->storage)
+        {
+            case(storageType::REGISTER):
+                code->push_back(getIndent()+"div %"+registerNAME(right->reg));
+                break;
+            case(storageType::MEMORY):
+                code->push_back(getIndent()+"div "+location(right->reg,right->offset).expr());
+                break;
+            case(storageType::MEMORY_ABSOLUTE):
+                code->push_back(getIndent()+"div "+location(right->offset).expr());
+                break;
+            case(storageType::IMMEDIATE):
+                if(fstore->registerStatus(rcx) == 1)
+                    saveRegister(rcx);
+                x86_64::mov(right,rcx);
+                code->push_back(getIndent()+"div %"+registerNAME(rcx));
+                break;
+        }
+        x86_64::mov(rax,dst);
+        restoreRegisters();
+        popRegSave();
     }
 
     //

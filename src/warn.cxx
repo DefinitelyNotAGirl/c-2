@@ -36,6 +36,7 @@ static std::string colorRESET = "\033[0m";
 
 bool warn(warning* w,token* t, std::string message)
 {
+    if(options::vstc){return false;}//dont warn if invoked for vstc purposes
     if(!w->enabled)
         return false;//warning disabled, dont give output
 

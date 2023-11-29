@@ -44,16 +44,32 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <util.h>
+#include <DWARF.h>
 
 std::vector<std::string> DataCode;
 std::vector<std::string> RoDataCode;
 std::vector<std::string> BssCode;
 std::vector<std::string> TextCode;
 std::vector<std::string> MiscCode;
+std::vector<std::string> DebugCode;
+std::vector<std::string> DebugAbbrevCode;
+uint64_t debugInfoSize = 0;//8 Bytes as mandated by DWARF-5
+uint64_t dbgAbbrev = 1;
+
+uint64_t DWARF_TYPE_ID = 1;
 
 std::vector<std::string> includedFiles;
+std::vector<std::string> dependencies;
+
+std::string currentFile = "";
 
 std::vector<line> getLines(std::string fname);
+
+void monVarDeclared(variable* v)
+{
+    std::cout << "monitored variable declared!" << std::endl;
+    return;
+}
 
 line compLine(std::string text)
 {
@@ -69,7 +85,7 @@ std::string getIndent() {
 	scope* sc = currentScope;
 	std::string ret;
 	while (sc != nullptr) {
-        if(sc->t == scopeType::FUNCTION || sc->t == scopeType::CONDITIONAL_BLOCK)
+        if(sc->t == scopeType::FUNCTION || sc->t == scopeType::CONDITIONAL_BLOCK || sc->t == scopeType::DUMMY || sc->t == scopeType::LOGICAL)
 		    ret += "\t";
 		sc = sc->parent;
 	}
@@ -96,6 +112,14 @@ arch* getArch(std::string name)
     return nullptr;
 }
 
+_system* getSystem(std::string name)
+{
+    for(_system* i : systems)
+        if(i->name == name)
+            return i;
+    return nullptr;
+}
+
 std::string getFunctionExpression(function* f, bool showVariableNames = false) {
 	std::string res = f->returnType->name + " " + f->name + "(";
 	if (!showVariableNames) {
@@ -113,7 +137,7 @@ std::string getFunctionExpression(function* f, bool showVariableNames = false) {
 }
 
 std::string getFunctionExpression(std::string name,
-								  std::vector<variable*> args) {
+								  std::vector<variable*>& args) {
 	std::string res = name + "(";
 	for (variable* i : args)
 	{
@@ -127,14 +151,30 @@ std::string getFunctionExpression(std::string name,
 	return res;
 }
 
-function* getFunction(std::string name, std::vector<variable*> args) {
+function* getFunction(const char* name, std::vector<variable*>& args)
+{
+    std::string n = name;
+    return getFunction(n,args);
+}
+
+function* getFunction(std::string& name, std::vector<variable*>& args) {
 	scope* sc = currentScope;
 	std::vector<function*> candidates;
 	while (sc != nullptr) {
 		for (function* i : sc->functions) {
+            //PRINT_DEBUG
 			if (i->name == name) {
+                //PRINT_DEBUG
 				if (i->parameters.size() == args.size()) {
+                    //PRINT_DEBUG
 					for (uint64_t II = 0; II < i->parameters.size(); II++){
+                        //PRINT_DEBUG
+                        //std::cout << "name: " << name << std::endl;
+                        //std::cout << "II: " << II << std::endl;
+                        //std::cout << "args size: " << args.size() << std::endl;
+                        //std::cout << "params size: " << i->parameters.size() << std::endl;
+                        //std::cout << "aII: " <<std::hex << (void*)args[II] << std::endl;
+                        //std::cout << "aII->dt: " <<std::hex << (void*)args[II]->dataType << std::endl;
 						if (i->parameters[II] != args[II]->dataType)
 							goto notThisFunction;
                     }
@@ -146,22 +186,37 @@ function* getFunction(std::string name, std::vector<variable*> args) {
 			notThisFunction:;
 				candidates.push_back(i);
 			}
-			// else
-			//     std::cout << i->name <<" != "<< name << std::endl;
+			//else
+			//    std::cout << i->name <<" != "<< name << std::endl;
 		}
 		sc = sc->parent;
 	}
-	std::cout << "ERROR: cannot find a function to match call \""
-			  << getFunctionExpression(name, args)
-			  << "\", candidates are: " << std::endl;
+    error::candidateExpressions.clear();
+    error::functionExpr = getFunctionExpression(name, args);
 	for (function* candidate : candidates)
-		std::cout << "    " << getFunctionExpression(candidate) << std::endl;
+		error::candidateExpressions.push_back(getFunctionExpression(candidate));
 	return nullptr;
+}
+
+void printVariable(variable* v)
+{
+    std::cout << "##### variable #####" << std::endl;
+    std::cout << "addr: " << std::hex << (void*)v << std::endl;
+    std::cout << "name: " << v->name << std::endl;
+    std::cout << "storage: " << (uint64_t)v->storage << std::endl;
+    std::cout << "auto storage: " << v->usedAutoStorage << std::endl;
+    std::cout << "reg: " << registerNAME(v->reg) << std::endl;
+    std::cout << "offset: " << v->offset << std::endl;
+    std::cout << "offsetReg: " << registerNAME(v->offsetReg) << std::endl;
+    std::cout << "offsetType: " << (uint64_t)v->offsetType << std::endl;
+    std::cout << "imm val: " << v->immediateValue << std::endl;
+    std::cout << "####################" << std::endl;
 }
 
 variable* getVariable(std::string name) {
 	scope* sc = currentScope;
 	while (sc != nullptr) {
+        //std::cout << "scanning scope: " << sc->name << std::endl;
 		for (variable* i : sc->variables)
 			if (i->name == name) return i;
             //else std::cout << "\"" << i->name << "\" != \"" << name << "\"" << std::endl;
@@ -170,20 +225,82 @@ variable* getVariable(std::string name) {
 	return nullptr;
 }
 
+void declareDwarfType(type* t)
+{setANB(16);
+    t->dwarfID = ++dbgAbbrev;
+    //
+    //.debug_info
+    //
+    DebugCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
+    DebugCode.push_back(getIndent()+".string \""+t->name+"\"");
+    DebugCode.push_back(getIndent()+".quad "+intToString(t->size));
+    //
+    //.debug_abbrev
+    //
+    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
+    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::TAG_class_type));
+    DebugAbbrevCode.push_back(getIndent()+".byte 0");//no children
+    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_name));
+    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
+    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_byte_size));
+    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_data8));
+    DebugAbbrevCode.push_back(getIndent()+".uleb128 0");//terminate
+    DebugAbbrevCode.push_back(getIndent()+".uleb128 0");
+popANB();}
+
 type* getType(std::string name) {
+    if(name == "operator*")
+        return nullptr;
 	for (type* t : types)
 		if (t->name == name) return t;
 	if (name.back() == '*') {
 		// unknown pointer type, create a new type
 		type* t = new type;
 		t->name = name;
-        t->valueType = getType(name.substr(0,name.length()-1));
+        t->dwarfID = DWARF_TYPE_ID++;
+        std::string vtn = name.substr(0,name.length()-1);
+        if(vtn == "__defuint")
+            t->valueType = defaultUnsignedIntegerType;
+        else if(vtn == "__defint")
+            t->valueType = defaultSignedIntegerType;
+        else if(vtn == "__defbool")
+            t->valueType = defaultBooleanType;
+        else if(vtn == "__defchar")
+            t->valueType = defaultCharType;
+        else if(vtn == "__defwchar")
+            t->valueType = defaultWcharType;
+        else if(vtn == "__deffloat")
+            t->valueType = defaultFloatType;
+        else if(vtn == "__defptr")
+            t->valueType = defaultPointerType;
+        else
+            t->valueType = getType(vtn);
+        if(!t->valueType)
+        {
+            //value type does not exist
+            std::cout << "\033[31mERROR:\033[0m \"" << name.substr(0,name.length()-1) << "\" does not name a type!" << std::endl;
+            return nullptr;
+        }
 		t->size = POINTER_SIZE;
         defaultMangler->mangle(t);
+        declareDwarfType(t);
 		types.push_back(t);
         std::vector<line> lines;
-        lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+","+defaultUnsignedIntegerType->name+");"));
+        lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=(__defptr,"+name+");"));
+        lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+",__defptr);"));
+        lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+",__defuint);"));
         lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+","+name+");"));
+        lines.push_back(compLine("nodoc primitiveAdd primitiveInPlace void operator+=("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveAdd primitiveInPlace void operator+=("+name+","+name+");"));
+        lines.push_back(compLine("nodoc primitiveSub primitiveInPlace void operator-=("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveSub primitiveInPlace void operator-=("+name+","+name+");"));
+        lines.push_back(compLine("nodoc primitiveMul primitiveInPlace void operator*=("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveMul primitiveInPlace void operator*=("+name+","+name+");"));
+        lines.push_back(compLine("nodoc primitiveDiv primitiveInPlace void operator/=("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveDiv primitiveInPlace void operator/=("+name+","+name+");"));
+        lines.push_back(compLine("nodoc primitiveMod primitiveInPlace void operator%=("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveMod primitiveInPlace void operator%=("+name+","+name+");"));
+        lines.push_back(compLine("nodoc primitiveInPlace primitiveArrayIndex "+t->valueType->name+" operator[]("+name+",__defuint);"));
         parse(lines);
 		return t;
 	}
@@ -193,6 +310,7 @@ type* getType(std::string name) {
 		t->name = name;
 		t->size = POINTER_SIZE;
         defaultMangler->mangle(t);
+        declareDwarfType(t);
 		types.push_back(t);
 		return t;
 	}
@@ -228,43 +346,124 @@ ABI* getABI(std::string name)
     return nullptr;
 }
 
+scope* lastScope = nullptr;
 void updateCurrentScope(scope* sc)
 {
+    if(options::ddebug)
+        std::cout << "\033[35m[INFO]\033[0m updating scope: " << sc->name << std::endl;
+    lastScope = currentScope;
     currentScope = sc;
     codeGenUpdateFuction();
+}
+
+void info(std::string i)
+{
+    std::cout << "\033[35m[INFO]\033[0m " << i << std::endl;
 }
 
 variable* getImmediateVariable(uint64_t v)
 {
     variable* var = new variable;
     var->name = getNewName();
+    var->dataType = defaultUnsignedIntegerType;
     var->storage = storageType::IMMEDIATE;
     var->immediateValue = v;
     return var;
 }
 
+variable* getRegisterHandle(__register__ reg)
+{
+    variable* var = new variable;
+    var->name = getNewName();
+    var->dataType = defaultUnsignedIntegerType;
+    var->storage = storageType::REGISTER;
+    var->reg = reg;
+    return var;
+}
+
+std::string c2oLocExpr(variable* v)
+{
+    switch(v->storage)
+    {
+        case(storageType::MEMORY):{
+            setANB(16);
+            std::string ret = registerNAME(v->offsetReg)+",";
+            ret += intToString(v->offset);
+            ret += ",0x1";
+            popANB();
+            break;
+        }case(storageType::MEMORY_ABSOLUTE):{
+            setANB(16);
+            std::string ret = "absolute,";
+            ret += intToString(v->offset);
+            ret += ",0x1";
+            popANB();
+            return ret;
+            break;
+        }case(storageType::REGISTER):{
+            return registerNAME(v->reg);
+            break;
+        }
+    }
+    return "LOCATION";
+}
+
+variable* __false__ = getImmediateVariable(0);
+
 revstack<std::string> scopenames;
 
 uint64_t templateMode = 0;//0: no template, 1: class template, 2: function template, 3: unknown
+uint64_t lastTemplateMode = 0;
+bool lastCSTM = false;
 typeTemplate* __typeTemplate = nullptr;
 functionTemplate* __functionTemplate = nullptr;
 std::vector<templateArg*> templateArgs;
+uint64_t dbgFileMax = 0;
+std::stack<uint64_t> dbgFile;
+extern std::string __reqFileVSTC;
 void parse(std::vector<line> lines) {
     if(lines.size() == 0)
         return;
 	uint64_t i = 0;
+    if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+    {
+        //emit file debug information
+        dbgFileMax++;
+        dbgFile.push(dbgFileMax);
+        if(code)
+            code->push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
+        else
+            TextCode.push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
+    }
+    bool is_vstc_send = options::vstc && currentFile == __reqFileVSTC;
+    bool is_vsls_send = options::vsls && currentFile == __reqFileVSTC;
 	while (true) {
 		line& L = lines[i];
 		if (L.text.empty()) break;
+        //if(currentFile == __reqFileVSTC)
+        //{
+        //    std::cout << "\033[34mline "<<L.lineNum<<": " << L.text <<"\033[0m"<< std::endl;
+        //}
 		token t = L.nextToken();
 		bool isPrimitiveFunction = 0;
 		bool isFunctionOnly		 = 0;
 		std::vector<token> attribs;
+        if(lastTemplateMode != templateMode)
+        {
+            std::cout << "template mode changed: " << lastTemplateMode << " -> " << templateMode << std::endl;
+            lastTemplateMode = templateMode;
+        }
+        if(lastCSTM != currentScope->templateMode)
+        {
+            std::cout << "CSTM changed: " << lastCSTM << " -> " << currentScope->templateMode << std::endl;
+            lastCSTM = currentScope->templateMode;
+        }
         for(token& i : currentScope->attribs)
             attribs.push_back(i);
 		if(options::ddebug)
 		{
             std::cout << "##### LINE #####" << std::endl;
+            std::cout << "number: " << L.lineNum << std::endl;
             std::cout << "line: " << L.text << std::endl;
             std::cout << "indent: " << L.leadingSpaces << " / "
 					  << currentScope->leadingSpace << std::endl;
@@ -277,7 +476,12 @@ void parse(std::vector<line> lines) {
 			while (true) {
 				if (L.leadingSpaces < ts->leadingSpace) {
 					if (options::ddebug) std::cout << "body ended: " << ts->name << std::endl;
-					if (ts->t == scopeType::FUNCTION || ts->t == scopeType::CONDITIONAL_BLOCK) {
+					if (
+                        ts->t == scopeType::FUNCTION
+                        || ts->t == scopeType::CONDITIONAL_BLOCK
+                        || ts->t == scopeType::LOGICAL
+                        || ts->t == scopeType::DUMMY
+                    ) {
                         //std::cout << "ended body: " << ts->func->symbol << std::endl;
                         //std::cout << "scope: " << ts->name << std::endl;
                         //std::cout << "blocks: " << ts->extraCodeBlocks.size() << std::endl;
@@ -292,6 +496,21 @@ void parse(std::vector<line> lines) {
                         if(ts->t == scopeType::FUNCTION)
                         {
                             std::vector<std::string> lines;
+                            if(!ts->func->isLocal)
+								lines.push_back(getIndent()+".global " + ts->func->symbol);
+                            if(!options::nod)
+                            {
+                                //optimizer data
+                                lines.push_back("// @function "+ts->func->symbol);
+                                for(variable* arg : ts->func->vparams)
+                                    lines.push_back("// @parameter "+c2oLocExpr(arg));
+                                lines.push_back("// @return rax");
+                                for(__register__ i : ts->func->abi->VolatileRegisters)
+                                    lines.push_back("// @modifies "+registerNAME(i));
+                                for(__register__ i : ts->func->abi->nonVolatile)
+                                    lines.push_back("// @preserves "+registerNAME(i));
+                            }
+                            //finish up function
 						    ts->func->abi->genProlouge(lines, ts);
 						    for (std::string& i : ts->func->code)
 						    	lines.push_back(i);
@@ -301,28 +520,107 @@ void parse(std::vector<line> lines) {
                                     lines.push_back(i);
 						    for (std::string& i : lines)
 						    	TextCode.push_back(i);
+                            TextCode.push_back("");
+                            if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+                            {
+                                //terminator
+                                DebugCode.push_back(getIndent()+".uleb128 0");
+                                DebugCode.push_back(getIndent()+".uleb128 0");
+                            }
 						    mOUT(moFunctionID, ts->func);
                         }
                         else if(ts->t == scopeType::CONDITIONAL_BLOCK)
                         {
-                            jump(ts->func,ts->parent->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(ts->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry");
+                            //jump(ts->func,ts->parent->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(ts->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry");
+                            //if(ts->extraCodeBlocks.size() >= 2)
+                            //    code = ts->extraCodeBlocks[1];
+                            //else
+                            //    code = ts->extraCodeBlocks.back();
+                            jump(ts->reentrySymbol);
+                            //code = &currentScope->func->code;
                             for(std::vector<std::string>* block : ts->extraCodeBlocks)
+                            {
                                 ts->parent->extraCodeBlocks.push_back(block);
+                            }
+                            if(ts->fstore->stackSize > ts->parent->fstore->stackSize)
+                                ts->parent->fstore->stackSize = ts->fstore->stackSize;
+                            //else
+                            //    std::cout << ts->fstore->stackSize << " <= " << ts->parent->fstore->stackSize << std::endl;
+                            //if(ts->fstore->stackOffset > ts->parent->fstore->stackOffset)
+                            //    ts->parent->fstore->stackOffset = ts->fstore->stackOffset;
+                        }
+                        else if(ts->t == scopeType::LOGICAL)
+                        {
+                            for(std::string& i : ts->func->code)
+                            {
+                                //info("logical block line: "+i);
+                                ts->parent->func->code.push_back(i);
+                            }
+                            for(std::vector<std::string>* block : ts->extraCodeBlocks)
+                            {
+                                //info("logical block end block: ");
+                                //for(std::string& i : *block)
+                                //    info("    "+i);
+                                ts->parent->extraCodeBlocks.push_back(block);
+                            }
+                            if(ts->fstore->stackSize > ts->parent->fstore->stackSize)
+                                ts->parent->fstore->stackSize = ts->fstore->stackSize;
+                            //else
+                            //    std::cout << ts->fstore->stackSize << " <= " << ts->parent->fstore->stackSize << std::endl;
+                            //if(ts->fstore->stackOffset > ts->parent->fstore->stackOffset)
+                            //    ts->parent->fstore->stackOffset = ts->fstore->stackOffset;
+                        }
+                        else if(ts->t == scopeType::DUMMY)
+                        {
+                            for(std::string& i : ts->func->code)
+                            {
+                                ts->parent->func->code.push_back(i);
+                            }
                         }
 					} else if (ts->t == scopeType::CLASS) {
-                        std::cout << "ended class body: " << ts->cl->mangledName << std::endl;
+                        //std::cout << "ended class body: " << ts->cl->mangledName << std::endl;
 						ts->cl->incomplete = false;
 						mOUT(moClassID, ts->cl);
 					} else if (ts->t == scopeType::NAMESPACE) {
                         //std::cout << "ended namespace body: " << ts->name << std::endl;
 					}
                     
-                    //clean up memory
-                    switch(ts->t)
+                    ////clean up memory
+                    //switch(ts->t)
+                    //{
+                    //    case(scopeType::CONDITIONAL_BLOCK):
+                    //        delete ts;
+                    //        break;
+                    //}
+                    //if(ts->parent != nullptr)
+                    //{
+                    //    if(ts->reentrySymbol != "")
+                    //    {
+                    //        updateCurrentScope(ts->parent);
+                    //        std::cout << "placing reentry symbol: " << ts->reentrySymbol << std::endl;
+                    //        std::cout << "parent: " << ts->parent->name << std::endl;
+                    //        placeSymbol(ts->reentrySymbol);
+                    //        if(ts->parent->lastReentrySym)
+                    //            std::cout << "lrs: " << *ts->parent->lastReentrySym << std::endl;
+                    //        std::cout << "code back: " << code->back() << std::endl; 
+                    //        if(ts->parent->lastReentrySym)
+                    //        {
+                    //            if(*ts->parent->lastReentrySym == code->back())
+                    //            {
+                    //                std::cout << "clearing reentry sym: " << *ts->parent->lastReentrySym << std::endl;
+                    //                ts->parent->lastReentrySym->clear();
+                    //            }
+                    //        }
+                    //        std::cout << "code: " << code << std::endl;
+                    //        ts->parent->lastReentrySym = &code->back();
+                    //        if(ts->parent->lastReentrySym)
+                    //            std::cout << "lrs: " << *ts->parent->lastReentrySym << std::endl;
+                    //        updateCurrentScope(ts);
+                    //    }
+                    //}
+                    if(ts->parent != nullptr)
                     {
-                        case(scopeType::CONDITIONAL_BLOCK):
-                            delete ts;
-                            break;
+                        ts->parent->lastReentrySym = ts->reentrySymbol;
                     }
 					ts = ts->parent;
 				} else {
@@ -338,12 +636,12 @@ void parse(std::vector<line> lines) {
 				   currentScope->isIndentBased) {
 			//std::cout << "indentation error! (1)" << std::endl;
 		}
-        if(t.text != "if(" && t.text != "else")
+        if(/*t.text != "if" && */t.text != "else")
         {
-            if(currentScope->reentrySymbol != "")
+            if(currentScope->lastReentrySym != "")
             {
-                placeSymbol(currentScope->func,currentScope->reentrySymbol);
-                currentScope->reentrySymbol = "";
+                placeSymbol(currentScope->lastReentrySym);
+                currentScope->lastReentrySym = "";
             }
         }
         if(currentScope->templateMode)
@@ -356,11 +654,27 @@ void parse(std::vector<line> lines) {
                     break;
                 default:
                     errorCompilerBug;
+                    goto ERRORENDLINE;
             }
+        }
+        if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+        {
+            //emit file debug information
+            if(currentScope->t != scopeType::GLOBAL && currentScope->t != scopeType::NAMESPACE && currentScope->t != scopeType::CLASS)
+            {
+                if(code)
+                    code->push_back(getIndent()+".loc "+std::to_string(dbgFile.top())+" "+std::to_string(L.lineNum));
+            }
+        }
+        if(options::ddebug){
+            info("first token: ");
+            printToken(t);
         }
 		switch (t.type) {
 			case (5): // directive
-                if (t.text == "#cum") {
+                if (t.text == "#EOL") {
+                    goto ENDLINE;
+                } else if (t.text == "#EOF") {
                     goto ENDPARSER;
 				} else if (t.text == "#include") {
                     if(options::ddebug)
@@ -372,9 +686,20 @@ void parse(std::vector<line> lines) {
 							// std::endl;
                             std::string inc = t.text;
                             if (std::filesystem::exists(inc)) {
+								std::string rstFile = currentFile;
+                                currentFile = inc;
 								parse(getLines(inc));
+                                currentFile = rstFile;
                                 resetScope();
                                 includedFiles.push_back(inc);
+                                if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+                                {
+                                    //emit file debug information
+                                    if(code)
+                                        code->push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
+                                    else
+                                        TextCode.push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
+                                }
 							}
                             else
                                 error::noSuchFile(t);
@@ -391,21 +716,37 @@ void parse(std::vector<line> lines) {
 							for (std::string i : includeDirs) {
 								inc = i + "/" + fname;
 								if (std::filesystem::exists(inc)) {
+                                    std::string rstFile = currentFile;
+                                    currentFile = inc;
 									parse(getLines(inc));
+                                    currentFile = rstFile;
                                     resetScope();
                                     includedFiles.push_back(inc);
+                                    dependencies.push_back(inc);
 									goto sysIncludeSuccess;
 								}
 								inc += ".h2";
 								if (std::filesystem::exists(inc)) {
+                                    std::string rstFile = currentFile;
+                                    currentFile = inc;
 									parse(getLines(inc));
+                                    currentFile = rstFile;
                                     resetScope();
                                     includedFiles.push_back(inc);
+                                    dependencies.push_back(inc);
 									goto sysIncludeSuccess;
 								}
 							}
 							error::noSuchFile(t);
 						    sysIncludeSuccess:;
+                            if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+                            {
+                                //emit file debug information
+                                if(code)
+                                    code->push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
+                                else
+                                    TextCode.push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
+                            }
                             if(options::ddebug)
                                 std::cout << "included file: " << inc << std::endl;
 						    break;
@@ -506,7 +847,6 @@ void parse(std::vector<line> lines) {
                                 l.text = L.restText() + "primitiveAssign primitiveInPlace void operator=(" + name + "," + defaultUnsignedIntegerType->name + ");";
 						    	gLines.push_back(l);
                             }}
-
 							l.text = L.restText() + "primitiveMul " + name +
 									 " operator*(" + name + "," + name + ");";
 							gLines.push_back(l);
@@ -557,6 +897,8 @@ void parse(std::vector<line> lines) {
 							gLines.push_back(l);
                             l.text = L.restText() +"primitiveLess "+defaultBooleanType->name+" operator<(" + name + "," + name + ");";
 							gLines.push_back(l);
+                            l.text = L.restText() +"primitiveNotEqual "+defaultBooleanType->name+" operator!=(" + name + "," + name + ");";
+							gLines.push_back(l);
 							l.text = L.restText() +
 									 " primitiveAssign primitiveInPlace void "
 									 "operator=(" +
@@ -572,6 +914,60 @@ void parse(std::vector<line> lines) {
 									 "operator--(" +
 									 name + ");";
 							gLines.push_back(l);
+                            if(name != defaultUnsignedIntegerType->name)
+                            {
+                                    l.text = L.restText() + "primitiveMul " + name +
+							    		 " operator*(" + name + ",__defuint);";
+							    gLines.push_back(l);
+							    l.text = L.restText() + "primitiveDiv " + name +
+							    		 " operator/(" + name + ",__defuint);";
+							    gLines.push_back(l);
+							    l.text = L.restText() + "primitiveAdd " + name +
+							    		 " operator+(" + name + ",__defuint);";
+							    gLines.push_back(l);
+							    l.text = L.restText() + "primitiveSub " + name +
+							    		 " operator-(" + name + ",__defuint);";
+							    gLines.push_back(l);
+							    l.text = L.restText() + "primitiveMod " + name +
+							    		 " operator%(" + name + ",__defuint);";
+							    gLines.push_back(l);
+							    l.text = L.restText() +
+							    		 "primitiveMul primitiveInPlace void "
+							    		 "operator*=(" +
+							    		 name + ",__defuint);";
+							    gLines.push_back(l);
+							    l.text = L.restText() +
+							    		 "primitiveDiv primitiveInPlace void "
+							    		 "operator/=(" +
+							    		 name + ",__defuint);";
+							    gLines.push_back(l);
+							    l.text = L.restText() +
+							    		 "primitiveAdd primitiveInPlace void "
+							    		 "operator+=(" +
+							    		 name + ",__defuint);";
+							    gLines.push_back(l);
+							    l.text = L.restText() +
+							    		 "primitiveSub primitiveInPlace void "
+							    		 "operator-=(" +
+							    		 name + ",__defuint);";
+							    gLines.push_back(l);
+							    l.text = L.restText() +
+							    		 "primitiveMod primitiveInPlace void "
+							    		 "operator%=(" +
+							    		 name + ",__defuint);";
+                                l.text = L.restText() +"primitiveEqual "+defaultBooleanType->name+" operator==(" + name +",__defuint);";
+                                gLines.push_back(l);
+                                l.text = L.restText() +"primitiveGreater "+defaultBooleanType->name+" operator>(" + name + ",__defuint);";
+                                gLines.push_back(l);
+                                l.text = L.restText() +"primitiveGreaterEqual "+defaultBooleanType->name+" operator>=(" + name + ",__defuint);";
+                                gLines.push_back(l);
+                                l.text = L.restText() +"primitiveLessEqual "+defaultBooleanType->name+" operator<=(" + name + ",__defuint);";
+                                gLines.push_back(l);
+                                l.text = L.restText() +"primitiveLess "+defaultBooleanType->name+" operator<(" + name + ",__defuint);";
+                                gLines.push_back(l);
+                                l.text = L.restText() +"primitiveNotEqual "+defaultBooleanType->name+" operator!=(" + name + ",__defuint);";
+                                gLines.push_back(l);
+                            }
 						}
 						if (gLines.size() > 0) parse(gLines);
 					}
@@ -622,7 +1018,10 @@ void parse(std::vector<line> lines) {
 								type* ntype		  = new type;
 								mangler* mangling = defaultMangler;
 								ntype->name		  = t.text;
+                                token nametoken = t;
 								ntype->size		  = 8;
+                                ntype->__declared_file = currentFile;
+                                ntype->__declared_line = L.lineNum;
 
 								for (token& attr : attribs) {
 									if (attr.text == "nodoc")
@@ -669,6 +1068,7 @@ void parse(std::vector<line> lines) {
 								} else {
 									mOUT(moClassID, ntype);
 								}
+                                declareDwarfType(ntype);
 								types.push_back(ntype);
 								break;
 							}
@@ -685,7 +1085,10 @@ void parse(std::vector<line> lines) {
 								type* ntype		  = new type;
 								mangler* mangling = defaultMangler;
 								ntype->name		  = t.text;
+                                token nametoken = t;
 								ntype->size		  = 0;
+                                ntype->__declared_file = currentFile;
+                                ntype->__declared_line = L.lineNum;
 								t				  = L.nextToken();
                                 token f = t;
 								switch (t.type) {
@@ -779,6 +1182,8 @@ void parse(std::vector<line> lines) {
 										defaultCharType = ntype;
                                     else if (attr.text == "defaultWchar")
 										defaultWcharType = ntype;
+                                    else if (attr.text == "defaultPointer")
+										defaultPointerType = ntype;
 									else if (attr.text.substr(
 												 0, strlen("mangling-")) ==
 											 "mangling-") {
@@ -801,7 +1206,7 @@ void parse(std::vector<line> lines) {
 								mangling->mangle(ntype);
 								if (t.type == 40) {
 									// indent based body
-                                    std::cout << "harder daddy!" << std::endl;
+                                    //std::cout << "harder daddy!" << std::endl;
 									ntype->incomplete = true;
 									scope* sc		  = new scope;
 									sc->parent		  = currentScope;
@@ -810,13 +1215,16 @@ void parse(std::vector<line> lines) {
 									sc->isIndentBased = true;
 									sc->t			  = scopeType::CLASS;
 									sc->cl			  = ntype;
-                                    sc->templateMode = true;
-                                    __typeTemplate = new typeTemplate;
-                                    __typeTemplate->tArgs = templateArgs;
-                                    __typeTemplate->name = ntype->name;
-                                    if(templateMode == 3)templateMode = 1;
+                                    if(templateMode == 3)
+                                    {
+                                        sc->templateMode = true;
+                                        __typeTemplate = new typeTemplate;
+                                        __typeTemplate->tArgs = templateArgs;
+                                        __typeTemplate->name = ntype->name;
+                                        templateMode = 1;
+                                    }
 									updateCurrentScope(sc);
-									//if (options::ddebug)
+									if (options::ddebug)
 										std::cout << "class body started: " << ntype->name << std::endl;
 								} else if (t.type == 41) {
 									mOUT(moClassID, ntype);
@@ -825,10 +1233,14 @@ void parse(std::vector<line> lines) {
                                     errorCompilerBug;
                                 }
                                 if(templateMode == 0)
+                                {
+                                    declareDwarfType(ntype);
 								    types.push_back(ntype);
+                                    if(is_vstc_send)std::cout << "0001\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col+L.leadingSpaces <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<ntype->__declared_file<<'\x0c'<<std::to_string(ntype->__declared_line)<<'\n';
+                                }
                                 else
                                     std::cout << "template mode: " << templateMode << std::endl;
-                                std::cout << "most recent type: " << types.back()->name << std::endl;
+                                //std::cout << "most recent type: " << types.back()->name << std::endl;
 								break;
 							}
 							default:
@@ -908,7 +1320,6 @@ void parse(std::vector<line> lines) {
                                 nsp.push_back(t.text);
                             t = L.nextToken();
                         }
-
 						std::string symb = currentScope->name;
 						scope* sco		 = nullptr;
 						for (std::string ns : nsp) {
@@ -935,13 +1346,132 @@ void parse(std::vector<line> lines) {
                         t = L.nextToken();
                         variable* retVal = resolve(t);
                         variable* ret = new variable;
+                        //std::cout << "cs: " << currentScope->name << std::endl;
+                        //std::cout << "line: " << L.text << std::endl;
                         ret->storage = storageType::REGISTER;
                         ret->reg = currentScope->func->abi->integerReturn;
                         ret->dataType = currentScope->func->returnType;
-                        mov(retVal,ret);
+                        if(retVal == nullptr)
+                        {
+                            error::genericError(0x2001);
+                            goto ERRORENDLINE;
+                        }
+                        else if(ret == nullptr)
+                        {
+                            error::genericError(0x2002);
+                            goto ERRORENDLINE;
+                        }
+                        else
+                            mov(retVal,ret);
                         jump(currentScope->func,currentScope->func->symbol+CPE2_SYMBOL_SCOPE_SEP+"epilogue");
+                    } else if (t.text == "while") {
+                        //parse condition line
+                        if(options::asmSepComments)putComment("");
+                        scope* sc = new scope;
+                        sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"while"+std::to_string(currentScope->whileCounter++);
+                        sc->parent = currentScope;
+                        sc->isIndentBased = true;
+                        sc->t = scopeType::CONDITIONAL_BLOCK;
+                        sc->fstore = new functionStorage;
+                        sc->func = new function;
+                        *(sc->func) = *(currentScope->func);
+                        *(sc->fstore) = *(currentScope->fstore);
+                        sc->func->code = std::vector<std::string>();
+                        sc->reentrySymbol = sc->name+CPE2_SYMBOL_SCOPE_SEP"reentry";
+                        sc->leadingSpace=currentScope->leadingSpace+tabLength;
+                        placeSymbol(sc->reentrySymbol);
+                        line conditionLine = L;
+                        conditionLine.tpos = 0;
+                        conditionLine.text = L.restText();
+                        token cond = conditionLine.nextToken();
+                        //std::cout << "condition: " << cond.text << std::endl;
+                        variable* condition = resolve(cond);
+                        //cmp(__false__,condition);
+                        jc(sc->name);
+                        if(options::asmSepComments)putComment("");
+                        //prepare for body
+                        updateCurrentScope(sc);
+                        std::vector<std::string>* endcode = new std::vector<std::string>;
+                        for(std::string& i : currentScope->func->code)
+                            endcode->push_back(i);
+                        currentScope->func->code = std::vector<std::string>();
+                        currentScope->extraCodeBlocks.push_back(&currentScope->func->code);
+                        currentScope->extraCodeBlocks.push_back(endcode);
+                        placeSymbol(currentScope->name);
+                    } else if (t.text == "for") {
+                        t = L.nextToken();
+                        //construct new scope
+                        scope* sc = new scope;
+                        sc->leadingSpace=currentScope->leadingSpace+tabLength;
+                        sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"forloop"+std::to_string(currentScope->forCounter++);
+                        sc->parent = currentScope;
+                        sc->isIndentBased = true;
+                        sc->t = scopeType::LOGICAL;
+                        sc->fstore = new functionStorage;
+                        sc->func = new function;
+                        //sc->parent->conditionalCounter++;
+                        *(sc->func) = *(currentScope->func);
+                        *(sc->fstore) = *(currentScope->fstore);
+                        sc->func->code = std::vector<std::string>();
+                        //currentScope->reentrySymbol = sc->parent->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
+                        //sc->extraCodeBlocks.push_back(&sc->func->code);
+                        updateCurrentScope(sc);
+                        placeSymbol(currentScope->name);
+                        //parse begin line
+                        line beginLine = L;
+                        beginLine.text = L.restText();
+                        beginLine.tpos = 0;
+                        beginLine.leadingSpaces+=tabLength;
+                        std::vector<line> beginLines = {beginLine};
+                        parse(beginLines);
+                        //parse condition line
+                        if(options::asmSepComments)putComment("");
+                        sc = new scope;
+                        sc->leadingSpace=currentScope->leadingSpace;
+                        sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"body";
+                        sc->parent = currentScope;
+                        sc->isIndentBased = true;
+                        sc->t = scopeType::CONDITIONAL_BLOCK;
+                        sc->fstore = new functionStorage;
+                        sc->func = new function;
+                        *(sc->func) = *(currentScope->func);
+                        *(sc->fstore) = *(currentScope->fstore);
+                        sc->func->code = std::vector<std::string>();
+                        sc->reentrySymbol = sc->parent->name+CPE2_SYMBOL_SCOPE_SEP"reentry";
+                        placeSymbol(sc->reentrySymbol);
+                        line conditionLine = lines[++i];
+                        token cond = conditionLine.nextToken();
+                        //std::cout << "condition: " << cond.text << std::endl;
+                        variable* condition = resolve(cond);
+                        //cmp(__false__,condition);
+                        jc(sc->name);
+                        if(options::asmSepComments)putComment("");
+                        //parse end line
+                        updateCurrentScope(sc);
+                        if(options::asmSepComments)putComment("");
+                        line endLine = lines[++i];
+                        {
+                            uint64_t bi = endLine.text.size()-1;
+                            while(endLine.text[bi] != ':')
+                                bi--;
+                            while(endLine.text[bi] != ')')
+                                bi--;
+                            endLine.text = endLine.text.substr(0,bi);
+                        }
+                        endLine.leadingSpaces = currentScope->leadingSpace;
+                        std::vector<line> endLines = {endLine};
+                        parse(endLines);
+                        //prepare for body
+                        std::vector<std::string>* endcode = new std::vector<std::string>;
+                        for(std::string& i : currentScope->func->code)
+                            endcode->push_back(i);
+                        currentScope->func->code = std::vector<std::string>();
+                        currentScope->extraCodeBlocks.push_back(&currentScope->func->code);
+                        currentScope->extraCodeBlocks.push_back(endcode);
+                        placeSymbol(currentScope->name);
                     } else if (t.text == "if") {
                         if(options::ddebug)std::cout << "if" << std::endl;
+                        if(options::asmSepComments)putComment("");
                         scope* sc = new scope;
                         sc->leadingSpace=currentScope->leadingSpace+tabLength;
                         sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"if"+std::to_string(currentScope->ifCounter++);
@@ -952,9 +1482,15 @@ void parse(std::vector<line> lines) {
                         sc->func = new function;
                         sc->parent->conditionalCounter++;
                         *(sc->func) = *(currentScope->func);
+                        *(sc->func->fstore) = *(currentScope->func->fstore);
                         *(sc->fstore) = *(currentScope->fstore);
+                        //std::cout << "transfer " << currentScope->name << " -> " << sc->name << std::endl;
+                        //std::cout << "parent stack offset: " <<std::dec<< sc->fstore->stackOffset << std::endl;
+                        //std::cout << "parent func stack offset: " <<std::dec<< sc->func->fstore->stackOffset << std::endl;
+                        //std::cout << "parent stack size: " <<std::dec<< sc->fstore->stackSize << std::endl;
+                        //std::cout << "parent func stack size: " <<std::dec<< sc->func->fstore->stackSize << std::endl;
                         sc->func->code = std::vector<std::string>();
-                        currentScope->reentrySymbol = sc->parent->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
+                        sc->reentrySymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
                         sc->extraCodeBlocks.push_back(&sc->func->code);
                         //generate conditional jump code
                         line cl = L;
@@ -980,7 +1516,7 @@ void parse(std::vector<line> lines) {
                             while(cond.type != 40)//while != :
                             {
                                 cond = L.nextToken();
-                                if(cond.type != 40){
+                                if(cond.type != 40) {
                                     cl.text += cond.text;
                                 }
                             }
@@ -988,11 +1524,11 @@ void parse(std::vector<line> lines) {
                         }
                         
                         cond = cl.nextToken();
-                        std::cout << "condition: " << cond.text << std::endl;
+                        //std::cout << "condition: " << cond.text << std::endl;
                         variable* condition = resolve(cond);
-                        variable* __false__ = getImmediateVariable(0);
-                        cmp(__false__,condition);
-                        jne(sc->name);
+                        //cmp(__false__,condition);
+                        jc(sc->name);
+                        if(options::asmSepComments)putComment("");
                         //set return symbol
                         updateCurrentScope(sc);
                         placeSymbol(sc->func,sc->name);
@@ -1001,6 +1537,7 @@ void parse(std::vector<line> lines) {
                         if(t.text == "if")
                         {
                             if(options::ddebug)std::cout << "else if" << std::endl;
+                            if(options::asmSepComments)putComment("");
                             scope* sc = new scope;
                             sc->leadingSpace=currentScope->leadingSpace+tabLength;
                             sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"elseif"+std::to_string(currentScope->elseIfCounter++);
@@ -1011,9 +1548,10 @@ void parse(std::vector<line> lines) {
                             sc->func = new function;
                             *(sc->func) = *(currentScope->func);
                             *(sc->fstore) = *(currentScope->fstore);
+                            //std::cout << "transfer " << currentScope->name << " -> " << sc->name << std::endl;
                             sc->func->code = std::vector<std::string>();
                             sc->extraCodeBlocks.push_back(&sc->func->code);
-                            currentScope->reentrySymbol = sc->parent->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
+                            sc->reentrySymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
                             //generate conditional jump code
                             line cl = L;
                             cl.text = "";
@@ -1044,13 +1582,13 @@ void parse(std::vector<line> lines) {
                                 }
                                 cl.tpos = 0;
                             }
-
                             cond = cl.nextToken();
-                            std::cout << "condition: " << cond.text << std::endl;
+                            //std::cout << "condition: " << cond.text << std::endl;
                             variable* condition = resolve(cond);
                             variable* __false__ = getImmediateVariable(0);
-                            cmp(__false__,condition);
-                            jne(sc->name);
+                            //cmp(__false__,condition);
+                            jc(sc->name);
+                            if(options::asmSepComments)putComment("");
                             //set return symbol
                             updateCurrentScope(sc);
                             placeSymbol(sc->func,sc->name);
@@ -1063,17 +1601,17 @@ void parse(std::vector<line> lines) {
                             sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"else"+std::to_string(currentScope->elseCounter++);
                             sc->parent = currentScope;
                             sc->isIndentBased = true;
-                            sc->t = scopeType::CONDITIONAL_BLOCK;
+                            sc->t = scopeType::LOGICAL;
                             sc->fstore = new functionStorage;
                             sc->func = new function;
                             *(sc->func) = *(currentScope->func);
                             *(sc->fstore) = *(currentScope->fstore);
                             sc->func->code = std::vector<std::string>();
-                            sc->extraCodeBlocks.push_back(&sc->func->code);
-                            currentScope->reentrySymbol = sc->parent->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
+                            sc->reentrySymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
+                            //sc->extraCodeBlocks.push_back(&sc->func->code);
                             //set return symbol
                             updateCurrentScope(sc);
-                            placeSymbol(sc->func,sc->name);
+                            placeSymbol(currentScope->name);
                         }
                     } else if (t.text == "template") {
                         t = L.nextToken();
@@ -1133,12 +1671,38 @@ void parse(std::vector<line> lines) {
 				switch (t.type) {
 					case (9): {
 						// function or variable declaration
+                        uint64_t arraySizeCount = 0;
+                        bool isArray = 0;
 						type* it = getType(t.text);
 						if (it == nullptr) {
 							error::noSuchType(t);
 							goto ERRORENDLINE;
 						}
 						t				 = L.nextToken();
+                        line arrayCountLine = L;
+                        arrayCountLine.tpos = 0;
+                        arrayCountLine.text = "";
+                        if(t.type == 32)
+                        {
+                            t = L.nextToken();
+                            while(t.type != 33)
+                            {
+                                arrayCountLine.text += t.text;
+                                t = L.nextToken();
+                            }
+                            isArray = true;
+                            token sizeToken = arrayCountLine.nextToken();
+                            variable* size = resolve(sizeToken);
+                            if(size->storage != storageType::IMMEDIATE)
+                            {
+                                error::arraySizeImmediate(t);
+                                goto ERRORENDLINE;
+                            }
+                            arraySizeCount = size->immediateValue;
+                            it = getType(it->name+"*");
+                            t = L.nextToken();
+                        }
+                        token nametoken = t;
 						std::string name = t.text;
 						bool isFunction	 = false;
                         t = L.nextToken();
@@ -1148,6 +1712,7 @@ void parse(std::vector<line> lines) {
                             isFunction = true;
                         }
 						if (isFunction) {
+                            if(is_vstc_send)std::cout << "0003\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col+L.leadingSpaces <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<currentFile<<'\x0c'<<std::to_string(L.lineNum)<<'\x0c'<<it->name<<'\n';
 							mangler* mangling	  = defaultMangler;
 							bool isStatic		  = false;
 							bool isInline		  = false;
@@ -1164,8 +1729,9 @@ void parse(std::vector<line> lines) {
 							primitiveOP op		  = primitiveOP::invalid;
 							uint8_t access		  = 0;
 							ABI* abi = defaultABI;
+                            std::string symbol;
 							for (token& attr : attribs) {
-								if (attr.text == "static") isStatic = true;
+								if (attr.text == "local") isStatic = true;
 								else if (attr.text == "public") access = 0;
 								else if (attr.text == "protected") access = 1;
 								else if (attr.text == "private") access = 2;
@@ -1178,22 +1744,17 @@ void parse(std::vector<line> lines) {
 								else if (attr.text == "export") doExport = true;
 								else if (attr.text == "deprecated")
 									isDeprecated = true;
-								else if (attr.text.substr(
-											   0, strlen("ABI-")) ==
-										   "ABI-") {
+                                else if (attr.text.substr(0, strlen("SYMBOL-")) == "SYMBOL-") {
+                                    //std::cout << "symbol: " << attr.text.substr(strlen("SYMBOL-"),attr.text.length()) << std::endl;
+                                    symbol = attr.text.substr(strlen("SYMBOL-"),attr.text.length());
+                                } else if (attr.text.substr(0, strlen("ABI-")) == "ABI-") {
 									std::string ABIName =
-										attr.text.substr(strlen("ABI-"),
-														 attr.text.length());
+										attr.text.substr(strlen("ABI-"),attr.text.length());
 									abi = getABI(ABIName);
 									if (abi == nullptr) {
-										std::cout << "ERROR: ABI \""
-												  << ABIName
-												  << "\" does not exist!"
-												  << std::endl;
+                                        std::cout << "ERROR: ABI \""<< ABIName<< "\" does not exist!"<< std::endl;
 									}
-								} else if (attr.text.substr(
-											   0, strlen("mangling-")) ==
-										   "mangling-") {
+								} else if (attr.text.substr(0, strlen("mangling-")) == "mangling-") {
 									std::string manglerName =
 										attr.text.substr(strlen("mangling-"),
 														 attr.text.length());
@@ -1229,8 +1790,7 @@ void parse(std::vector<line> lines) {
 										op = primitiveOP::NotEqual;
 									else if (attr.text == "primitiveGreater")
 										op = primitiveOP::Greater;
-									else if (attr.text ==
-											 "primitiveGreaterEqual")
+									else if (attr.text == "primitiveGreaterEqual")
 										op = primitiveOP::GreaterEqual;
 									else if (attr.text == "primitiveLess")
 										op = primitiveOP::Less;
@@ -1250,6 +1810,22 @@ void parse(std::vector<line> lines) {
 										op = primitiveOP::Dec;
 									else if (attr.text == "primitiveAssign")
 										op = primitiveOP::assign;
+                                    else if (attr.text == "primitiveArrayIndex")
+										op = primitiveOP::Index;
+                                    else if (attr.text == "primitiveInterrupt")
+										op = primitiveOP::Interrupt;
+                                    else if (attr.text == "primitiveCPUID")
+										op = primitiveOP::CPUid;
+                                    else if (attr.text == "primitiveSYSCALL")
+										op = primitiveOP::SYSCALL;
+                                    else if (attr.text == "primitivePRINTCHAR")
+										op = primitiveOP::PRINTCHAR;
+                                    else if (attr.text == "primitivePRINTSTR")
+										op = primitiveOP::PRINTSTR;
+                                    else {
+									    error::invalidFunctionAttribute(attr);
+									    goto ERRORENDLINE;
+								    }
 								} else {
 									error::invalidFunctionAttribute(attr);
 									goto ERRORENDLINE;
@@ -1270,6 +1846,9 @@ void parse(std::vector<line> lines) {
                             t = L.nextToken();
 							while (true) {
                                 variable* arg = new variable;
+                                arg->isParameter = true;
+                                arg->__declared_file = currentFile;
+                                arg->__declared_line = L.lineNum;
                                 switch(t.type)
                                 {
                                     case(42):
@@ -1300,6 +1879,7 @@ void parse(std::vector<line> lines) {
                                 switch (t.type) {
                                     case(1):
                                         arg->name = t.text;
+                                        if(is_vstc_send)std::cout << "0004\x0c" << t.lineNum <<'\x0c'<< t.col+L.leadingSpaces <<'\x0c'<< t.text.length() <<'\x0c'<<t.text<<'\x0c'<<arg->__declared_file<<'\x0c'<<std::to_string(arg->__declared_line)<<'\x0c'<<arg->dataType->name<< '\n';
                                         t = L.nextToken();
                                         break;
                                     case(31):
@@ -1325,6 +1905,8 @@ void parse(std::vector<line> lines) {
 								//goto ERRORENDLINE;
 							}
 							function* func		   = new function;
+                            func->__declared_file = currentFile;
+                            func->__declared_line = L.lineNum;
 							func->name			   = name;
 							func->parameters	   = paramTypes;
 							func->vparams		   = arguments;
@@ -1339,8 +1921,17 @@ void parse(std::vector<line> lines) {
 							func->noDoc			   = nodoc;
 							func->doExport		   = doExport;
                             func->abi = abi;
-                            mangling->mangle(func);
-							currentScope->functions.push_back(func);
+                            func->symbol = symbol;
+                            func->isLocal = isStatic;
+                            if(func->symbol.empty())
+                            {
+                                if(name == "main" && options::mainAutoSym)
+                                    func->symbol = "cpe2main";
+                                else
+                                    mangling->mangle(func);
+                            }
+							//currentScope->functions.push_back(func);
+                            globalScope->functions.push_back(func);
                             if(options::ddebug)
 							    std::cout << "declared function: "<< getFunctionExpression(func, true) << std::endl;
                             t = L.nextToken();
@@ -1354,11 +1945,14 @@ void parse(std::vector<line> lines) {
 								sc->t			  = scopeType::FUNCTION;
 								sc->fstore		  = func->fstore;
 								sc->func		  = func;
-
 								// declare variables for arguments
                                 func->abi->setArgStorages(func,arguments);
 								for (variable* arg : arguments) {
                                     sc->variables.push_back(arg);
+                                    if(options::ddebug)
+                                    {
+                                        std::cout << "declared arg: " << arg->name << std::endl;
+                                    }
 									if (options::asmVerbose >= 2 || options::ddebug) {
 										std::string comment = "    # " +
 															  arg->name +
@@ -1390,22 +1984,77 @@ void parse(std::vector<line> lines) {
 									}
 								}
 								updateCurrentScope(sc);
+                                //debug info
+                                if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+                                {
+                                    setANB(16);
+                                    //function.debug
+                                    std::vector<std::string>* cc = code;
+                                    code = &TextCode;
+                                    placeSymbol(func->symbol+CPE2_SYMBOL_SCOPE_SEP"debug");
+                                    code->push_back(getIndent()+".type "+func->symbol+", @function");
+                                    code = cc;
+                                    //.debug_info
+                                    DebugCode.push_back(getIndent()+".uleb128 "+intToString(++dbgAbbrev));
+                                    DebugCode.push_back(getIndent()+".string \""+func->name+"\"");
+                                    DebugCode.push_back(getIndent()+".string \""+func->symbol+"\"");
+                                    //.debug_abbrev
+                                    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
+                                    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::TAG_subprogram));
+                                    DebugAbbrevCode.push_back(getIndent()+".byte 1");//bool indicating the presence of child tags (0 for testing purposes)
+                                    //mark main
+                                    if(func->symbol == "cpe2main")
+                                    {
+                                        DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_main_subprogram));
+                                        DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_flag_present));
+                                    }
+                                    if(!func->isLocal)
+                                    {
+                                        DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_external));
+                                        DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_flag_present));
+                                    }
+                                    //name
+                                    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_name));
+                                    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
+                                    //symbol (linkage name)
+                                    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_linkage_name));
+                                    DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
+                                    //terminator
+                                    DebugAbbrevCode.push_back(getIndent()+".uleb128 0");
+                                    DebugAbbrevCode.push_back(getIndent()+".uleb128 0");
+                                    popANB();
+                                }
 								if (options::ddebug)
 									std::cout << "body started" << std::endl;
-                                if(!isStatic)
-								    MiscCode.push_back(".global " + func->symbol);
 							} else if (t.type == 41) {
 								// function declaration
 								if (!isPrimitive)
-									MiscCode.push_back(".extern " +
-													   func->symbol);
+                                {
+                                    if(!options::nod)
+                                    {
+                                        //optimizer data
+                                        MiscCode.push_back("// @function "+func->symbol);
+                                        for(variable* arg : func->vparams)
+                                            MiscCode.push_back("// @parameter "+c2oLocExpr(arg));
+                                        MiscCode.push_back("// @return rax");
+                                        for(__register__ i : func->abi->VolatileRegisters)
+                                            MiscCode.push_back("// @modifies "+registerNAME(i));
+                                        for(__register__ i : func->abi->nonVolatile)
+                                            MiscCode.push_back("// @preserves "+registerNAME(i));
+                                        MiscCode.push_back(".extern " +
+									    	func->symbol);
+                                    }
+                                }
 								mOUT(1, func);
 							} else {
                                 errorCompilerBug;
                             }
 						} else {
+                            if(is_vstc_send)std::cout << "0002\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col+L.leadingSpaces <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<currentFile<<'\x0c'<<std::to_string(L.lineNum)<<'\x0c'<<it->name<<'\n';
 							variable* var	  = new variable;
 							var->dataType	  = it;
+                            var->__declared_file = currentFile;
+                            var->__declared_line = L.lineNum;
 							mangler* mangling = defaultMangler;
 							bool isStatic	  = false;
 							bool isExtern	  = false;
@@ -1413,10 +2062,12 @@ void parse(std::vector<line> lines) {
 							bool isVolatile	  = false;
 							bool noalloc	  = false;
 							uint8_t access	  = 0;
+                            token lspecToken;
 							for (token& attr : attribs) {
 								if (attr.text[0] == '(' &&
 									attr.text.back() == ')') {
 									// storage attribute
+                                    lspecToken = attr;
 									if (isdigit(attr.text[1])) {
 										// absolute memory address
 										token blub = t;
@@ -1429,7 +2080,7 @@ void parse(std::vector<line> lines) {
 										var->offset = addr;
 									} else if (attr.text[1] == '+' ||
 											   attr.text[1] == '-') {
-										// address relative to SP
+										// address relative to stack pointer
 										token blub = t;
 										blub.text  = attr.text.substr(
 											 1, attr.text.size() - 2);
@@ -1462,6 +2113,8 @@ void parse(std::vector<line> lines) {
 										var->storage = storageType::REGISTER;
 										var->reg	 = reg;
 									}
+                                } else if (attr.text.substr(0, strlen("SYMBOL-")) == "SYMBOL-") {
+                                    var->symbol = attr.text.substr(strlen("SYMBOL-"),attr.text.length());
 								} else if (attr.text.substr(
 											   0, strlen("mangling-")) ==
 										   "mangling-") {
@@ -1475,7 +2128,7 @@ void parse(std::vector<line> lines) {
 												  << "\" does not exist!"
 												  << std::endl;
 									}
-								} else if (attr.text == "static")
+								} else if (attr.text == "local")
 									isStatic = true;
 								else if (attr.text == "export")
 									var->doExport = true;
@@ -1492,21 +2145,48 @@ void parse(std::vector<line> lines) {
 									goto ERRORENDLINE;
 								}
 							}
+                            var->name	= name;
+							var->access = access;
+                            if(var->symbol.empty())
+							    mangling->mangle(var);
+                            if(isExtern)
+                            {
+                                var->storage = storageType::SYMBOL;
+                                MiscCode.push_back(".extern " + var->symbol);
+                            }
 							if (var->storage == storageType::INVALID) {
 								// auto storage
                                 var->usedAutoStorage = true;
-								if (currentScope->t == scopeType::FUNCTION)
-									currentScope->fstore->setStorage(currentScope->func,var);
+								if (currentScope->t == scopeType::FUNCTION || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK)
+								{
+                                    currentScope->fstore->setStorage(currentScope->func,var);
+                                }
 								else if (currentScope->t == scopeType::CLASS) {
 									var->offset	 = currentScope->cl->size;
 									var->storage = storageType::MEMORY;
 								}
 							}
-							var->name	= name;
-							var->access = access;
-							mangling->mangle(var);
+                            if(isArray)
+                            {
+                                if(currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK)
+                                {
+                                    uint64_t stackArrayBase = currentScope->fstore->stackOffset;
+                                    currentScope->fstore->stackOffset+=(var->dataType->valueType->size*arraySizeCount);
+                                    if(currentScope->fstore->stackOffset > currentScope->fstore->stackSize)
+                                        currentScope->fstore->stackSize = currentScope->fstore->stackOffset;
+                                    std::vector<variable*> eqArgs = {var,getImmediateVariable(stackArrayBase)};
+                                    std::vector<variable*> addArgs = {var,getRegisterHandle(StackPointer)};
+                                    call(getFunction("operator=",eqArgs),eqArgs);
+                                    call(getFunction("operator+=",addArgs),addArgs);
+                                }
+                                else if(currentScope->t == scopeType::CLASS)
+                                {
+                                    uint64_t classArrayBase = currentScope->cl->size;
+                                    currentScope->cl->size+=(var->dataType->valueType->size*arraySizeCount);
+                                }
+                            }
 							if (options::asmVerbose >= 2 &&
-								currentScope->t == scopeType::FUNCTION) {
+								currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK) {
 								std::string comment = getIndent() + "# " +
 													  var->name + " is stored ";
 								if (var->storage == storageType::MEMORY) {
@@ -1525,7 +2205,7 @@ void parse(std::vector<line> lines) {
 								}
 								currentScope->func->code.push_back(comment);
 							}
-							if (currentScope->t == scopeType::FUNCTION) {
+							if (currentScope->t == scopeType::FUNCTION || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK) {
 								if (var->storage == storageType::REGISTER)
 									currentScope->fstore->registerStatus(
 										var->reg, 1);
@@ -1533,7 +2213,8 @@ void parse(std::vector<line> lines) {
 							if (var->storage == storageType::REGISTER) {
                                 //(uint64_t)var->reg & 0x504C532043554D20494E53494445204D45 /* UwU */
 								if (((uint64_t)var->reg & BITMASK_REGISTER_CPL) < options::fcpl) {
-									if (warn(getWarning("cpl-registers"), &L,
+                                    if(is_vsls_send)std::cout << "5001-" << lspecToken.lineNum <<'-'<< lspecToken.col+L.leadingSpaces <<'-'<< lspecToken.text.length() <<'-'<<lspecToken.text<<"-cpl-registers"<< '\n';
+									else if (warn(getWarning("cpl-registers"), &L,
 											 "insufficient privilege level to "
 											 "access register \"" +
 												 registerNAME(var->reg) +
@@ -1546,20 +2227,20 @@ void parse(std::vector<line> lines) {
 										note("use --fcpl <some number> or \"#pragma cpl <some number>\" to set the privilege level.");
 									}
 								}
-                                if(var->reg == __register__::rsp)
+                                if(var->reg == StackPointer)
                                 {
-                                    warn(getWarning("stack-pointer-rsp-storage"), &L, 
-                                    "rsp is conventionally used to store the stack pointer, "
-                                    "you should not mess with the stack pointer unless you know what you're doing!");
+                                    if(is_vsls_send)std::cout << "5002-" << L.lineNum <<'-'<< lspecToken.col+L.leadingSpaces <<'-'<< lspecToken.text.length() <<'-'<<lspecToken.text<<"-stack-pointer-storage"<< '\n';
+                                    else warn(getWarning("stack-pointer-storage"), &L, registerNAME(StackPointer)+" is currently used to store the stack pointer, you should not mess with the stack pointer unless you know what you're doing!");
                                 }
 							} else if (var->storage ==
 									   storageType::MEMORY_ABSOLUTE) {
-								if (warn(getWarning("memory-absolute"), &L,
+                                if(is_vsls_send)std::cout << "5003-" << lspecToken.lineNum <<'-'<< lspecToken.col+L.leadingSpaces <<'-'<< lspecToken.text.length() <<'-'<<"memory-absolute"<< '\n';
+								else if (warn(getWarning("memory-absolute"), &L,
 										 "saving variable at an absolute "
-										 "address may be "
+										 "memory address may be "
 										 "unintentional"))
 									note("use an explicit sign (+ or -) to "
-										 "specifiy a relative "
+										 "specifiy a stack-pointer-relative "
 										 "address");
 							}
 							if (currentScope->t == scopeType::CLASS) {
@@ -1572,7 +2253,7 @@ void parse(std::vector<line> lines) {
 											storageType::MEMORY_ABSOLUTE &&
 										var->isStatic == false) {
 										// error absolute address only legal for
-										// static members
+										// local members
 										std::cout << "BLUB" << std::endl;
 									} else {
 										currentScope->cl->members.push_back(
@@ -1584,11 +2265,11 @@ void parse(std::vector<line> lines) {
 												var->dataType->size;
 									}
 								}
-                                std::cout << "declared member: " << var->name << std::endl;
+                                if(options::ddebug)
+                                    std::cout << "declared member: " << var->name << std::endl;
 							} 
                             else
                             {
-                                PRINT_DEBUG
                                 currentScope->variables.push_back(var);
                                 bool isPointer = var->dataType->name.back() == '*' ? true : false;
                                 type* childTargetDataType = isPointer ? var->dataType->valueType : var->dataType;
@@ -1598,10 +2279,8 @@ void parse(std::vector<line> lines) {
                                 //std::cout << "ctdt: " << std::hex << (void*)childTargetDataType << std::endl;
                                 if(childTargetDataType->members.size() > 0)
                                 {
-                                    PRINT_DEBUG
                                     if(var->storage == storageType::REGISTER && !isPointer)
                                     {
-                                        PRINT_DEBUG
                                         if(var->usedAutoStorage)
                                         {
                                             //switch to memory storage
@@ -1613,11 +2292,9 @@ void parse(std::vector<line> lines) {
                                     }
                                     else
                                     {
-                                        PRINT_DEBUG
                                         std::string msep = isPointer ? "->" : ".";
                                         if(isPointer)
                                         {
-                                            PRINT_DEBUG
                                             for(variable i : childTargetDataType->members)
                                             {
                                                 //init
@@ -1632,13 +2309,12 @@ void parse(std::vector<line> lines) {
                                                 child->parent = var;
                                                 var->children.push_back(child);
                                                 currentScope->variables.push_back(child);
-                                                //if(options::ddebug)
+                                                if(options::ddebug)
                                                     std::cout << "declared child: " << child->name << std::endl;
                                             }
                                         }
                                         else
                                         {
-                                            PRINT_DEBUG
                                             for(variable i : childTargetDataType->members)
                                             {
                                                 //init
@@ -1653,14 +2329,43 @@ void parse(std::vector<line> lines) {
                                                 child->parent = var;
                                                 var->children.push_back(child);
                                                 currentScope->variables.push_back(child);
-                                                //if(options::ddebug)
+                                                if(options::ddebug)
                                                     std::cout << "declared child: " << child->name << std::endl;
                                             }
                                         }
                                     }
                                 }
                             }
-                            std::cout << "declared variable: " << var->name << std::endl;
+                            if(options::ddebug)
+                                std::cout << "declared variable: " << var->name << std::endl;
+                            //debug
+                            if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+                            {setANB(16);
+                                //
+                                //.debug_info
+                                //
+                                DebugCode.push_back(getIndent()+".uleb128 "+intToString(++dbgAbbrev));
+                                DebugCode.push_back(getIndent()+".string \""+var->name+"\"");
+                                DebugCode.push_back(getIndent()+".string \""+var->symbol+"\"");
+                                DebugCode.push_back(getIndent()+".quad "+intToString(var->dataType->dwarfID));
+                                //
+                                //.debug_abbrev
+                                //
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::TAG_variable));
+                                DebugAbbrevCode.push_back(getIndent()+".byte 0");//no children
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_name));
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_linkage_name));
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_external));
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_flag_present));
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_type));
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_ref8));
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 0");//terminate
+                                DebugAbbrevCode.push_back(getIndent()+".uleb128 0");
+                            popANB();}
+                            //docs
 							mOUT(moVariableID, var);
 							t = L.nextToken();
 							switch (t.type) {
@@ -1678,6 +2383,11 @@ void parse(std::vector<line> lines) {
                                 case(11):
 								case (1):
 									variable* result = resolve(t);
+                                    if(!result)
+                                    {
+                                        error::noSuchIdentifier(t);
+                                        goto ERRORENDLINE;
+                                    }
                                     std::vector<variable*> args;
                                     args.push_back(var);
                                     args.push_back(result);
@@ -1687,11 +2397,38 @@ void parse(std::vector<line> lines) {
 							        		warn(getWarning("deprecated"), &L,
 							        			 "call to deprecated function \"" +
 							        				 func->name + "\"");
-                                        //std::cout << "calling function " << func->name << std::endl;
 							        	call(func, args);
 							        }
+                                    else
+                                        error::functionNotFound(L);
 									break;
 							}
+                            if(currentScope->t == scopeType::GLOBAL || currentScope->t == scopeType::NAMESPACE)
+                            {
+                                if(var->storage == storageType::SYMBOL && !isExtern)
+                                    MiscCode.push_back(".global " + var->symbol);
+                                else if(var->storage == storageType::INVALID)
+                                {
+                                    var->storage = storageType::SYMBOL;
+                                    DataCode.push_back(var->symbol+":");
+                                    switch(var->dataType->size)
+                                    {
+                                        case(1):
+                                            DataCode.push_back("\t.byte 0");
+                                            break;
+                                        case(2):
+                                            DataCode.push_back("\t.word 0");
+                                            break;
+                                        case(4):
+                                            DataCode.push_back("\t.int 0");
+                                            break;
+                                        case(8):
+                                            DataCode.push_back("\t.quad 0");
+                                            break;
+                                    }
+                                    //MiscCode.push_back(".global " + var->symbol);
+                                }
+                            }
 						}
 
 						break;
@@ -1708,77 +2445,120 @@ void parse(std::vector<line> lines) {
 				break;
 			case (10): {
 				// do smth with variable
-				std::string name = t.text;
-				variable* arg1	 = getVariable(t.text);
-				t				 = L.nextToken();
-				switch (t.type) {
-					case (3):
-						std::string functionName;
-						std::string op = t.text;
-						if (t.text == "=") functionName = "operator" + t.text;
-						else if (t.text == "+=")
-							functionName = "operator" + t.text;
-						else if (t.text == "-=")
-							functionName = "operator" + t.text;
-						else if (t.text == "*=")
-							functionName = "operator" + t.text;
-						else if (t.text == "/=")
-							functionName = "operator" + t.text;
-						else if (t.text == "%=")
-							functionName = "operator" + t.text;
-						else if (t.text == "==")
-							functionName = "operator" + t.text;
-						else if (t.text == "|=")
-							functionName = "operator" + t.text;
-						else if (t.text == "&=")
-							functionName = "operator" + t.text;
-						else if (t.text == "^=")
-							functionName = "operator" + t.text;
-						else if (t.text == "!=")
-							functionName = "operator" + t.text;
-						else if (t.text == "*")
-							functionName = "operator" + t.text;
-						else if (t.text == "+")
-							functionName = "operator" + t.text;
-						else if (t.text == "-")
-							functionName = "operator" + t.text;
-						else if (t.text == "/")
-							functionName = "operator" + t.text;
-						else if (t.text == "++")
-							functionName = "operator" + t.text;
-						else if (t.text == "--")
-							functionName = "operator" + t.text;
-						else if (t.text == "^")
-							functionName = "operator" + t.text;
-						else {
-							// unkown operator
-							std::cout << "unknown operator: " << t.text
-									  << std::endl;
-						}
-
-						t			   = L.nextToken();
-                        if(options::asmVerbose >= 3)
-                            if(currentScope->func != nullptr)
-						        currentScope->func->code.push_back(getIndent() + "# " + L.text);
-						variable* arg2 = resolve(t);
-						if (arg2 == nullptr) {
-							std::cout << "wtf?" << std::endl;
-                            printLine(L);
-						} else {
-							std::vector<variable*> args;
-							args.push_back(arg1);
-							if (op != "++" && op != "--") args.push_back(arg2);
-							function* func = getFunction(functionName, args);
-							if (func != nullptr) {
-								if (func->isDeprecated)
-									warn(getWarning("deprecated"), &L,
-										 "call to deprecated function \"" +
-											 func->name + "\"");
-                                //std::cout << "calling function " << func->name << std::endl;
-								call(func, args);
-							}
-						}
-				}
+				//std::string name = t.text;
+                //if(options::ddebug)
+                //    info("var name: "+name);
+                //std::vector<variable*> args__;
+				//variable* arg1	 = getVariable(t.text);
+				//t				 = L.nextToken();
+                //if(t.type == 32)
+                //{
+                //    t = L.nextToken();
+                //    line indexLine = L;
+                //    indexLine.tpos = 0;
+                //    indexLine.text = "";
+                //    while(t.type != 33)
+                //    {
+                //        indexLine.text += t.text;
+                //        t = L.nextToken();
+                //    }
+                //    token indexToken = indexLine.nextToken();
+                //    variable* index = resolve(indexToken);
+                //    //
+                //    std::string fname = "operator[]";
+                //    args__.push_back(arg1);
+                //    args__.push_back(index);
+                //    function* indexOP = getFunction(fname,args__);
+                //    if(indexOP)
+                //        arg1 = call(indexOP,args__);
+                //    else
+                //        error::functionNotFound(L);
+                //    //
+                //    t = L.nextToken();
+                //}
+				//switch (t.type) {
+                //    case(34):
+                //        t = L.nextToken();
+                //        if(t.type == 34)
+                //            t.text = "<<";
+                //        else
+                //            break;
+                //        goto procop;
+				//	case (3):
+                //        procop:;
+                //        std::string functionName;
+				//		std::string op = t.text;
+				//		if (t.text == "=") functionName = "operator" + t.text;
+				//		else if (t.text == "+=")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "-=")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "*=")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "/=")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "%=")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "==")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "|=")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "&=")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "^=")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "!=")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "*")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "+")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "-")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "/")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "++")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "--")
+				//			functionName = "operator" + t.text;
+				//		else if (t.text == "^")
+				//			functionName = "operator" + t.text;
+                //        else if (t.text == "<<")
+				//			functionName = "operator" + t.text;
+                //        else if (t.text == ">>")
+				//			functionName = "operator" + t.text;
+				//		else {
+                //            if(functionName == "")
+				//			{
+                //                std::cout << "unknown operator: " << t.text<< std::endl;
+                //            }
+				//		}
+				//		t = L.nextToken();
+                //        if(options::asmVerbose >= 3)
+                //            if(currentScope->func != nullptr)
+				//		        currentScope->func->code.push_back(getIndent() + "# " + L.text);
+				//		variable* arg2 = resolve(t);
+				//		if (arg2 == nullptr) {
+				//			std::cout << "wtf?" << std::endl;
+                //            printLine(L);
+				//		} else {
+				//			std::vector<variable*> args;
+				//			args.push_back(arg1);
+				//			if (op != "++" && op != "--") args.push_back(arg2);
+				//			function* func = getFunction(functionName, args);
+				//			if (func != nullptr) {
+				//				if (func->isDeprecated)
+				//					warn(getWarning("deprecated"), &L,
+				//						 "call to deprecated function \"" +
+				//							 func->name + "\"");
+				//				call(func, args);
+				//			}
+                //            else
+                //                error::functionNotFound(L);
+				//		}
+                //        break;
+				//}
+                resolve(t);
 				break;
 			}
 			case (11): {
@@ -1789,7 +2569,7 @@ void parse(std::vector<line> lines) {
 			case (1): {
 				// new unique identifier
 				if (currentScope->t == scopeType::ENUM) {
-					// declare new static enum member
+					// declare new local enum member
 				}
 				break;
 			}
@@ -1803,5 +2583,6 @@ void parse(std::vector<line> lines) {
 		if (++i >= lines.size()) break;
 	}
     ENDPARSER:;
+    dbgFile.pop();
     templateMode = 0;//cant ever be too sure in a file exceeding 2.000 lines LMFAO
 }

@@ -32,6 +32,8 @@
 #include <compiler.h>
 #include <miscout.h>
 #include <mangling.h>
+#include <stack>
+#include <error.h>
 
 uint64_t moClassID = 0;
 uint64_t moFunctionID = 0;
@@ -44,7 +46,12 @@ mangler* defaultMangler = nullptr;
 arch* currentArch = nullptr;
 std::vector<arch*> architectures;
 
+_system* csys = nullptr;
+std::vector<_system*> systems;
+
 uint64_t ARCH_REGISTER_MASK = 0;
+
+std::vector<std::string> startObjFiles;
 
 std::vector<format> formats;
 std::vector<format*> ClassesOutformats;
@@ -52,7 +59,6 @@ std::vector<format*> FunctionsOutformats;
 std::vector<format*> VariablesOutformats;
 std::vector<format*> ScopesOutformats;
 std::list<std::string> sourceFiles;
-std::list<std::string> dependencies;
 std::vector<type*> types;
 std::vector<std::string> includeDirs;
 //std::vector<function*> functions;
@@ -96,7 +102,9 @@ char c_horizontaltab        = 0x09;
 char c_verticaltab          = 0x0B;
 
 std::string objOut = "";
+std::string execOut = "";
 std::string asmOut = "";
+std::string mdOut = "";
 
 uint64_t POINTER_SIZE = 8;
 
@@ -106,6 +114,18 @@ type* defaultFloatType = nullptr;
 type* defaultCharType = nullptr;
 type* defaultWcharType = nullptr;
 type* defaultBooleanType = nullptr;
+type* defaultPointerType = nullptr;
+
+int ANB = 10;
+std::stack<int> ANB_STACK;
+void setANB(int n){
+    ANB_STACK.push(ANB);
+    ANB = n;
+}
+void popANB(){
+    ANB = ANB_STACK.top();
+    ANB_STACK.pop();
+}
 
 std::vector<typeTemplate*> typeTemplates;
 std::vector<functionTemplate*> functionTemplates;
@@ -133,14 +153,39 @@ namespace options
     //-d******
     bool dprintTokens = false;
     bool ddebug = false;
+    bool asmSepComments = true;
 
     //misc
     std::string SysRoot = defaultSysRoot;
     bool MD = false;
     bool C = false;
+    bool debugSymbols = false;
     bool as = false;
+    bool aso = false;
+    bool nod = false;
+    bool vsls = false;
+    bool vstc = false;
+    bool mainAutoSym = true;
     std::string output = "";
 
     std::string buildDir = "build";
     std::string docDir = "documentation";
+}
+
+std::string intToString(uint64_t n)
+{
+    std::stringstream stream;
+    if(ANB == 10)
+    {
+        stream << std::dec << n;
+    }
+    else if(ANB == 16)
+    {
+        stream <<"0x"<< std::hex << n;
+    }
+    else
+    {
+        error::genericError(0x00001);
+    }
+    return stream.str();
 }

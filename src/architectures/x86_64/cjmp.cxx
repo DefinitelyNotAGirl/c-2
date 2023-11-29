@@ -40,7 +40,7 @@ namespace x86_64
         else if(b->storage == storageType::REGISTER && a->storage == storageType::MEMORY)
             code->push_back(getIndent()+"cmp %"+location(a->reg,a->offset).expr()+","+registerNAME(b->reg));
         else if(a->storage == storageType::REGISTER && b->storage == storageType::MEMORY)
-            code->push_back(getIndent()+"cmp %"+registerNAME(a->reg)+","+location(b->reg,b->offset).expr());
+            code->push_back(getIndent()+"cmp %"+registerNAME(a->reg)+","+location(b).expr());
         else if(b->storage == storageType::MEMORY && a->storage == storageType::MEMORY)
         {
             //cant compare directly
@@ -85,15 +85,105 @@ namespace x86_64
         }
         else if(b->storage == storageType::MEMORY && a->storage == storageType::IMMEDIATE)
         {
-            code->push_back(getIndent()+"cmp $"+std::to_string(a->immediateValue)+",%"+location(b->reg,b->offset).expr());
+            std::string instr = "cmp";
+            switch(b->dataType->size)
+            {
+                case(1):
+                    instr = "cmpb";
+                    break;
+                case(2):
+                    instr = "cmpw";
+                    break;
+                case(4):
+                    instr = "cmpd";
+                    break;
+                case(8):
+                    instr = "cmpq";
+                    break;
+            }
+            code->push_back(getIndent()+instr+" $"+std::to_string(a->immediateValue)+","+location(b).expr());
         }
         else if(b->storage == storageType::REGISTER && a->storage == storageType::IMMEDIATE)
         {
             code->push_back(getIndent()+"cmp $"+std::to_string(a->immediateValue)+",%"+registerNAME(b->reg));
         }
+        else if(b->storage == storageType::SYMBOL && a->storage == storageType::REGISTER)
+        {
+            code->push_back(getIndent()+"cmp "+b->symbol+",%"+registerNAME(a->reg,a->dataType->size));
+        }
+        else if(a->storage == storageType::SYMBOL && b->storage == storageType::REGISTER)
+        {
+            code->push_back(getIndent()+"cmp %"+registerNAME(b->reg,b->dataType->size)+","+a->symbol);
+        }
         else if(b->storage == storageType::IMMEDIATE)
         {
-            std::cout << "ERROR: cant put immediate on right side of cmp!" << std::endl;
+            std::cout << "b: " << std::endl;
+            printVariable(b);
+            std::cout << "ERROR: cant put immediate on left side of cmp!" << std::endl;
+        }
+        else if(b->storage == storageType::SYMBOL && a->storage == storageType::SYMBOL)
+        {
+            __register__ reg = fstore->getFreeRegister();
+            pushRegSave();
+            if(reg == __register__::invalid)
+            {
+                reg = __register__::rax;
+                saveRegister(reg);
+            }
+            switch(b->dataType->size)
+            {
+                case(1):
+                    code->push_back(getIndent()+"movb "+b->symbol+", %"+registerNAME(reg));
+                    code->push_back(getIndent()+"cmpb %"+registerNAME(reg)+", "+a->symbol);
+                    break;
+                case(2):
+                    code->push_back(getIndent()+"movw "+b->symbol+", %"+registerNAME(reg));
+                    code->push_back(getIndent()+"cmpw %"+registerNAME(reg)+", "+a->symbol);
+                    break;
+                case(4):
+                    code->push_back(getIndent()+"movd "+b->symbol+", %"+registerNAME(reg));
+                    code->push_back(getIndent()+"cmpd %"+registerNAME(reg)+", "+a->symbol);
+                    break;
+                case(8):
+                    code->push_back(getIndent()+"movq "+b->symbol+", %"+registerNAME(reg));
+                    code->push_back(getIndent()+"cmpq %"+registerNAME(reg)+", "+a->symbol);
+                    break;
+            }
+            restoreRegisters();
+            popRegSave();
+        }
+        else if(b->storage == storageType::SYMBOL && a->storage == storageType::MEMORY)
+        {
+            __register__ reg = fstore->getFreeRegister();
+            pushRegSave();
+            if(reg == __register__::invalid)
+            {
+                reg = __register__::rax;
+                saveRegister(reg);
+            }
+            switch(b->dataType->size)
+            {
+                case(1):
+                    x86_64::mov(getImmediateVariable(0),reg);
+                    code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
+                    code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                    break;
+                case(2):
+                    x86_64::mov(getImmediateVariable(0),reg);
+                    code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
+                    code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                    break;
+                case(4):
+                    code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
+                    code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                    break;
+                case(8):
+                    code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
+                    code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                    break;
+            }
+            restoreRegisters();
+            popRegSave();
         }
         else
         {

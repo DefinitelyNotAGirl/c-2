@@ -28,8 +28,13 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <compiler.h>
+#include <codegen.h>
+#include <error.h>
+
 namespace x86_64
 {
+    variable* _0 = getImmediateVariable(0);
     void mov(uint64_t,__register__);
     
     void writeMSR(__register__ src)
@@ -37,12 +42,14 @@ namespace x86_64
         std::cout << "wrmsr" << std::endl;
         using enum __register__;
         pushRegSave();
-        if(fstore->registerStatus(rcx) != 0)    
+        if(fstore->registerStatus(rcx) != 0)
             saveRegister(rcx);
-        if(fstore->registerStatus(rdx) != 0)    
+        if(fstore->registerStatus(rdx) != 0)
             saveRegister(rdx);
         x86_64::mov((uint64_t)0,rdx);
+        setANB(16);
         x86_64::mov(getx86MSR(src),rcx);
+        popANB();
         code->push_back(getIndent()+"wrmsr");
         restoreRegisters();
     }
@@ -52,9 +59,11 @@ namespace x86_64
         std::cout << "rdmsr" << std::endl;
         using enum __register__;
         pushRegSave();
-        if(fstore->registerStatus(rcx) != 0)    
+        if(fstore->registerStatus(rcx) != 0)
             saveRegister(rcx);
+        setANB(16);
         x86_64::mov(getx86MSR(dst),rcx);
+        popANB();
         code->push_back(getIndent()+"rdmsr");
         restoreRegisters();
     }
@@ -109,7 +118,7 @@ namespace x86_64
         if((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x00)
         {
             if(src != 0)
-                code->push_back(getIndent()+"mov $"+std::to_string(src)+", %"+registerNAME(dst));
+                code->push_back(getIndent()+"mov $"+intToString(src)+", %"+registerNAME(dst));
             else
                 code->push_back(getIndent()+"xor %"+registerNAME(dst)+", %"+registerNAME(dst));
         }
@@ -177,16 +186,26 @@ namespace x86_64
     {
         if(dst->storage == storageType::REGISTER && src->storage == storageType::REGISTER)
             x86_64::mov(src->reg,dst->reg);
-        else if(dst->storage == storageType::REGISTER && src->storage == storageType::MEMORY)
-            x86_64::mov(location(__register__::rsp,src->offset),dst->reg);
+        else if(src->storage == storageType::MEMORY && dst->storage == storageType::REGISTER)
+        {
+            if(dst->dataType->size <= 2)
+            {
+                x86_64::mov(_0,dst->reg);
+                code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(dst->reg,dst->dataType->size));
+            }
+            else
+                code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(dst->reg,dst->dataType->size));
+        }
         else if(src->storage == storageType::REGISTER && dst->storage == storageType::MEMORY)
-            x86_64::mov(src->reg,location(__register__::rsp,dst->offset));
+        {
+            code->push_back(getIndent()+"mov %"+registerNAME(src->reg,src->dataType->size)+", "+location(dst).expr());
+        }
         else if(dst->storage == storageType::MEMORY && src->storage == storageType::MEMORY)
-            x86_64::mov(location(__register__::rsp,src->offset),location(__register__::rsp,dst->offset));
+            x86_64::mov(location(src),location(dst));
         else if(dst->storage == storageType::MEMORY_ABSOLUTE && src->storage == storageType::REGISTER)
-            x86_64::mov(src->reg,location(dst->offset));
+            code->push_back(getIndent()+"mov %"+registerNAME(src->reg,src->dataType->size)+", "+location(dst).expr());
         else if(src->storage == storageType::MEMORY_ABSOLUTE && dst->storage == storageType::REGISTER)
-            x86_64::mov(location(src->offset),dst->reg);
+            code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(dst->reg,dst->dataType->size));
         else if(src->storage == storageType::MEMORY_ABSOLUTE && dst->storage == storageType::MEMORY_ABSOLUTE)
         {
             //cant move directly
@@ -199,56 +218,168 @@ namespace x86_64
                 reg = __register__::rax;
                 saveRegister(reg);
             }
-            x86_64::mov(src,reg);
-            x86_64::mov(reg,dst);
+            code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(reg,src->dataType->size));
+            code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
             if(rInvalid);
                 restoreRegisters();
         }
         else if(src->storage == storageType::IMMEDIATE && dst->storage == storageType::MEMORY_ABSOLUTE)
         {
-            PRINT_DEBUG
-            //cant move directly
-            //need intermediate register
-            __register__ reg = fstore->getFreeRegister();
-            bool rInvalid = false;
-            if(reg == __register__::invalid)
+            if(src->immediateValue <= 0xFFFFFFFF)
             {
-                rInvalid = true;
-                reg = __register__::rax;
-                saveRegister(reg);
+                //imm32,imm16,imm8
+                code->push_back(getIndent()+"mov $"+intToString(src->immediateValue)+", "+location(dst).expr());
             }
-            x86_64::mov(src,reg);
-            x86_64::mov(reg,dst);
-            if(rInvalid);
+            else
+            {
+                if(dst->dataType->size < 8)
+                    return error::genericError(0x8664003);
+                //imm64
+                //this uses movabs under GAS, mov under any other assembler
+                __register__ reg = fstore->getFreeRegister();
+                bool rInvalid = false;
+                pushRegSave();
+                if(reg == __register__::invalid)
+                {
+                    rInvalid = true;
+                    reg = __register__::rax;
+                    saveRegister(reg);
+                }
+                code->push_back(getIndent()+"movabsq $"+intToString(src->immediateValue)+", %"+registerNAME(reg,8));
+                code->push_back(getIndent()+"mov %"+registerNAME(reg,8)+", "+location(dst).expr());
                 restoreRegisters();
+                popRegSave();
+            }
         }
         else if(src->storage == storageType::IMMEDIATE && dst->storage == storageType::MEMORY)
         {
             switch(dst->dataType->size)
             {
                 case(1):
-                    code->push_back(getIndent()+"movb $"+std::to_string(src->immediateValue)+", "+location(dst->reg,dst->offset).expr());
+                    code->push_back(getIndent()+"movb $"+intToString(src->immediateValue)+", "+location(dst).expr());
                     break;
                 case(2):
-                    code->push_back(getIndent()+"movw $"+std::to_string(src->immediateValue)+", "+location(dst->reg,dst->offset).expr());
+                    code->push_back(getIndent()+"movw $"+intToString(src->immediateValue)+", "+location(dst).expr());
                     break;
                 case(4):
-                    code->push_back(getIndent()+"movl $"+std::to_string(src->immediateValue)+", "+location(dst->reg,dst->offset).expr());
+                    code->push_back(getIndent()+"movl $"+intToString(src->immediateValue)+", "+location(dst).expr());
                     break;
                 case(8):
-                    code->push_back(getIndent()+"movq $"+std::to_string(src->immediateValue)+", "+location(dst->reg,dst->offset).expr());
+                    code->push_back(getIndent()+"movq $"+intToString(src->immediateValue)+", "+location(dst).expr());
                     break;
             }
         }
         else if(src->storage == storageType::IMMEDIATE && dst->storage == storageType::REGISTER)
         {
-            x86_64::mov(src->immediateValue,dst->reg);
+            if(dst->dataType->size < src->dataType->size)
+                code->push_back(getIndent()+"xor %"+registerNAME(dst->reg)+", %"+registerNAME(dst->reg));
+            code->push_back(getIndent()+"mov $"+intToString(src->immediateValue)+", %"+registerNAME(dst->reg,dst->dataType->size));
+        }
+        else if(src->storage == storageType::SYMBOL && dst->storage == storageType::REGISTER)
+        {
+            if(dst->dataType->size <= 2)
+                code->push_back(getIndent()+"xor %"+registerNAME(dst->reg)+", %"+registerNAME(dst->reg));
+            code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(dst->reg,dst->dataType->size));
+        }
+        else if(src->storage == storageType::SYMBOL_ADDR && dst->storage == storageType::REGISTER)
+        {
+            if(dst->dataType->size < src->dataType->size)
+                code->push_back(getIndent()+"xor %"+registerNAME(dst->reg)+", %"+registerNAME(dst->reg));
+            code->push_back(getIndent()+"mov $"+src->symbol+", %"+registerNAME(dst->reg,dst->dataType->size));
+        }
+        else if(src->storage == storageType::SYMBOL && dst->storage == storageType::SYMBOL)
+        {
+            __register__ reg = fstore->getFreeRegister();
+            pushRegSave();
+            if(reg == __register__::invalid)
+            {
+                reg = __register__::rax;
+                saveRegister(reg);
+            }
+            switch(dst->dataType->size)
+            {
+                case(1):
+                    code->push_back(getIndent()+"movb "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                    code->push_back(getIndent()+"movb %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                    break;
+                case(2):
+                    code->push_back(getIndent()+"movw "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                    code->push_back(getIndent()+"movw %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                    break;
+                case(4):
+                    code->push_back(getIndent()+"movd "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                    code->push_back(getIndent()+"movd %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                    break;
+                case(8):
+                    code->push_back(getIndent()+"movq "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                    code->push_back(getIndent()+"movq %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                    break;
+            }
+            restoreRegisters();
+            popRegSave();
+        }
+        else if(src->storage == storageType::SYMBOL && dst->storage == storageType::MEMORY)
+        {
+            __register__ reg = fstore->getFreeRegister();
+            pushRegSave();
+            if(reg == __register__::invalid)
+            {
+                reg = __register__::rax;
+                saveRegister(reg);
+            }
+            switch(dst->dataType->size)
+            {
+                case(1):
+                    code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                    x86_64::mov(_0,dst->reg);
+                    code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                    break;
+                case(2):
+                    code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                    x86_64::mov(_0,dst->reg);
+                    code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                    break;
+                case(4):
+                    code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                    code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                    break;
+                case(8):
+                    code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                    code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                    break;
+            }
+            restoreRegisters();
+            popRegSave();
+        }
+        else if(src->storage == storageType::IMMEDIATE && dst->storage == storageType::SYMBOL)
+        {
+            switch(dst->dataType->size)
+            {
+                case(1):
+                    code->push_back(getIndent()+"movb $"+std::to_string(src->immediateValue)+", "+dst->symbol);
+                    break;
+                case(2):
+                    code->push_back(getIndent()+"movw $"+std::to_string(src->immediateValue)+", "+dst->symbol);
+                    break;
+                case(4):
+                    code->push_back(getIndent()+"movd $"+std::to_string(src->immediateValue)+", "+dst->symbol);
+                    break;
+                case(8):
+                    code->push_back(getIndent()+"movq $"+std::to_string(src->immediateValue)+", "+dst->symbol);
+                    break;
+            }
+        }
+        else if(src->storage == storageType::REGISTER && dst->storage == storageType::SYMBOL)
+        {
+            code->push_back(getIndent()+"mov %"+registerNAME(src->reg,dst->dataType->size)+", "+dst->symbol);
         }
         else
         {
             std::cout << "well, ig im dumb LMFAO" << std::endl;
-            std::cout << "src: " << (uint64_t)src->storage << std::endl;
-            std::cout << "dst: " << (uint64_t)dst->storage << std::endl;
+            std::cout << "src: " << std::endl;
+            printVariable(src);
+            std::cout << "dst: " << std::endl;
+            printVariable(dst);
         }
     }
 

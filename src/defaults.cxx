@@ -53,4 +53,10 @@ void setDefaults()
         exit(-1);
     }
     currentArch->activate();
+    csys = getSystem("gnu-linux");
+    if(csys == nullptr)
+    {
+        std::cout << "ERROR: could not find default system (gnu-linux), aborting!" << std::endl;
+        exit(-1);
+    }
 }

@@ -1,0 +1,13 @@
+{
+    "configurations": [
+    {
+        "type": "gdb",
+        "request": "launch",
+        "name": "compile stdlib",
+        "target": "./../c+=2/cp2",
+        "arguments": "-Bbuild -Ddocumentation -Iinc -S -c src/out.c2",
+        "cwd": "${workspaceRoot}/../stdcpe2/",
+        "valuesFormatting": "parseText"
+    }
+    ]
+}

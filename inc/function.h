@@ -51,7 +51,13 @@ enum class primitiveOP : uint64_t
     LessEqual,
     Not,
     Inc,
-    Dec
+    Dec,
+    Index,
+    Interrupt,
+    CPUid,
+    PRINTCHAR,
+    PRINTSTR,
+    SYSCALL
 };
 
 class function
@@ -66,6 +72,8 @@ public:
     std::vector<std::string> code;
     ABI* abi = nullptr;
     functionStorage* fstore;
+    std::string __declared_file;
+    uint64_t __declared_line;
 
     bool isPrimitive = false;
     primitiveOP op = primitiveOP::invalid;
@@ -74,6 +82,7 @@ public:
     bool isDeprecated = false;
     bool noReturn = false;
     bool noDoc = false;
+    bool isLocal = false;//static
     bool doExport = false;
 
     bool ignoreCall = false;

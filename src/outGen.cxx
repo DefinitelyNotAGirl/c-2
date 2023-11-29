@@ -41,29 +41,43 @@
 
 void genOutput(std::string& i)
 {
+    if(options::vsls || options::vstc)
+        return;
     int results;
     FILE* f;
     //output
     std::string asmCode;
-    asmCode+="# cpe2\n";
+    asmCode+="// c2o\n";
+    asmCode+="// @syntax gas\n";
+    asmCode+="// @file "+i+"\n";
     asmCode+="\n";
     for(std::string& l : MiscCode)
         asmCode+=l+"\n";
-    asmCode+="\n.data\n";
+    asmCode+=".data\n";
     for(std::string& l : DataCode)
         asmCode+=l+"\n";
     if(options::mnorodata)
-        asmCode+="\n.data\n";
+        asmCode+=".data\n";
     else
-        asmCode+="\n.section .rodata\n";
+        asmCode+=".section .rodata\n";
     for(std::string& l : RoDataCode)
         asmCode+=l+"\n";
-    asmCode+="\n.bss\n";
+    asmCode+=".bss\n";
     for(std::string& l : BssCode)
         asmCode+=l+"\n";
-    asmCode+="\n.text\n";
+    asmCode+=".text\n";
     for(std::string& l : TextCode)
         asmCode+=l+"\n";
+    if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+    {
+        asmCode+=".section .debug_info,\"\",@progbits\n";
+        for(std::string& l : DebugCode)
+            asmCode+=l+"\n";
+        asmCode+=".section .debug_abbrev,\"\",@progbits\n";
+        asmCode+="debugAbbrev:\n";
+        for(std::string& l : DebugAbbrevCode)
+            asmCode+=l+"\n";
+    }
     f = fopen(asmOut.c_str(),"w");
     if(f == NULL)
     {
@@ -77,14 +91,53 @@ void genOutput(std::string& i)
         goto endAsmOutput;
     }
     fclose(f);
+    if(options::MD)
+    {
+        f = fopen(mdOut.c_str(),"w");
+        if(f == NULL)
+        {
+            std::cout << "ERROR: could not open file \"" << asmOut << "\"" << std::endl;
+            goto endAsmOutput;
+        }
+        std::string content;
+        if(!options::C)
+            content = execOut+":";
+        else
+            content = objOut+":";
+        for(std::string& dep : dependencies)
+            content+=" "+dep;
+        if(!options::C)
+            for(std::string& std : startObjFiles)
+                content+=" "+std;
+        if(!options::C)
+            if(!options::ffreestanding)
+                content+=" /usr/lib/libcpe2.a";
+        results = fwrite(content.c_str(),content.length(),1,f);
+        if (results == EOF)
+        {
+            std::cout << "ERROR: could write to file \"" << asmOut << "\"" << std::endl;
+            goto endAsmOutput;
+        }
+        fclose(f);
+    }
     endAsmOutput:;
     //invoke assembler
-    std::string ASMcmd = "as -o "+objOut+" "+asmOut;
-    system(ASMcmd.c_str());
-    //invoke linker (if not -c)
-    if(!options::C)
+    std::string ASMcmd = "as --gstabs -o "+objOut+" "+asmOut;
+    if(options::ddebug && !options::aso)
+        std::cout << "as: " << ASMcmd  << std::endl;
+    if(!options::aso)
+        system(ASMcmd.c_str());
+    //invoke linker (if not -c and not -s)
+    if(!options::C && !options::aso)
     {
-        std::string LDcmd = "ld -o a.exe "+objOut;
+        //std::string LDcmd = "ld -no-pie -o a.exe "+objOut;
+        std::string LDcmd = "ld -o "+execOut+" "+objOut;
+        for(std::string& i : startObjFiles)
+            LDcmd+=" "+i;
+        if(!options::ffreestanding)
+            LDcmd+=" -lcpe2";
+        if(options::ddebug)
+            std::cout << "ld: " << LDcmd  << std::endl;
         system(LDcmd.c_str());
     }
     //remove unwanted output

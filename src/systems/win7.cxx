@@ -1,11 +1,11 @@
-/**
- * Created Date: Monday July 10th 2023
+/*
+ * Created Date: Saturday September 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 18th 2023 4:48:23 pm
+ * Last Modified: Saturday September 30th 2023 11:39:45 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -27,34 +27,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
 
-#include <string>
-#include <common.h>
+#include <compiler.h>
+#include <codegen.h>
+#define constructor __attribute__ ((constructor))
 
-void strToLower(std::string& str);
-bool cstrcmp(codechar* a, codechar* b);
-uint64_t strlen(codechar* str);
-void strToLower(codechar* buff);
-
-bool isDigit(codechar);
-bool isLatinChar(codechar);
-
-template<typename T>
-void inject(std::vector<T>& src, std::vector<T>& dst, uint64_t offset)
+namespace mswin7
 {
-    std::vector<T> old = dst;
+    void printStr(variable* str)
+    {
+    }
 
-    dst.clear();
+    void printChar(variable* c)
+    {
+    }
 
-    for(uint64_t i = 0;i<offset;i++)
-        dst.push_back(old[i]);
+    constructor void init()
+    {
+        _system* sys = new _system;
+        sys->name = "windows-7";
+        sys->printChar = &printChar;
+        sys->printStr = &printStr;
 
-    for(T& i : src)
-        dst.push_back(i);
-    
-    for(uint64_t i = offset;i<old.size();i++)
-        dst.push_back(old[i]);
+        systems.push_back(sys);
+    }
 }
-
-bool strContains(codechar* buff, codechar c);

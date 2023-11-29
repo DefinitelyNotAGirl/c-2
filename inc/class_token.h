@@ -40,4 +40,5 @@ public:
     std::string text;
     uint64_t col = 0;
     uint64_t type = 0;
+    uint64_t lineNum = 0;
 };

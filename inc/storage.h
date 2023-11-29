@@ -43,6 +43,7 @@ public:
     ~functionStorage();
 
     uint64_t stackSize = 0;
+    uint64_t stackOffset = 0;
 
     uint8_t ABI = 0;
     

@@ -121,6 +121,15 @@ void CARGHANDLER_HELP(CARGPARSE_HANDLER_ARGS)
         std::cout << "do not delete assembly code after running the assembler";
         printOptReset();
     }
+    {//s
+        printPreOptionSpaces();
+        std::cout << "-s";
+        CSLLB+=3;printEvenSpaces();
+        std::cout << "produce neither an object file nor an executable, just the assembly code";
+        printOptReset();printEvenSpaces();
+        std::cout << "note: using this options with -S and/or -c does not make sense";
+        printOptReset();
+    }
     {//ffreestanding
         printPreOptionSpaces();
         std::cout << "--ffreestanding";
@@ -165,6 +174,24 @@ void CARGHANDLER_HELP(CARGPARSE_HANDLER_ARGS)
         std::cout << "note: this option should simply be left alone for user-space software";
         printOptReset();
     }
+    {//vsls
+        printPreOptionSpaces();
+        std::cout << "--vsls";
+        CSLLB+=16;printEvenSpaces();
+        std::cout << "makes the compiler emmit output to be used by the vscode c+=2 language server";
+        printOptReset();printEvenSpaces();
+        std::cout << "note: this option is almost certainly irrelevant to you";
+        printOptReset();
+    }
+    {//vstc
+        printPreOptionSpaces();
+        std::cout << "--vstc";
+        CSLLB+=16;printEvenSpaces();
+        std::cout << "makes the compiler emmit output to be used by the vscode c+=2 semantic token provider";
+        printOptReset();printEvenSpaces();
+        std::cout << "note: this option is almost certainly irrelevant to you";
+        printOptReset();
+    }
     {//mno-rtti
         printPreOptionSpaces();
         std::cout << "--mno-rtti";
@@ -188,6 +215,13 @@ void CARGHANDLER_HELP(CARGPARSE_HANDLER_ARGS)
         std::cout << "keep line (//) comments in the output assembly code";
         printOptReset();printEvenSpaces();
         std::cout << "note: using this option only matters when used in conjunction with -S";
+        printOptReset();
+    }
+    {//-g
+        printPreOptionSpaces();
+        std::cout << "-g";
+        CSLLB+=3;printEvenSpaces();
+        std::cout << "generate debug symbols";
         printOptReset();
     }
     {//-V

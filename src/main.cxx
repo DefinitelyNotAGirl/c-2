@@ -42,6 +42,9 @@
 #include <unordered_set>
 #include <filesystem>
 #include <mangling.h>
+#include <sys/resource.h>
+#include <codegen.h>
+#include <DWARF.h>
 
 void cliOptions(int argc, char **argv);
 std::vector<line> getLines(std::string fname);
@@ -73,24 +76,53 @@ line defLine(std::string text)
     return l;
 }
 
+std::string __reqFileVSTC = "";
+
 int main(int argc, char** argv)
 {
     signal(SIGSEGV, HANDLER_SIGSEGV);   // install our handler
     signal(SIGABRT, HANDLER_SIGSEGV);   // install our handler
     signal(SIGILL, HANDLER_SIGSEGV);   // install our handler
-
+    //resize stack
+    const rlim_t kStackSize = 16 * 1024 * 1024;// min stack size = 16MiB
+    struct rlimit rl;
+    int result;
+    result = getrlimit(RLIMIT_STACK, &rl);
+    if (result == 0)
+    {
+        //std::cout << "current stack limit: 0x" << std::hex << rl.rlim_cur << std::endl;
+        if (rl.rlim_cur < kStackSize)
+        {
+            rl.rlim_cur = kStackSize;
+            result = setrlimit(RLIMIT_STACK, &rl);
+            if (result != 0)
+            {
+                fprintf(stderr, "setrlimit returned result = %d\n", result);
+            }
+            else
+            {
+                //std::cout << "stack limit set to: 0x" << std::hex << kStackSize << std::endl;
+            }
+        }
+    }
+    //get working directory
+    char* workingDir = getcwd(nullptr,0);//only works for GNU libc, must find alternative soloution for other systems
+    std::string cwd = workingDir;
+    //initiate compiler
     initWarnings();
-
     setDefaults();
-
     cliOptions(argc, argv);
-
+    if(options::ddebug)
+    {
+        std::cout << "#\n#\n#\n#" << "c+=2 compiler running" << "\n#\n#\n#" << std::endl;
+    }
+    if(options::aso)
+        options::as = true;
     if(options::fcpl != 3)
         std::cout << "cpu privilege level: " << options::fcpl << std::endl;
-
+    globalScope->name = "global";
     if(options::ffreestanding)
         options::fnoautoinclude = true;
-
     moClassID = 1;
     moFunctionID = 1;
     moVariableID = 1;
@@ -123,21 +155,77 @@ int main(int argc, char** argv)
         //else
         //    std::cout << "initialized format: " << f->name << std::endl;
 
+    //set stdlib include dir
+    if(!options::ffreestanding)
+        includeDirs.push_back("/usr/local/include/cpe2/");
+
     for(std::string i : sourceFiles)
     {
         if(!options::fnoautoinclude)
         {
             std::vector<line> stdLines;
             stdLines.push_back(defLine("#include <stdint>"));
+            stdLines.push_back(defLine("#include <userspace>"));
+            stdLines.push_back(defLine("#include <lang>"));
             stdLines.push_back(defLine("#include <Memory>"));
             stdLines.push_back(defLine("#include <OperatingSystem>"));
             if(!options::fnolibc)
                 stdLines.push_back(defLine("#include <libc>"));
             parse(stdLines);
         }
+        if(!options::C)
+        {
+            if(!options::ffreestanding)
+            {
+                startObjFiles.push_back("/usr/local/lib/cpe2/crt0.o");
+                startObjFiles.push_back("/usr/local/lib/cpe2/crtsig.o");
+                startObjFiles.push_back("/usr/local/lib/cpe2/exit.o");
+            }
+        }
 
         std::vector<line> lines = getLines(i);
+        currentFile = i;
+        if(options::vstc || options::vsls)
+            __reqFileVSTC = currentFile;
         parse(lines);
+        //finish up debug information
+        if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+        {
+            std::vector<std::string> dbgCode = DebugCode;
+            std::vector<std::string> dbgAbCode = DebugAbbrevCode;
+            DebugCode.clear();
+            DebugAbbrevCode.clear();
+            code = &DebugCode;
+            setANB(16);
+            putComment("unit header");
+            DebugCode.push_back("__debug_info_start:");
+            DebugCode.push_back("\t.int 0xffffffff");//4-byte 0xffffffff as mandated by DWARF-5
+            DebugCode.push_back("\t.quad __debug_info_end - (__debug_info_start+12)");//debug_info size
+            DebugCode.push_back("\t.word 5");//DWARF version 5
+            DebugCode.push_back("\t.byte "+intToString((uint64_t)DWARF5::UT_compile));//DW_UT_compile
+            DebugCode.push_back("\t.byte "+intToString(POINTER_SIZE));//address size in bytes
+            DebugCode.push_back("\t.quad debugAbbrev");//offset into debug_abbrev section
+            //dwaft compilation unit
+            DebugCode.push_back("\t.uleb128 "+intToString(1));
+            DebugAbbrevCode.push_back("\t.uleb128 "+intToString(1));
+            DebugAbbrevCode.push_back("\t.uleb128 "+intToString((uint64_t)DWARF5::TAG_compile_unit));
+            DebugAbbrevCode.push_back("\t.byte 1");//bool indicating the presence of child tags (0 for testing purposes)
+            DebugAbbrevCode.push_back("\t.uleb128 "+intToString((uint64_t)DWARF5::AT_name));
+            DebugAbbrevCode.push_back("\t.uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
+            DebugCode.push_back("\t.string \""+i+"\"");
+            DebugAbbrevCode.push_back("\t.uleb128 "+intToString((uint64_t)DWARF5::AT_comp_dir));
+            DebugAbbrevCode.push_back("\t.uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
+            DebugCode.push_back("\t.string \""+cwd+"\"");
+            DebugAbbrevCode.push_back("\t.uleb128 0");//null, terminate
+            DebugAbbrevCode.push_back("\t.uleb128 0");
+            //re-add debug code
+            for(std::string& i : dbgCode)
+                DebugCode.push_back(i);
+            for(std::string& i : dbgAbCode)
+                DebugAbbrevCode.push_back(i);
+            DebugCode.push_back("__debug_info_end:");
+        }
+        //output
         std::string rname = i;
         FILE* f;
         stripExt(rname);
@@ -147,14 +235,20 @@ int main(int argc, char** argv)
         std::filesystem::create_directories(options::buildDir);
         if(options::buildDir != "")
         {
-            objOut = options::buildDir+"/"+rname+".o";
-            asmOut = options::buildDir+"/"+rname+".s";
+            objOut = options::buildDir+rname+".o";
+            asmOut = options::buildDir+rname+".a86";//must be changed for intel syntax
+            mdOut = options::buildDir+rname+".d";
+            execOut = options::buildDir+rname+".exe";
+            //use .exe on all platforms for now, should not cause issues (queue linux trying to load as PE executable)
         }
         else if(options::output == "")
         {
             //no output destination specified
             objOut = rname+".o";
-            asmOut = rname+".s";
+            asmOut = rname+".a86";//must be changed for intel syntax
+            mdOut = rname+".d";
+            execOut = rname+".exe";
+            //use .exe on all platforms for now, should not cause issues (queue linux trying to load as PE executable)
         }
         else
         {

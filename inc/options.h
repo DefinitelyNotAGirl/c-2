@@ -47,7 +47,9 @@ extern char c_cariagereturn;
 extern char c_horizontaltab;
 extern char c_verticaltab;
 extern std::string objOut;
+extern std::string execOut;
 extern std::string asmOut;
+extern std::string mdOut;
 extern std::vector<std::string> includeDirs;
 
 namespace options
@@ -71,11 +73,18 @@ namespace options
     //-d******
     extern bool dprintTokens;
     extern bool ddebug;
+    extern bool asmSepComments;
 
     //misc
     extern bool MD;
     extern bool C;
     extern bool as;
+    extern bool aso;
+    extern bool nod;
+    extern bool vsls;
+    extern bool vstc;
+    extern bool debugSymbols;
+    extern bool mainAutoSym;
     extern std::string output;
     extern std::string SysRoot;
 

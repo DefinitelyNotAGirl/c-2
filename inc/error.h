@@ -38,7 +38,10 @@ namespace error
     void incompleteType(token& t);
     void noSuchFile(token& t);
     void noSuchType(token& t);
+    void noSuchIdentifier(token& t);
     void noSuchABI(token& t);
+    void arraySizeImmediate(token& t);
+    void genericError(uint64_t ID);
     void noSuchLitop(token& t, uint64_t offset = 0);
     void expectedNewUnique(token& t);
     void expectedShortop(token& t);
@@ -47,6 +50,11 @@ namespace error
     void invalidClassAttribute(token& t);
     void expectedTypename(token& t);
     void expectedTemplateArg(token& t);
+
+    void functionNotFound(line& l);
+
+    extern std::string functionExpr;
+    extern std::list<std::string> candidateExpressions;
 }
 
 #define errorCompilerBug error::compilerBug(__FILE__,__LINE__)

@@ -81,8 +81,13 @@ void CARGHANDLER_VV(CARGPARSE_HANDLER_ARGS){options::asmVerbose = 2;}
 void CARGHANDLER_VVV(CARGPARSE_HANDLER_ARGS){options::asmVerbose = 3;}
 
 CARGHANDLER_BOOLEAN(MD)
+CARGHANDLER_BOOLEAN(debugSymbols)
 CARGHANDLER_BOOLEAN(C)
 CARGHANDLER_BOOLEAN(as)
+CARGHANDLER_BOOLEAN(aso)
+CARGHANDLER_BOOLEAN(nod)
+CARGHANDLER_BOOLEAN(vsls)
+CARGHANDLER_BOOLEAN(vstc)
 CARGHANDLER_PATH(SysRoot)
 CARGHANDLER_PATH(output)
 CARGHANDLER_PATH(buildDir)
@@ -102,9 +107,14 @@ CARGHANDLER_BOOLEAN(ddebug)
 CARGHANDLER_INT(fcpl)
 
 #define name_MD "-MD"
+#define name_debugSymbols "-g"
 #define name_C "-c"
 #define name_output "-o"
 #define name_as "-S"
+#define name_aso "-s"
+#define name_nod "-NOD"
+#define name_vsls "--vsls"
+#define name_vstc "--vstc"
 #define name_fclasslayout "--fclassinfo"
 #define name_ffunctioninfo "--ffunctioninfo"
 #define name_fvariableinfo "--fvariableinfo"
@@ -271,8 +281,13 @@ void cliOptions(int argc, char **argv)
     cargparse::instance carg;
     //misc
     CARGHANDLER_BOOLEAN_CA0(MD);
+    CARGHANDLER_BOOLEAN_CA0(debugSymbols);
     CARGHANDLER_BOOLEAN_CA0(C);
     CARGHANDLER_BOOLEAN_CA0(as);
+    CARGHANDLER_BOOLEAN_CA0(aso);
+    CARGHANDLER_BOOLEAN_CA0(nod);
+    CARGHANDLER_BOOLEAN_CA0(vsls);
+    CARGHANDLER_BOOLEAN_CA0(vstc);
     CARGHANDLER_PATH_CA1(output);
     CARGHANDLER_PATH_CA1(buildDir);
     CARGHANDLER_PATH_CA1(docDir);

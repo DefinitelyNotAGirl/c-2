@@ -47,16 +47,17 @@ static void genProlouge(std::vector<std::string>& lines, scope* sc)
 {
     std::vector<std::string> tlines;
     code = &tlines;
-    sc->fstore->stackSize = roundUp(sc->fstore->stackSize, 16);
     pushRegSave();
     scope* cs = currentScope;
     currentScope = cs->parent;
     lines.push_back(getIndent()+sc->func->symbol+":");
     currentScope = cs;
+    fstore->stackOffset = fstore->stackSize;
     for(__register__ r : abi->nonVolatile)
         if(sc->fstore->registerStatus(r) == 1)
             saveRegister(r);
     code = &lines;
+    sc->fstore->stackSize = roundUp(sc->fstore->stackSize, 16);
     sub(sc->fstore->stackSize,StackPointer);
     for(std::string& i : tlines)
         lines.push_back(i);

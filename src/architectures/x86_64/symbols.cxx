@@ -28,6 +28,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include <compiler.h>
+#include <codegen.h>
+
 namespace x86_64
 {
     void jmp(std::string symbol)

@@ -37,7 +37,9 @@
 
 void printToken(token& t);
 
-std::string getFunctionExpression(std::string name,std::vector<variable*> args);
+std::string getFunctionExpression(std::string name,std::vector<variable*>& args);
+
+std::string* LSS = nullptr;
 
 litop* getLitop(std::string name)
 {
@@ -45,6 +47,41 @@ litop* getLitop(std::string name)
         if(l->name == name)
             return l;
     return nullptr;
+}
+
+uint8_t HEXDIGTONUM(char dig)
+{
+    switch(dig)
+    {
+        case('0'):
+        case('1'):
+        case('2'):
+        case('3'):
+        case('4'):
+        case('5'):
+        case('6'):
+        case('7'):
+        case('8'):
+        case('9'):
+            return (dig - '0');
+        case('a'):
+        case('b'):
+        case('c'):
+        case('d'):
+        case('e'):
+        case('f'):
+            return (dig - 'a'+0xA);
+        case('A'):
+        case('B'):
+        case('C'):
+        case('D'):
+        case('E'):
+        case('F'):
+            return (dig - 'A'+0xA);
+        default:
+            error::genericError(0x3001);
+    }
+    return 0;
 }
 
 variable* resolveIMM(token& t)
@@ -245,14 +282,16 @@ variable* resolveIMM(token& t)
         case('"'):{
             //string
             std::string strSym = getNewName();
-            DataCode.push_back(getIndent()+strSym+"_data:");
+            DataCode.push_back(strSym+":");
+            //LSS = &DataCode.back();
             uint64_t tpos = 1;
+            //std::cout << "resolving string: " << t.text << std::endl;
             while(1)
             {
                 switch(t.text[tpos])
                 {
                     case('"'):
-                        DataCode.push_back(getIndent()+"\t.byte 0");
+                        DataCode.push_back("\t.byte 0");
                         if(options::asmVerbose >= 2){
                             DataCode.back()+=" # terminate string";
                         }
@@ -262,7 +301,7 @@ variable* resolveIMM(token& t)
                         switch(t.text[tpos])
                         {
                             case('"'):
-                                DataCode.push_back(getIndent()+"\t.byte "+std::to_string((uint8_t)t.text[tpos]));
+                                DataCode.push_back("\t.byte "+std::to_string((uint8_t)t.text[tpos]));
                                 if(options::asmVerbose >= 2){
                                     DataCode.back()+=" # '";
                                     DataCode.back().push_back(t.text[tpos]);
@@ -270,12 +309,79 @@ variable* resolveIMM(token& t)
                                 }
                                 tpos++;
                                 break;
+                            case('n'):
+                                DataCode.push_back("\t.byte 10");//line feed
+                                tpos++;
+                                break;
+                            case('0'):
+                            case('1'):
+                            case('2'):
+                            case('3'):
+                            case('4'):
+                            case('5'):
+                            case('6'):
+                            case('7'):
+                            case('8'):
+                            case('9'):
+                            case('A'):
+                            case('B'):
+                            case('C'):
+                            case('D'):
+                            case('E'):
+                            case('F'):
+                            case('a'):
+                            case('b'):
+                            case('c'):
+                            case('d'):
+                            case('e'):
+                            case('f'):
+                                switch(t.text[tpos+1])
+                                {
+                                    case('0'):
+                                    case('1'):
+                                    case('2'):
+                                    case('3'):
+                                    case('4'):
+                                    case('5'):
+                                    case('6'):
+                                    case('7'):
+                                    case('8'):
+                                    case('9'):
+                                    case('A'):
+                                    case('B'):
+                                    case('C'):
+                                    case('D'):
+                                    case('E'):
+                                    case('F'):
+                                    case('a'):
+                                    case('b'):
+                                    case('c'):
+                                    case('d'):
+                                    case('e'):
+                                    case('f'):
+                                    {
+                                        uint64_t num = HEXDIGTONUM(t.text[tpos]);
+                                        num *= 16;
+                                        num += HEXDIGTONUM(t.text[tpos+1]);
+                                        DataCode.push_back("\t.byte "+std::to_string(num));//line feed
+                                        tpos+=2;
+                                        break;
+                                    }
+                                    default:
+                                    {
+                                        uint64_t num = HEXDIGTONUM(t.text[tpos]);
+                                        DataCode.push_back("\t.byte "+std::to_string(num));//line feed
+                                        tpos+=1;
+                                        break;
+                                    }
+                                }
+                                break;
                         }
                         break;
                     case(0x00):
                         goto endLoop1;
                     default:
-                        DataCode.push_back(getIndent()+"\t.byte "+std::to_string((uint8_t)t.text[tpos]));
+                        DataCode.push_back("\t.byte "+std::to_string((uint8_t)t.text[tpos]));
                         if(options::asmVerbose >= 2){
                             DataCode.back()+=" # '";
                             DataCode.back().push_back(t.text[tpos]);
@@ -286,10 +392,10 @@ variable* resolveIMM(token& t)
             }
             endLoop1:;
             variable* tvar = new variable;
-            tvar->storage = storageType::SYMBOL;
+            tvar->storage = storageType::SYMBOL_ADDR;
             tvar->dataType = getType(defaultCharType->name+"*");
             tvar->name = strSym;
-            tvar->symbol = strSym+"_data";
+            tvar->symbol = strSym;
             return tvar;
             break;
             }
@@ -355,13 +461,14 @@ variable* resolveIMM(token& t)
 
 void makeNewToken(std::string& working, uint64_t i, std::vector<token>& tokens,token& t)
 {
+    if(working == "")
+        return;
     token nt;
     nt.text = working;
     nt.Line = t.Line;
     nt.col = t.col+i-working.length();
     if((working[0] >= 0x21 && working[0] <= 0x2F) || (working[0] >= 0x3c && working[0] <= 0x3e) || (working[0] == 0x5e))
         nt.type = 3;
-
     tokens.push_back(nt);
 
     working = "";
@@ -374,15 +481,15 @@ variable* resolve(token& t)
         std::cout << "resolving token: " << t.text << std::endl;
         printToken(t);
     }
-    if(t.type == 6)
-    {
-        t.text = "\""+t.text+"\"";
-    }
+    //if(t.type == 6)
+    //{
+    //    t.text = "\""+t.text+"\"";
+    //}
     std::vector<token> tokens;
     std::string working = "";
     token at = t.Line->nextToken();
     token lt = t;
-    while(at.type != 0 && at.type != 41)
+    while(at.type != 0 && at.type != 41 && at.type != 40)
     {
         t.text += at.text;
         //printToken(at);
@@ -390,11 +497,13 @@ variable* resolve(token& t)
         at = t.Line->nextToken();
     }
 
+
     if(options::ddebug)
         std::cout << "expression: " << t.text << std::endl;
 
     for(uint64_t i=0;i<t.text.length();i++)
     {
+        //std::cout << "char: " << t.text[i] << std::endl;
         switch(t.text[i])
         {
             case(0x00):
@@ -404,20 +513,21 @@ variable* resolve(token& t)
                 working.push_back(t.text[i++]);
                 while(1)
                 {
+                    //std::cout << "char: " << t.text[i] << std::endl;
                     switch(t.text[i])
                     {
-                        case('"'):
-                            working.push_back(t.text[i++]);
-                            goto endLoop1;
-                        case('\\'):
-                            i++;
-                            switch(t.text[i])
-                            {
-                                case('"'):
-                                    working.push_back(t.text[i++]);
-                                    break;
-                            }
-                            break;
+                        //case('"'):
+                        //    working.push_back(t.text[i]);
+                        //    goto endLoop1;
+                        //case('\\'):
+                        //    i++;
+                        //    switch(t.text[i])
+                        //    {
+                        //        case('"'):
+                        //            working.push_back(t.text[i++]);
+                        //            break;
+                        //    }
+                        //    break;
                         case(0x00):
                             goto endLoop1;
                         default:
@@ -433,7 +543,7 @@ variable* resolve(token& t)
                         makeNewToken(working,i,tokens,t);
                         working="++";
                         i++;
-                        makeNewToken(working,i,tokens,t);
+                        makeNewToken(working,i,tokens,t);   
                         break;
                     case('='):
                         makeNewToken(working,i,tokens,t);
@@ -462,11 +572,15 @@ variable* resolve(token& t)
                         i++;
                         makeNewToken(working,i,tokens,t);
                         break;
+                    case('>'):
+                        working+="->";
+                        i++;
+                        break;
                     default:
                         makeNewToken(working,i,tokens,t);
                         working="-";
+                        makeNewToken(working,i,tokens,t);
                 }
-                makeNewToken(working,i,tokens,t);
                 break;
             case('*'):
                 switch(t.text[i+1])
@@ -696,6 +810,8 @@ variable* resolve(token& t)
     
     variable* left = nullptr;
     variable* right = nullptr;
+    if(!tokens.size())
+        goto TokenSize0;
     for(uint64_t i=1;i<tokens.size()-1;i+=2)
     {
         if(
@@ -724,11 +840,12 @@ variable* resolve(token& t)
                     left = getVariable(__leftHand.text);
                 if(left == nullptr)
                 {
+                    if(__leftHand.text.size() >= 3){
                     if(__leftHand.text.substr(__leftHand.text.size()-3,__leftHand.text.size()) == "++")
                     {
                         //TODO: shedule operator++ to be called
                         left = getVariable(__leftHand.text.substr(0,__leftHand.text.size()-3));
-                    }
+                    }}
                 }
                 if(left == nullptr)
                 {
@@ -740,29 +857,155 @@ variable* resolve(token& t)
                     }
                 }
                 if(left == nullptr)
-                    std::cout << "ERROR: cant resolve expression \"" << __leftHand.text << "\"" << std::endl;
+                {
+                    char* lt = __leftHand.text.c_str();
+                    while(lt[0] != '[' && lt[0] != 0x00)
+                        lt++;
+                    uint64_t len = (uint64_t)lt-(uint64_t)__leftHand.text.c_str();
+                    char* arraytext = calloc(0,len+1);
+                    memcpy(arraytext,__leftHand.text.c_str(),len);
+                    if(options::ddebug)
+                        std::cout << "array: " << arraytext << std::endl;
+                    variable* array = getVariable(arraytext);
+                    if(array == nullptr)
+                        goto NOTARRAYRESL_2;
+                    if(lt[0] != 0x00 && lt[1] != 0x00)
+                    {
+                        lt++;
+                        char* it = lt;
+                        while(it[0] != ']' && it[0] != 0x00)
+                            it++;
+                        len = (uint64_t)it-(uint64_t)lt;
+                        char* index = calloc(0,len+1);
+                        memcpy(index,lt,len);
+                        if(options::ddebug)
+                            std::cout << "index: " << index << std::endl;
+                        line indexLine = *t.Line;
+                        indexLine.tpos = 0;
+                        indexLine.text = index;
+                        token indexToken = indexLine.nextToken();
+                        variable* index_v = resolve(indexToken);
+                        //
+                        std::string fname = "operator[]";
+                        std::vector<variable*> args__;
+                        args__.push_back(array);
+                        args__.push_back(index_v);
+                        function* indexOP = getFunction(fname,args__);
+                        if(indexOP)
+                            left = call(indexOP,args__);
+                        else
+                            error::functionNotFound(*t.Line);
+                    }
+                }
+                NOTARRAYRESL_2:;
+                if(left == nullptr)
+                    std::cout << "ERROR: cant resolve left expression \"" << __leftHand.text << "\"" << std::endl;
+                if(right == nullptr)
+                    right = getVariable(__rightHand.text);
                 if(right == nullptr)
                 {
-                    right = getVariable(__rightHand.text);
-                    if(right == nullptr)
+                    if(__rightHand.text.size() >= 3){
+                    if(__rightHand.text.substr(__rightHand.text.size()-3,__rightHand.text.size()) == "++")
                     {
-                        if(__rightHand.text.substr(__rightHand.text.size()-3,__rightHand.text.size()) == "++")
-                        {
-                            //TODO: shedule operator++ to be called
-                            right = getVariable(__rightHand.text.substr(0,__rightHand.text.size()-3));
-                        }
-                    }
-                    if(right == nullptr)
-                        std::cout << "ERROR: cant resolve expression \"" << __rightHand.text << "\"" << std::endl;
+                        //TODO: shedule operator++ to be called
+                        right = getVariable(__rightHand.text.substr(0,__rightHand.text.size()-3));
+                    }}
                 }
+                if(right == nullptr)
+                {
+                    if(__rightHand.text.back() == ')')
+                    {
+                        std::string fname = __rightHand.text.substr(0,__rightHand.text.find_first_of('('));
+                        std::string args = __rightHand.text.substr(__rightHand.text.find_first_of('('),__rightHand.text.size());
+                        args = args.substr(1,args.length()-2);
+                        std::cout << "fname: "  << fname << std::endl;
+                        std::cout << "right over:"  << args << std::endl;
+                        line L;
+                        L.text = args;
+                        std::vector<variable*> _args;
+                        token at = L.nextToken();
+                        while(at.type != 0)
+                        {
+                            std::string working;
+                            //std::cout << "blub" << std::endl;
+                            while(at.type != 42 && at.type != 0)
+                            {
+                                working+=at.text;
+                                //printToken(at);
+                                at = L.nextToken();
+                            }
+                            line al;
+                            al.text = working;
+                            at = al.nextToken();
+                            _args.push_back(resolve(at));
+                            at = L.nextToken();
+                        }
+                        function* func = getFunction(fname,_args);
+                        right = call(func,_args);
+                    }
+                }
+                if(right == nullptr)
+                {
+                    char* lt = __rightHand.text.c_str();
+                    while(lt[0] != '[' && lt[0] != 0x00)
+                        lt++;
+                    uint64_t len = (uint64_t)lt-(uint64_t)__rightHand.text.c_str();
+                    char* arraytext = calloc(0,len+1);
+                    memcpy(arraytext,__rightHand.text.c_str(),len);
+                    if(options::ddebug)
+                        std::cout << "array: " << arraytext << std::endl;
+                    variable* array = getVariable(arraytext);
+                    if(array == nullptr)
+                        goto NOTARRAYRESL_3;
+                    if(lt[0] != 0x00 && lt[1] != 0x00)
+                    {
+                        lt++;
+                        char* it = lt;
+                        while(it[0] != ']' && it[0] != 0x00)
+                            it++;
+                        len = (uint64_t)it-(uint64_t)lt;
+                        char* index = calloc(0,len+1);
+                        memcpy(index,lt,len);
+                        if(options::ddebug)
+                            std::cout << "index: " << index << std::endl;
+                        line indexLine = *t.Line;
+                        indexLine.tpos = 0;
+                        indexLine.text = index;
+                        token indexToken = indexLine.nextToken();
+                        variable* index_v = resolve(indexToken);
+                        //
+                        std::string fname = "operator[]";
+                        std::vector<variable*> args__;
+                        args__.push_back(array);
+                        args__.push_back(index_v);
+                        function* indexOP = getFunction(fname,args__);
+                        if(indexOP)
+                            right = call(indexOP,args__);
+                        else
+                            error::functionNotFound(*t.Line);
+                    }
+                }
+                NOTARRAYRESL_3:;
+                if(right == nullptr)
+                {
+                   //std::cout << "ERROR: cant resolve right expression \"" << __rightHand.text << "\"" << std::endl;
+                   error::noSuchIdentifier(__rightHand);
+                   return nullptr;
+                }
+
                 if(options::ddebug) {
                     std::cout << "left: " << std::hex << (void*)left << std::endl;
                     std::cout << "right: " << std::hex << (void*)right << std::endl;
+                    std::cout << "left text: " << __leftHand.text << std::endl;
+                    std::cout << "right text: " << __rightHand.text << std::endl;
                 }
+                args.push_back(left);
                 if(tokens[i].text != "++")
                     args.push_back(right);
-                args.push_back(left);
-                function* func = getFunction("operator"+tokens[i].text, args);
+                if(options::ddebug)
+                        std::cout << "calling function " << getFunctionExpression("operator"+tokens[i].text,args) << std::endl;
+                std::string fname = "operator"+tokens[i].text;
+                function* func = getFunction(fname, args);
 				if (func != nullptr) {
 					if (func->isDeprecated)
 						warn(getWarning("deprecated"), t.Line,
@@ -771,10 +1014,18 @@ variable* resolve(token& t)
 					if (options::asmVerbose >= 3)
 						currentScope->func->code.push_back(
 							getIndent() + "# " + t.Line->text);
-                    if(options::ddebug)
-                        std::cout << "calling function " << getFunctionExpression(func->name,args) << std::endl;
+                    //if(right->dataType == getType(defaultCharType->name+"*") && func->op == primitiveOP::assign)
+                    //{
+                    //    *LSS = getIndent()+left->name+":";
+                    //}
+                    //else
+                    //{
+                    //                    //    std::cout << right->dataType->name << " != " << defaultCharType->name+"*" << std::endl;
+                    //}
 					left = call(func, args);
 				}
+                else
+                    error::functionNotFound(*t.Line);
             }
             else
             {
@@ -799,7 +1050,7 @@ variable* resolve(token& t)
                     left->immediateValue &= right->immediateValue;
                 else
                 {
-                    std::cout << "invalid operator: " << tokens[i].text << std::endl;
+                    //std::cout << "invalid operator: " << tokens[i].text << std::endl;
                     //invalid operator
                 }
                 //  -1   0  +1 +2
@@ -808,6 +1059,7 @@ variable* resolve(token& t)
             }
         }
     }
+    TokenSize0:;
     if(tokens.size() == 1)
     {
         token& __leftHand = tokens[0];
@@ -816,8 +1068,9 @@ variable* resolve(token& t)
         left = resolveIMM(__leftHand);
         if(left == nullptr)
         {
-            if(__leftHand.text[0] == '\"')
+            if(__leftHand.text[0] == '\"'){
                 left = resolveIMM(__leftHand);
+            }
         }
         if(left == nullptr)
         {
@@ -825,13 +1078,63 @@ variable* resolve(token& t)
         }
         if(left == nullptr)
         {
+            //std::cout << "array check: " << __leftHand.text << std::endl;
+            char* lt = __leftHand.text.c_str();
+            while(lt[0] != '[' && lt[0] != 0x00)
+                lt++;
+            uint64_t len = (uint64_t)lt-(uint64_t)__leftHand.text.c_str();
+            if(len == 0)
+                goto NOTARRAYRESL_1;
+            char* arraytext = calloc(1,len+1);
+            memcpy(arraytext,__leftHand.text.c_str(),len);
+            if(options::ddebug)
+                std::cout << "array: " << arraytext << std::endl;
+            variable* array = getVariable(arraytext);
+            if(array == nullptr)
+                goto NOTARRAYRESL_1;
+            if(lt[0] != 0x00 && lt[1] != 0x00)
+            {
+                lt++;
+                char* it = lt;
+                while(it[0] != ']' && it[0] != 0x00)
+                    it++;
+                len = (uint64_t)it-(uint64_t)lt;
+                if(len == 0)
+                    goto NOTARRAYRESL_1;
+                char* index = calloc(1,len+1);
+                memcpy(index,lt,len);
+                if(options::ddebug)
+                    std::cout << "index: " << index << std::endl;
+                line indexLine = *t.Line;
+                indexLine.tpos = 0;
+                indexLine.text = index;
+                token indexToken = indexLine.nextToken();
+                variable* index_v = resolve(indexToken);
+                //
+                std::string fname = "operator[]";
+                std::vector<variable*> args__;
+                args__.push_back(array);
+                args__.push_back(index_v);
+                function* indexOP = getFunction(fname,args__);
+                if(indexOP)
+                    left = call(indexOP,args__);
+                else
+                    error::functionNotFound(*t.Line);
+            }
+        }
+        NOTARRAYRESL_1:;
+        if(left == nullptr)
+        {
             if(__leftHand.text.back() == ')')
             {
-                std::string fname = __leftHand.text.substr(0,__leftHand.text.find_first_of('('));
+                size_t fpo = __leftHand.text.find_first_of('(');
+                std::string fname = "";
+                if(fpo != std::string::npos)
+                    fname = __leftHand.text.substr(0,fpo);
                 __leftHand.text = __leftHand.text.substr(__leftHand.text.find_first_of('(')+1,__leftHand.text.size());
                 __leftHand.text.pop_back();
                 std::vector<variable*> args;
-                //std::cout << "left over: "  << __leftHand.text << std::endl;
+                //std::cout << "left over: \""  << __leftHand.text <<"\""<< std::endl;
                 //std::cout << "fname: " << fname << std::endl;
 
                 std::string working;
@@ -844,7 +1147,8 @@ variable* resolve(token& t)
                             et.col = 0;
                             et.Line = __leftHand.Line;
                             et.text = working;
-                            args.push_back(resolve(et));
+                            variable* arg = resolve(et);
+                            args.push_back(arg);
                             working = "";
                             break;
                         }
@@ -853,11 +1157,15 @@ variable* resolve(token& t)
                             break;
                     }
                 }
-                token et;
-                et.col = 0;
-                et.Line = __leftHand.Line;
-                et.text = working;
-                args.push_back(resolve(et));
+                if(__leftHand.text != "")
+                {
+                    token et;
+                    et.col = 0;
+                    et.Line = __leftHand.Line;
+                    et.text = working;
+                    args.push_back(resolve(et));
+                }
+                //std::cout << "fname: " << fname << std::endl;
                 function* func = getFunction(fname,args);
                 if(options::ddebug)
                     std::cout << "calling function " << getFunctionExpression(fname,args) << std::endl;
@@ -867,23 +1175,10 @@ variable* resolve(token& t)
         }
         //std::cout << "blub blub immediate blub blub" << std::endl;
     }
-    else
-    {
-        //std::cout << "\"cum!\" - viper" << std::endl;
-        //std::cout << "tokens size: " <<std::dec<< tokens.size() << std::endl;
-        //for(token& i : tokens)
-        //{
-        //    printToken(i);
-        //}
-    }
 
-    if(options::ddebug)
-    {
-        //if(left != nullptr)
-        //    std::cout << "result: " << left->immediateValue << std::endl;
-        //else
-        //    std::cout << "no result, left == nullptr" << std::endl;
-    }
-
+    //if(!left)
+    //{
+    //    std::cout << "\033[31mERROR:\033[0m could not evaluate expression \""+t.text+"\"" << std::endl;
+    //}
     return left;
 }

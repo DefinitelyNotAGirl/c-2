@@ -43,7 +43,7 @@ void enableWarningSet(std::string name)
     }
     else if(name == "stack-pointer")
     {
-        disableWarning("stack-pointer-rsp-storage");
+        disableWarning("stack-pointer-storage");
     }
     else if(name == "cpl")
     {
@@ -74,7 +74,7 @@ void disableWarningSet(std::string name)
     }
     else if(name == "stack-pointer")
     {
-        disableWarning("stack-pointer-rsp-storage");
+        disableWarning("stack-pointer-storage");
     }
     else if(name == "cpl")
     {

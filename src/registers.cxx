@@ -111,6 +111,111 @@ __register__ registerID(std::string name)
     return invalid;
 }
 
+std::string registerNAME(__register__ reg, uint8_t size)
+{
+    using enum __register__;
+    switch(reg)
+    {
+        case(rax):switch(size){
+            case(1):return "al";
+            case(2):return "ax";
+            case(4):return "eax";
+            case(8):return "rax";
+        }break;
+        case(rbx):switch(size){
+            case(1):return "bl";
+            case(2):return "bx";
+            case(4):return "ebx";
+            case(8):return "rbx";
+        }break;
+        case(rcx):switch(size){
+            case(1):return "cl";
+            case(2):return "cx";
+            case(4):return "ecx";
+            case(8):return "rcx";
+        }break;
+        case(rdx):switch(size){
+            case(1):return "dl";
+            case(2):return "dx";
+            case(4):return "edx";
+            case(8):return "rdx";
+        }break;
+        case(rdi):switch(size){
+            case(1):return "dil";
+            case(2):return "di";
+            case(4):return "edi";
+            case(8):return "rdi";
+        }break;
+        case(rsi):switch(size){
+            case(1):return "sil";
+            case(2):return "si";
+            case(4):return "esi";
+            case(8):return "rsi";
+        }break;
+        case(rbp):switch(size){
+            case(1):return "bpl";
+            case(2):return "bp";
+            case(4):return "ebp";
+            case(8):return "rbp";
+        }break;
+        case(rsp):switch(size){
+            case(1):return "spl";
+            case(2):return "sp";
+            case(4):return "esp";
+            case(8):return "rsp";
+        }break;
+        case(r8):switch(size){
+            case(1):return "r8b";
+            case(2):return "r8w";
+            case(4):return "r8d";
+            case(8):return "r8";
+        }break;
+        case(r9):switch(size){
+            case(1):return "r9b";
+            case(2):return "r9w";
+            case(4):return "r9d";
+            case(8):return "r9";
+        }break;
+        case(r10):switch(size){
+            case(1):return "r10b";
+            case(2):return "r10w";
+            case(4):return "r10d";
+            case(8):return "r10";
+        }break;
+        case(r11):switch(size){
+            case(1):return "r11b";
+            case(2):return "r11w";
+            case(4):return "r11d";
+            case(8):return "r11";
+        }break;
+        case(r12):switch(size){
+            case(1):return "r12b";
+            case(2):return "r12w";
+            case(4):return "r12d";
+            case(8):return "r12";
+        }break;
+        case(r13):switch(size){
+            case(1):return "r13b";
+            case(2):return "r13w";
+            case(4):return "r13d";
+            case(8):return "r13";
+        }break;
+        case(r14):switch(size){
+            case(1):return "r14b";
+            case(2):return "r14w";
+            case(4):return "r14d";
+            case(8):return "r14";
+        }break;
+        case(r15):switch(size){
+            case(1):return "r15b";
+            case(2):return "r15w";
+            case(4):return "r15d";
+            case(8):return "r15";
+        }break;
+    }
+    return registerNAME(reg);
+}
+
 std::string registerNAME(__register__ reg)
 {
     using enum __register__;
@@ -191,6 +296,5 @@ std::string registerNAME(__register__ reg)
     case(xmm14): return "xmm14";
     case(xmm15): return "xmm15";
     }
-    std::cout << "invalid register: " << std::hex << "0x" << (uint64_t)reg << std::endl;
     return "invalid";
 }

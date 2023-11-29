@@ -1,8 +1,8 @@
 /*
- * Created Date: Wednesday July 19th 2023
+ * Created Date: Saturday September 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday July 19th 2023 8:06:45 pm
+ * Last Modified: Saturday September 30th 2023 11:40:58 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -27,3 +27,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#include <compiler.h>
+#include <codegen.h>
+#define constructor __attribute__ ((constructor))
+
+namespace geos
+{
+    void printStr(variable* str)
+    {
+    }
+
+    void printChar(variable* c)
+    {
+    }
+
+    constructor void init()
+    {
+        _system* sys = new _system;
+        sys->name = "geos";
+        sys->printChar = &printChar;
+        sys->printStr = &printStr;
+
+        systems.push_back(sys);
+    }
+}

@@ -1,8 +1,8 @@
 /**
- * Created Date: Thursday August 3rd 2023
+ * Created Date: Saturday September 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 3rd 2023 2:01:37 pm
+ * Last Modified: Saturday September 30th 2023 11:29:20 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -30,17 +30,15 @@
 #pragma once
 
 #include <compiler.h>
-#include "pops.h"
 
-extern std::vector<std::string>* code;
-extern functionStorage* fstore;
+class _system
+{
+public:
+    std::string name;
+    void(*printStr)(variable* str);
+    void(*printChar)(variable* c);
+};
 
-variable* primitiveCall(function* func,std::vector<variable*> args);
-
-void saveRegister(__register__ reg);
-void restoreRegisters();
-void pushRegSave();
-void popRegSave();
-
-void CodePlaceSymbol(std::string& symbol);
-void jmp(std::string symbol);
+_system* getSystem(std::string name);
+extern _system* csys;
+extern std::vector<_system*> systems;

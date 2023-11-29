@@ -35,14 +35,14 @@ class token;
 
 class line
 {
-    friend void parse(std::vector<line> lines);
-private:
-    uint64_t tpos = 0;
-    
 public:
+    uint64_t tpos = 0;
+    uint64_t ccol = 0;
+    uint64_t tline = 0;
+    uint64_t whitespace = 0;
+
     uint64_t lineNum;
     std::string file;
-    
     std::string text;
 
     uint64_t leadingSpaces;
@@ -51,3 +51,5 @@ public:
     std::string restText();
     void stripTokens(uint64_t n);
 };
+
+void parse(std::vector<line> lines);
