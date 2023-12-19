@@ -84,6 +84,12 @@ uint8_t HEXDIGTONUM(char dig)
     return 0;
 }
 
+#include <numberSystem.h>
+std::string numberSystemNames[256];
+uint64_t(*numberSystems[256])(std::string& text, uint64_t* numlen) = {nullptr};
+char defaultNumberSystem = 'd';
+extern std::string __reqFileVSTC;
+extern bool vstcDisableSend;
 variable* resolveIMM(token& t)
 {
     if(options::ddebug)
@@ -100,185 +106,29 @@ variable* resolveIMM(token& t)
         ret->dataType = defaultUnsignedIntegerType;
         return ret;
     }
+    uint64_t numlen = 0;
+    uint64_t ttlen = t.text.length();
+    bool numhs = false;
+    std::string numsysname;
     switch(t.text[0])
     {
         case('0'):
-            switch(t.text[1]){
-            case('x'):
+            if(numberSystems[(uint64_t)t.text[1]] != nullptr)
             {
-                //base 16
-                resBase16:;
-                if(options::dprintTokens)
-                    std::cout << "number format: hexadecimal" << std::endl;
-                for(i=i;i<len;i++)
-                {
-                    switch(t.text[i])
-                    {
-                        case('0'):
-                        case('1'):
-                        case('2'):
-                        case('3'):
-                        case('4'):
-                        case('5'):
-                        case('6'):
-                        case('7'):
-                        case('8'):
-                        case('9'):
-                            value<<=4;
-                            value += (t.text[i] - '0');
-                            break;
-                        case('a'):
-                        case('b'):
-                        case('c'):
-                        case('d'):
-                        case('e'):
-                        case('f'):
-                            value<<=4;
-                            value += (t.text[i] - 'a'+0xA);
-                            break;
-                        case('A'):
-                        case('B'):
-                        case('C'):
-                        case('D'):
-                        case('E'):
-                        case('F'):
-                            value<<=4;
-                            value += (t.text[i] - 'A'+0xA);
-                            break;
-
-                        default:
-                            checkLitop = true;
-                            goto endSwitchB16;
-                    }
-                }
-                endSwitchB16:;
-                goto breakResNumeric;
+                std::string text = t.text.substr(2);
+                value = numberSystems[(uint64_t)t.text[1]](text,&numlen);
+                ttlen -= 2;
+                numhs = true;
+                numsysname = numberSystemNames[(uint64_t)t.text[1]];
             }
-            case('b'):
-                resBase2:;
-                //base 2
-                if(options::dprintTokens)
-                    std::cout << "number format: binary" << std::endl;
-                for(i=i;i<len;i++)
-                {
-                    switch(t.text[i])
-                    {
-                        case('0'):
-                            value<<=1;
-                            break;
-                        case('1'):
-                            value<<=1;
-                            SETBIT_00(value);
-                            break;
-
-                        default:
-                            checkLitop = true;
-                            goto endSwitchB2;
-                    }
-                }
-                endSwitchB2:;
-                goto breakResNumeric;
-            case('o'):
-                resBase8:;
-                //base 8
-                if(options::dprintTokens)
-                    std::cout << "number format: octal" << std::endl;
-                for(i=i;i<len;i++)
-                {
-                    switch(t.text[i])
-                    {
-                        case('0'):
-                        case('1'):
-                        case('2'):
-                        case('3'):
-                        case('4'):
-                        case('5'):
-                        case('6'):
-                        case('7'):
-                            value *= 8;
-                            value += (t.text[i] - '0');
-                            break;
-                        default:
-                            checkLitop = true;
-                            goto endSwitchB8;
-                    }
-                }
-                endSwitchB8:;
-                goto breakResNumeric;
-            case('d'):
-                resBase10:;
-                //base 10
-                if(options::dprintTokens)
-                    std::cout << "number format: decimal" << std::endl;
-                for(i=i;i<len;i++)
-                {
-                    switch(t.text[i])
-                    {
-                        case('0'):
-                        case('1'):
-                        case('2'):
-                        case('3'):
-                        case('4'):
-                        case('5'):
-                        case('6'):
-                        case('7'):
-                        case('8'):
-                        case('9'):
-                            value*=10;
-                            value += (t.text[i] - '0');
-                            break;
-
-                        default:
-                            checkLitop = true;
-                            goto endSwitchB10;
-                    }
-                }
-                endSwitchB10:;
-                goto breakResNumeric;
-            case('q'):
-                resBase4:;
-                //base 4
-                if(options::dprintTokens)
-                    std::cout << "number format: quaternary" << std::endl;
-                for(i=i;i<len;i++)
-                {
-                    switch(t.text[i])
-                    {
-                        case('0'):
-                        case('1'):
-                        case('2'):
-                        case('3'):
-                            value *= 4;
-                            value += (t.text[i] - '0');
-                            break;
-
-                        default:
-                            checkLitop = true;
-                            goto endSwitchB4;
-                    }
-                }
-                endSwitchB4:;
-                goto breakResNumeric;
-            default:
-                defFormatNumberRes:;
-                i = 0;
-                if(options::dprintTokens)
-                    std::cout << "number format: default" << std::endl;
-                switch(defaultNumberBase)
-                {
-                    case(2):
-                        goto resBase2;
-                    case(8):
-                        goto resBase8;
-                    case(10):
-                        goto resBase10;
-                    case(4):
-                        goto resBase4;
-                    case(16):
-                        goto resBase16;
-                }
-                break;
+            else
+            {
+                resNumDefault:;
+                std::string text = t.text;
+                value = numberSystems[(uint64_t)defaultNumberSystem](text,&numlen);
+                numsysname = numberSystemNames[(uint64_t)defaultNumberSystem];
             }
+            goto breakResNumeric;
         case('`'):{
                 //grave string
                 std::string strSym = getNewName();
@@ -521,7 +371,9 @@ variable* resolveIMM(token& t)
             }
         default:
             if(isdigit(t.text[0]))
-                goto defFormatNumberRes;
+            {
+                goto resNumDefault;
+            }
             else
                 return nullptr;
             break;
@@ -532,12 +384,19 @@ variable* resolveIMM(token& t)
         breakResNumeric:;
         {
             type* vtype = defaultUnsignedIntegerType;
-            if(!checkLitop)
+            //send vstc information
+            if(options::vstc && currentFile == __reqFileVSTC && !vstcDisableSend)
+            {
+                std::cout << "0005\x0c" << t.lineNum <<'\x0c'<< t.col <<'\x0c'<< (numhs*2)+numlen <<'\x0c'<<value<<'\x0c'<<numsysname<<'\n';
+            }
+            //0xABC; ttlen = 5, numlen = 3
+            //123; ttlen = 3, numlen = 3
+            if(ttlen == numlen)
                 goto skipLitopCheck;
             {
                 if(options::ddebug)
                     std::cout << "pre litop value: " <<std::dec<< value << std::endl;
-                char* litop_ = t.text.c_str()+i;
+                char* litop_ = t.text.c_str()+(numhs*2)+numlen;
                 if(options::ddebug)
                     std::cout << "checking for litop: " << litop_ << std::endl;
                 litop* l = getLitop(litop_);
@@ -603,8 +462,6 @@ void makeNewToken(std::string& working, uint64_t i, std::vector<token>& tokens,t
 
     working = "";
 }
-
-extern bool vstcDisableSend;
 variable* resolve(token& t)
 {
     if(options::ddebug)
