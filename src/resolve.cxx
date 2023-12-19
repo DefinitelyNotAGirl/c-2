@@ -279,6 +279,126 @@ variable* resolveIMM(token& t)
                 }
                 break;
             }
+        case('`'):{
+                //grave string
+                std::string strSym = getNewName();
+                DataCode.push_back(strSym+":");
+                //LSS = &DataCode.back();
+                uint64_t tpos = 1;
+                //std::cout << "resolving string: " << t.text << std::endl;
+                while(1)
+                {
+                    switch(t.text[tpos])
+                    {
+                        case('`'):
+                            DataCode.push_back("\t.byte 0");
+                            if(options::asmVerbose >= 2){
+                                DataCode.back()+=" # terminate string";
+                            }
+                            goto endLoop2;
+                        case('\\'):
+                            tpos++;
+                            switch(t.text[tpos])
+                            {
+                                case('`'):
+                                    DataCode.push_back("\t.byte "+std::to_string((uint8_t)t.text[tpos]));
+                                    if(options::asmVerbose >= 2){
+                                        DataCode.back()+=" # '";
+                                        DataCode.back().push_back(t.text[tpos]);
+                                        DataCode.back()+="'";
+                                    }
+                                    tpos++;
+                                    break;
+                                case('n'):
+                                    DataCode.push_back("\t.byte 10");//line feed
+                                    tpos++;
+                                    break;
+                                case('0'):
+                                case('1'):
+                                case('2'):
+                                case('3'):
+                                case('4'):
+                                case('5'):
+                                case('6'):
+                                case('7'):
+                                case('8'):
+                                case('9'):
+                                case('A'):
+                                case('B'):
+                                case('C'):
+                                case('D'):
+                                case('E'):
+                                case('F'):
+                                case('a'):
+                                case('b'):
+                                case('c'):
+                                case('d'):
+                                case('e'):
+                                case('f'):
+                                    switch(t.text[tpos+1])
+                                    {
+                                        case('0'):
+                                        case('1'):
+                                        case('2'):
+                                        case('3'):
+                                        case('4'):
+                                        case('5'):
+                                        case('6'):
+                                        case('7'):
+                                        case('8'):
+                                        case('9'):
+                                        case('A'):
+                                        case('B'):
+                                        case('C'):
+                                        case('D'):
+                                        case('E'):
+                                        case('F'):
+                                        case('a'):
+                                        case('b'):
+                                        case('c'):
+                                        case('d'):
+                                        case('e'):
+                                        case('f'):
+                                        {
+                                            uint64_t num = HEXDIGTONUM(t.text[tpos]);
+                                            num *= 16;
+                                            num += HEXDIGTONUM(t.text[tpos+1]);
+                                            DataCode.push_back("\t.byte "+std::to_string(num));//line feed
+                                            tpos+=2;
+                                            break;
+                                        }
+                                        default:
+                                        {
+                                            uint64_t num = HEXDIGTONUM(t.text[tpos]);
+                                            DataCode.push_back("\t.byte "+std::to_string(num));//line feed
+                                            tpos+=1;
+                                            break;
+                                        }
+                                    }
+                                    break;
+                            }
+                            break;
+                        case(0x00):
+                            goto endLoop2;
+                        default:
+                            DataCode.push_back("\t.byte "+std::to_string((uint8_t)t.text[tpos]));
+                            if(options::asmVerbose >= 2){
+                                DataCode.back()+=" # '";
+                                DataCode.back().push_back(t.text[tpos]);
+                                DataCode.back()+="'";
+                            }
+                            tpos++;
+                    }
+                }
+                endLoop2:;
+                variable* tvar = new variable;
+                tvar->storage = storageType::SYMBOL_ADDR;
+                tvar->dataType = getType(defaultCharType->name+"*");
+                tvar->name = strSym;
+                tvar->symbol = strSym;
+                return tvar;
+                break;
+                }
         case('"'):{
             //string
             std::string strSym = getNewName();
@@ -459,6 +579,7 @@ variable* resolveIMM(token& t)
     return nullptr;
 }
 
+void sendVstcToken(token& t);
 void makeNewToken(std::string& working, uint64_t i, std::vector<token>& tokens,token& t)
 {
     if(working == "")
@@ -467,13 +588,23 @@ void makeNewToken(std::string& working, uint64_t i, std::vector<token>& tokens,t
     nt.text = working;
     nt.Line = t.Line;
     nt.col = t.col+i-working.length();
+    nt.lineNum = t.lineNum;
     if((working[0] >= 0x21 && working[0] <= 0x2F) || (working[0] >= 0x3c && working[0] <= 0x3e) || (working[0] == 0x5e))
+    {
+        //std::cout << "token not sent: \"" << nt.text << "\"" << std::endl;
         nt.type = 3;
+    }
+    //else
+    //{
+    //    //sendVstcToken(nt);
+    //    //std::cout << "token sent: \"" << nt.text << "\"" << std::endl;
+    //}
     tokens.push_back(nt);
 
     working = "";
 }
 
+extern bool vstcDisableSend;
 variable* resolve(token& t)
 {
     if(options::ddebug)
@@ -489,14 +620,16 @@ variable* resolve(token& t)
     std::string working = "";
     token at = t.Line->nextToken();
     token lt = t;
+    //vstcDisableSend = true;
     while(at.type != 0 && at.type != 41 && at.type != 40)
     {
         t.text += at.text;
         //printToken(at);
         lt = at;
+        //std::cout << "line: \"" << t.Line->text <<"\""<< std::endl;
         at = t.Line->nextToken();
     }
-
+    //vstcDisableSend = false;
 
     if(options::ddebug)
         std::cout << "expression: " << t.text << std::endl;

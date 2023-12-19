@@ -281,6 +281,8 @@ type* getType(std::string name) {
             std::cout << "\033[31mERROR:\033[0m \"" << name.substr(0,name.length()-1) << "\" does not name a type!" << std::endl;
             return nullptr;
         }
+        t->__declared_file = t->valueType->__declared_file;
+        t->__declared_line = t->valueType->__declared_line;
 		t->size = POINTER_SIZE;
         defaultMangler->mangle(t);
         declareDwarfType(t);
@@ -406,6 +408,34 @@ std::string c2oLocExpr(variable* v)
         }
     }
     return "LOCATION";
+}
+
+class pdobj
+{
+public:
+    std::string name;
+    std::string desc;
+};
+
+class dObj
+{
+public:
+    std::string desc;
+    std::string ret;
+    std::vector<pdobj*> params;
+    std::vector<pdobj*> tparams;
+};
+
+dObj* currentd = new dObj;
+
+void resetCurrentD()
+{
+    for(pdobj* i : currentd->params)
+        delete i;
+    for(pdobj* i : currentd->tparams)
+        delete i;
+    delete currentd;
+    currentd = new dObj;
 }
 
 variable* __false__ = getImmediateVariable(0);
@@ -671,6 +701,36 @@ void parse(std::vector<line> lines) {
             printToken(t);
         }
 		switch (t.type) {
+            case(14): //description directive
+            {
+                if(t.text == "@desc")
+                {
+                    if(currentd->desc.length() != 0)
+                        currentd->desc.push_back('\x1A');
+                    currentd->desc+=L.restText();
+                }
+                else if(t.text == "@return")
+                {
+                    if(currentd->ret.length() != 0)
+                        currentd->ret.push_back('\x1A');
+                    currentd->ret+=L.restText();
+                }
+                else if(t.text == "@param")
+                {
+                    pdobj* param = new pdobj;
+                    param->name = L.nextToken().text;
+                    param->desc = L.restText();
+                    currentd->params.push_back(param);
+                }
+                else if(t.text == "@tparam")
+                {
+                    pdobj* tparam = new pdobj;
+                    tparam->name = L.nextToken().text;
+                    tparam->desc = L.restText();
+                    currentd->params.push_back(tparam);
+                }
+                break;
+            }
 			case (5): // directive
                 if (t.text == "#EOL") {
                     goto ENDLINE;
@@ -1083,6 +1143,8 @@ void parse(std::vector<line> lines) {
 							}
 							case (1): {
 								type* ntype		  = new type;
+                                ntype->desc = currentd->desc;
+                                resetCurrentD();
 								mangler* mangling = defaultMangler;
 								ntype->name		  = t.text;
                                 token nametoken = t;
@@ -1206,7 +1268,6 @@ void parse(std::vector<line> lines) {
 								mangling->mangle(ntype);
 								if (t.type == 40) {
 									// indent based body
-                                    //std::cout << "harder daddy!" << std::endl;
 									ntype->incomplete = true;
 									scope* sc		  = new scope;
 									sc->parent		  = currentScope;
@@ -1236,7 +1297,7 @@ void parse(std::vector<line> lines) {
                                 {
                                     declareDwarfType(ntype);
 								    types.push_back(ntype);
-                                    if(is_vstc_send)std::cout << "0001\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col+L.leadingSpaces <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<ntype->__declared_file<<'\x0c'<<std::to_string(ntype->__declared_line)<<'\n';
+                                    if(is_vstc_send)std::cout << "0001\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<ntype->__declared_file<<'\x0c'<<std::to_string(ntype->__declared_line)<<'\x0c'<<ntype->desc<<'\n';
                                 }
                                 else
                                     std::cout << "template mode: " << templateMode << std::endl;
@@ -1343,6 +1404,11 @@ void parse(std::vector<line> lines) {
                         sco->attribs = attribs;
 					} else if (t.text == "return") {
                         if(options::ddebug)std::cout << "return" << std::endl;
+                        if(currentScope->t == scopeType::GLOBAL)
+                        {
+                            error::lbGlobalScope(t);
+                            goto ERRORENDLINE;
+                        }
                         t = L.nextToken();
                         variable* retVal = resolve(t);
                         variable* ret = new variable;
@@ -1470,6 +1536,11 @@ void parse(std::vector<line> lines) {
                         currentScope->extraCodeBlocks.push_back(endcode);
                         placeSymbol(currentScope->name);
                     } else if (t.text == "if") {
+                        if(currentScope->t == scopeType::GLOBAL)
+                        {
+                            error::lbGlobalScope(t);
+                            goto ERRORENDLINE;
+                        }
                         if(options::ddebug)std::cout << "if" << std::endl;
                         if(options::asmSepComments)putComment("");
                         scope* sc = new scope;
@@ -1481,10 +1552,10 @@ void parse(std::vector<line> lines) {
                         sc->fstore = new functionStorage;
                         sc->func = new function;
                         sc->parent->conditionalCounter++;
+                        //std::cout << "transfer " << currentScope->name << " -> " << sc->name << std::endl;
                         *(sc->func) = *(currentScope->func);
                         *(sc->func->fstore) = *(currentScope->func->fstore);
                         *(sc->fstore) = *(currentScope->fstore);
-                        //std::cout << "transfer " << currentScope->name << " -> " << sc->name << std::endl;
                         //std::cout << "parent stack offset: " <<std::dec<< sc->fstore->stackOffset << std::endl;
                         //std::cout << "parent func stack offset: " <<std::dec<< sc->func->fstore->stackOffset << std::endl;
                         //std::cout << "parent stack size: " <<std::dec<< sc->fstore->stackSize << std::endl;
@@ -1501,14 +1572,25 @@ void parse(std::vector<line> lines) {
                         {
                             t = L.nextToken();
                             cond = t;
-                            while(cond.type != 31)//while != )
+                            //while(cond.type != 31)//while != )
+                            //{
+                            //    //std::cout << "type: " << t.type << std::endl;
+                            //    //std::cout << "text: " << 
+                            //    cond = L.nextToken();
+                            //    cl.text += cond.text;
+                            //}
+                            //cl.tpos = 0;
+                            for(char c : L.restText())
                             {
-                                //std::cout << "type: " << t.type << std::endl;
-                                //std::cout << "text: " << 
-                                cond = L.nextToken();
-                                cl.text += cond.text;
+                                switch(c)
+                                {
+                                    case(')'):
+                                        goto endCLine0;
+                                    default:
+                                        cl.text.push_back(c);
+                                }
                             }
-                            cl.tpos = 0;
+                            endCLine0:;
                         }
                         else
                         {
@@ -1516,13 +1598,23 @@ void parse(std::vector<line> lines) {
                             while(cond.type != 40)//while != :
                             {
                                 cond = L.nextToken();
-                                if(cond.type != 40) {
-                                    cl.text += cond.text;
+                                //if(cond.type != 40) {
+                                //    cl.text += cond.text;
+                                //}
+                            }
+                            //cl.tpos = 0;
+                            for(char c : L.restText())
+                            {
+                                switch(c)
+                                {
+                                    case(':'):
+                                        goto endCLine1;
+                                    default:
+                                        cl.text.push_back(c);
                                 }
                             }
-                            cl.tpos = 0;
+                            endCLine1:;
                         }
-                        
                         cond = cl.nextToken();
                         //std::cout << "condition: " << cond.text << std::endl;
                         variable* condition = resolve(cond);
@@ -1533,6 +1625,11 @@ void parse(std::vector<line> lines) {
                         updateCurrentScope(sc);
                         placeSymbol(sc->func,sc->name);
                     } else if (t.text == "else") {
+                        if(currentScope->t == scopeType::GLOBAL)
+                        {
+                            error::lbGlobalScope(t);
+                            goto ERRORENDLINE;
+                        }
                         t = L.nextToken();
                         if(t.text == "if")
                         {
@@ -1561,14 +1658,25 @@ void parse(std::vector<line> lines) {
                             {
                                 t = L.nextToken();
                                 cond = t;
-                                while(cond.type != 31)//while != )
+                                //while(cond.type != 31)//while != )
+                                //{
+                                //    //std::cout << "type: " << t.type << std::endl;
+                                //    //std::cout << "text: " << 
+                                //    cond = L.nextToken();
+                                //    cl.text += cond.text;
+                                //}
+                                //cl.tpos = 0;
+                                for(char c : L.restText())
                                 {
-                                    //std::cout << "type: " << t.type << std::endl;
-                                    //std::cout << "text: " << 
-                                    cond = L.nextToken();
-                                    cl.text += cond.text;
+                                    switch(c)
+                                    {
+                                        case(')'):
+                                            goto endCLine2;
+                                        default:
+                                            cl.text.push_back(c);
+                                    }
                                 }
-                                cl.tpos = 0;
+                                endCLine2:;
                             }
                             else
                             {
@@ -1576,11 +1684,22 @@ void parse(std::vector<line> lines) {
                                 while(cond.type != 40)//while != :
                                 {
                                     cond = L.nextToken();
-                                    if(cond.type != 40){
-                                        cl.text += cond.text;
+                                    //if(cond.type != 40) {
+                                    //    cl.text += cond.text;
+                                    //}
+                                }
+                                //cl.tpos = 0;
+                                for(char c : L.restText())
+                                {
+                                    switch(c)
+                                    {
+                                        case(':'):
+                                            goto endCLine3;
+                                        default:
+                                            cl.text.push_back(c);
                                     }
                                 }
-                                cl.tpos = 0;
+                                endCLine3:;
                             }
                             cond = cl.nextToken();
                             //std::cout << "condition: " << cond.text << std::endl;
@@ -1712,7 +1831,7 @@ void parse(std::vector<line> lines) {
                             isFunction = true;
                         }
 						if (isFunction) {
-                            if(is_vstc_send)std::cout << "0003\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col+L.leadingSpaces <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<currentFile<<'\x0c'<<std::to_string(L.lineNum)<<'\x0c'<<it->name<<'\n';
+                            if(is_vstc_send)std::cout << "0003\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<currentFile<<'\x0c'<<std::to_string(L.lineNum)<<'\x0c'<<it->name<<'\x0c'<<currentd->desc<<'\x0c'<<currentd->ret<<'\n';
 							mangler* mangling	  = defaultMangler;
 							bool isStatic		  = false;
 							bool isInline		  = false;
@@ -1879,7 +1998,7 @@ void parse(std::vector<line> lines) {
                                 switch (t.type) {
                                     case(1):
                                         arg->name = t.text;
-                                        if(is_vstc_send)std::cout << "0004\x0c" << t.lineNum <<'\x0c'<< t.col+L.leadingSpaces <<'\x0c'<< t.text.length() <<'\x0c'<<t.text<<'\x0c'<<arg->__declared_file<<'\x0c'<<std::to_string(arg->__declared_line)<<'\x0c'<<arg->dataType->name<< '\n';
+                                        if(is_vstc_send)std::cout << "0004\x0c" << t.lineNum <<'\x0c'<< t.col <<'\x0c'<< t.text.length() <<'\x0c'<<t.text<<'\x0c'<<arg->__declared_file<<'\x0c'<<std::to_string(arg->__declared_line)<<'\x0c'<<arg->dataType->name<< '\n';
                                         t = L.nextToken();
                                         break;
                                     case(31):
@@ -1905,11 +2024,24 @@ void parse(std::vector<line> lines) {
 								//goto ERRORENDLINE;
 							}
 							function* func		   = new function;
+                            func->desc = currentd->desc;
+                            func->returnDesc = currentd->ret;
                             func->__declared_file = currentFile;
                             func->__declared_line = L.lineNum;
 							func->name			   = name;
 							func->parameters	   = paramTypes;
 							func->vparams		   = arguments;
+                            for(variable* vp : func->vparams)
+                            {
+                                for(pdobj* o : currentd->params)
+                                {
+                                    if(o->name == vp->name)
+                                    {
+                                        vp->desc = o->desc;
+                                    }
+                                }
+                            }
+                            resetCurrentD();
 							func->returnType	   = returnType;
 							func->fstore		   = new functionStorage;
 							func->isDeprecated	   = isDeprecated;
@@ -2050,8 +2182,10 @@ void parse(std::vector<line> lines) {
                                 errorCompilerBug;
                             }
 						} else {
-                            if(is_vstc_send)std::cout << "0002\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col+L.leadingSpaces <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<currentFile<<'\x0c'<<std::to_string(L.lineNum)<<'\x0c'<<it->name<<'\n';
+                            if(is_vstc_send)std::cout << "0002\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<currentFile<<'\x0c'<<std::to_string(L.lineNum)<<'\x0c'<<it->name<<'\x0c'<<currentd->desc<<'\n';
 							variable* var	  = new variable;
+                            var->desc = currentd->desc;
+                            resetCurrentD();
 							var->dataType	  = it;
                             var->__declared_file = currentFile;
                             var->__declared_line = L.lineNum;

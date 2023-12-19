@@ -75,6 +75,18 @@ void genericError(uint64_t ID)
     std::cout << "\033[31mERROR:\033[0m generic error. code: " <<"0x"<<std::hex<< ID << std::endl;
 }
 
+void lbGlobalScope(token& t)
+{
+    if(options::vsls)
+    {
+        std::cout << "0016-" << t.lineNum << '-' << t.col+t.Line->leadingSpaces << '-' << t.text.length() << '-' << t.text << '\n';
+        return;
+    }
+    if(options::vstc)return;
+    std::cout << "\033[31mERROR:\033[0m logical "+t.text+" in global scope!" << std::endl;
+    genericErrorDisplay(t);
+}
+
 void incompleteType(token& t)
 {
     if(options::vsls)

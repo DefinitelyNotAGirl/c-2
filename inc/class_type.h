@@ -41,6 +41,7 @@ public:
     uint64_t size;
     std::string name;
     std::string mangledName;
+    std::string desc;
     std::vector<variable> members;
     std::vector<function> functions;
     std::vector<type*> supertypes;

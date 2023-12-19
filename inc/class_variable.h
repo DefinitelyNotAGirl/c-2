@@ -49,7 +49,7 @@ privilege levels:
 register size:
     0x******XX******: XX is the size of the register in bytes
 register type:
-    0x****00********: standart register (ex. rax)
+    0x****00********: standard register (ex. rax)
     0x****01********: x86 model specific register (ex. EFER)
     0x****02********: x86 control register (ex. cr0)
     0x****03********: x86 segment register (ex. cs)
@@ -157,6 +157,7 @@ public:
     type* dataType = nullptr;
     std::string name;
     std::string symbol;
+    std::string desc;
     bool doExport = false;
     bool isParameter = false;//only tracked for vstc features
     std::string __declared_file;

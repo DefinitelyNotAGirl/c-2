@@ -39,6 +39,7 @@ namespace error
     void noSuchFile(token& t);
     void noSuchType(token& t);
     void noSuchIdentifier(token& t);
+    void lbGlobalScope(token& t);
     void noSuchABI(token& t);
     void arraySizeImmediate(token& t);
     void genericError(uint64_t ID);

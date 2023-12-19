@@ -66,6 +66,9 @@ public:
     std::string name;
     std::string symbol;
 
+    std::string desc;
+    std::string returnDesc;
+
     type* returnType;
     std::vector<type*> parameters;
     std::vector<variable*> vparams;

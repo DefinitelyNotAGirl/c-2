@@ -48,6 +48,7 @@
 // 11 - function name
 // 12 - built in primitive type
 // 13 - short OP
+// 14 - description directive
 /**/
 // 20 - attribute
 // 21 - attribute (function only)
@@ -82,6 +83,7 @@ std::string resolvePlaceholder(std::string& s)
 }
 
 void* ltobj = nullptr;
+bool vstcDisableSend = false;
 uint64_t tokenType(std::string& s)
 {
     if(s.empty())
@@ -113,6 +115,11 @@ uint64_t tokenType(std::string& s)
     else if(s == ":")return 40;
     else if(s == ";")return 41;
     else if(s == ",")return 42;
+    //desc directives
+    else if(s == "@desc")return 14;
+    else if(s == "@return")return 14;
+    else if(s == "@param")return 14;
+    else if(s == "@tparam")return 14;
     //directives
     else if(s == "#cum")return 5;
     else if(s == "#include")return 5;
@@ -268,124 +275,10 @@ uint64_t tokenType(std::string& s)
     }
 }
 
-token line::nextToken()
+void sendVstcToken(token& t)
 {
-    token t;
-    std::string s;
-
-    t.col = this->ccol+this->whitespace;
-    bool endedLineBreak = false;
-
-    for(tpos = tpos;tpos < this->text.size();tpos++)
-    {
-        switch(this->text[tpos])
-        {
-            case('"'):
-                s += this->text[tpos++];
-                while(1)
-                {
-                    switch(this->text[tpos])
-                    {
-                        case('"'):
-                            s += this->text[tpos++];
-                            goto endLoop1;
-                        //case('\\'):
-                        //    tpos++;
-                        //    switch(this->text[tpos])
-                        //    {
-                        //        case('"'):
-                        //            tpos++;
-                        //            s += '"';
-                        //            break;
-                        //    }
-                        //    break;
-                        case(0x00):
-                            tpos++;
-                            goto endLoop1;
-                        default:
-                            s += this->text[tpos];
-                            tpos++;
-                    }
-                }
-                endLoop2:;
-                break;
-            case('<'):
-                if(s == "operator" || s.back() == '-' || s == "operator<")
-                    goto __default;
-                goto blublub;
-            case('>'):
-                if(s == "operator" || s.back() == '-' || s == "operator>")
-                    goto __default;
-                goto blublub;
-            case('['):
-                if(s == "operator")
-                    goto __default;
-                goto blublub;
-            case(']'):
-                if(s == "operator[")
-                    goto __default;
-                goto blublub;
-            case('('):
-            case('{'):
-            case(')'):
-            case('}'):
-            case(':'):
-            case(','):
-            case(';'):
-                blublub:;
-                if(s.size() == 0)
-                    s += this->text[tpos];
-                else
-                    tpos--;
-                goto endLoop1;
-            case('\n'):
-                this->tline++;
-                if(s.size() != 0)
-                {
-                    endedLineBreak = true;
-                    goto endLoop1;
-                }
-                t.col = 0;
-                break;
-            case(' '):
-                if(tline > this->lineNum)
-                {
-                    this->whitespace++;
-                    t.col++;
-                }
-                if(s.size() != 0)
-                    goto endLoop1;
-                break;
-            case('\t'):
-                if(tline > this->lineNum)
-                {
-                    this->whitespace += tabLength;
-                    t.col+=tabLength;
-                }
-                if(s.size() != 0)
-                    goto endLoop1;
-                break;
-            default:
-                __default:;
-                s += this->text[tpos];
-        }
-    }
-    endLoop1:;
-    if(!endedLineBreak)
-        this->whitespace++;
-    tpos++;
-
-    s = resolvePlaceholder(s);
-    t.type = tokenType(s);
-    t.Line = this;
-    t.text = s;
-    t.lineNum = this->tline-endedLineBreak;
-    this->ccol += endedLineBreak ? 0 : t.col+t.text.length();
-    if(endedLineBreak)
-    {
-        this->whitespace = 0;
-    }
-    if(options::vstc && currentFile == __reqFileVSTC)
+    t.type = tokenType(t.text);
+    if(options::vstc && currentFile == __reqFileVSTC && !vstcDisableSend)
     {
         std::string ID = "0000";
         std::string mdata = "";
@@ -394,17 +287,17 @@ token line::nextToken()
             case(9):
                 //typename
                 ID="0001";
-                mdata = "\x0c"+((type*)ltobj)->__declared_file+"\x0c"+std::to_string(((type*)ltobj)->__declared_line);
+                mdata = "\x0c"+((type*)ltobj)->__declared_file+"\x0c"+std::to_string(((type*)ltobj)->__declared_line)+"\x0c"+((type*)ltobj)->desc;
                 break;
             case(10):
                 //variable name
                 ID="0002";
-                mdata = "\x0c"+((variable*)ltobj)->__declared_file+"\x0c"+std::to_string(((variable*)ltobj)->__declared_line)+"\x0c"+((variable*)ltobj)->dataType->name;
+                mdata = "\x0c"+((variable*)ltobj)->__declared_file+"\x0c"+std::to_string(((variable*)ltobj)->__declared_line)+"\x0c"+((variable*)ltobj)->dataType->name+"\x0c"+((variable*)ltobj)->desc;
                 break;
             case(11):
                 //function name
                 ID="0003";
-                mdata = "\x0c"+((function*)ltobj)->__declared_file+"\x0c"+std::to_string(((function*)ltobj)->__declared_line)+"\x0c"+((function*)ltobj)->returnType->name;
+                mdata = "\x0c"+((function*)ltobj)->__declared_file+"\x0c"+std::to_string(((function*)ltobj)->__declared_line)+"\x0c"+((function*)ltobj)->returnType->name+"\x0c"+((function*)ltobj)->desc+"\x0c"+((function*)ltobj)->returnDesc;
                 break;
             case(60):
                 //parameter name
@@ -412,9 +305,190 @@ token line::nextToken()
                 mdata = "\x0c"+((variable*)ltobj)->__declared_file+"\x0c"+std::to_string(((variable*)ltobj)->__declared_line)+"\x0c"+((variable*)ltobj)->dataType->name;
                 break;
             default:
+                //std::cout << "invalid type: " << t.type << std::endl;
                 goto VSTC_NOSEND;
         }
-        std::cout << ID << '\x0c' << t.lineNum <<'\x0c'<< t.col+this->leadingSpaces <<'\x0c'<< t.text.length() <<'\x0c'<<t.text<<mdata<< '\n';
+        std::cout << ID << '\x0c' << t.lineNum <<'\x0c'<< t.col <<'\x0c'<< t.text.length() <<'\x0c'<<t.text<<mdata<< '\n';
+        VSTC_NOSEND:;
+    }
+    if(t.type == 60)
+        t.type = 10;//change to variable name before returning to compiler
+}
+
+token line::nextToken()
+{
+    //get token text
+    token t;
+    t.col = this->ccol+this->whitespace;
+    this->whitespace = 0;
+    uint64_t I = this->tpos;
+    while(true)
+    {
+        switch(this->text[I])
+        {
+            case(0x00):
+                goto textEnd;
+            case('\n'):
+                if(t.text.size() != 0)
+                    goto tokenBreak_space;
+                t.col = 0;
+                this->tline++;
+                break;
+            case('\t'):
+                if(t.text.size() != 0)
+                {
+                    //t.col+=tabLength;
+                    goto tokenBreak_space;
+                }
+                t.col+=tabLength;
+                break;
+            case(' '):
+                if(t.text.size() != 0)
+                {
+                    //t.col++;
+                    goto tokenBreak_space;
+                }
+                t.col++;
+                break;
+            case('='):
+                switch(t.text.back())
+                {
+                    case('+'):
+                    case('-'):
+                    case('*'):
+                    case('/'):
+                    case('%'):
+                    case('<'):
+                    case('>'):
+                    case('&'):
+                    case('|'):
+                    case('!'):
+                        goto __default;
+                }
+                if(t.text == "operator==")
+                    goto __default;
+            case('<'):
+            case('>'):
+            case('-'):
+            case('+'):
+            case('|'):
+            case('&'):
+                if(t.text.substr(0,strlen("operator")) == "operator" && t.text.back() == this->text[I])
+                    goto __default;
+                //else
+                //    std::cout << "\"" << t.text <<"\" != \"" << "operator" << this->text[I] <<"\"" << std::endl;
+            case('/'):
+                goto skipPointerTypeCheck;
+            case('*'):
+                if(getType(t.text) != nullptr)
+                    goto __default;
+            case('%'):
+            case('!'):
+                skipPointerTypeCheck:;
+                if(t.text == "operator")
+                    goto __default;
+            case('('):
+            case(')'):
+            case('{'):
+            case('}'):
+                goto skipIndexOperator;
+            case('['):
+                if(t.text == "operator")
+                    goto __default;
+                goto skipIndexOperator;
+            case(']'):
+                if(t.text == "operator[")
+                    goto __default;
+            case(':'):
+                skipIndexOperator:;
+            case(';'):
+            case(','):
+                if(t.text.size() == 0)
+                    t.text.push_back(this->text[I++]);
+                goto tokenBreak;
+            case('\''):
+            case('`'):
+            case('"'):
+            {
+                char limiter = this->text[I];
+                t.text.push_back(this->text[I++]);
+                while(true)
+                {
+                    switch(this->text[I])
+                    {
+                        case('\\'):
+                            t.text.push_back(this->text[I]);
+                            t.text.push_back(this->text[++I]);
+                            break;
+                        case(0x00):
+                            goto textEnd;
+                        default:
+                            if(this->text[I] == limiter)
+                            {
+                                t.text.push_back(this->text[I]);
+                                goto endString;
+                            }
+                            else
+                            {
+                                t.text.push_back(this->text[I]);
+                            }
+                    }
+                    I++;
+                }
+                endString:;
+                //std::cout << "string: " << t.text << std::endl;
+                break;
+            }
+            default:
+                __default:;
+                t.text.push_back(this->text[I]);
+                break;
+        }
+        I++;
+    }
+    tokenBreak:;
+    tokenBreak_space:;
+    textEnd:;
+
+    t.type = tokenType(t.text);
+    t.Line = this;
+    t.lineNum = this->tline;
+    this->tpos = I;
+    //if(currentFile == __reqFileVSTC)std::cout << "old ccol: " << this->ccol << std::endl;
+    this->ccol = t.col+t.text.length();
+    //if(currentFile == __reqFileVSTC)std::cout << "token: \"" << t.text << "\"" << std::endl;
+    //if(currentFile == __reqFileVSTC)std::cout << "new ccol: " << this->ccol << std::endl;
+    if(options::vstc && currentFile == __reqFileVSTC && !vstcDisableSend)
+    {
+        std::string ID = "0000";
+        std::string mdata = "";
+        switch(t.type)
+        {
+            case(9):
+                //typename
+                ID="0001";
+                mdata = "\x0c"+((type*)ltobj)->__declared_file+"\x0c"+std::to_string(((type*)ltobj)->__declared_line)+"\x0c"+((type*)ltobj)->desc;
+                break;
+            case(10):
+                //variable name
+                ID="0002";
+                mdata = "\x0c"+((variable*)ltobj)->__declared_file+"\x0c"+std::to_string(((variable*)ltobj)->__declared_line)+"\x0c"+((variable*)ltobj)->dataType->name+"\x0c"+((variable*)ltobj)->desc;
+                break;
+            case(11):
+                //function name
+                ID="0003";
+                mdata = "\x0c"+((function*)ltobj)->__declared_file+"\x0c"+std::to_string(((function*)ltobj)->__declared_line)+"\x0c"+((function*)ltobj)->returnType->name+"\x0c"+((function*)ltobj)->desc+"\x0c"+((function*)ltobj)->returnDesc;
+                break;
+            case(60):
+                //parameter name
+                ID="0004";
+                mdata = "\x0c"+((variable*)ltobj)->__declared_file+"\x0c"+std::to_string(((variable*)ltobj)->__declared_line)+"\x0c"+((variable*)ltobj)->dataType->name;
+                break;
+            default:
+                //std::cout << "invalid type: " << t.type << std::endl;
+                goto VSTC_NOSEND;
+        }
+        std::cout << ID << '\x0c' << t.lineNum <<'\x0c'<< t.col <<'\x0c'<< t.text.length() <<'\x0c'<<t.text<<mdata<< '\n';
         VSTC_NOSEND:;
     }
     if(t.type == 60)
@@ -448,3 +522,7 @@ void line::stripTokens(uint64_t n)
         //std::cout << "after: \"" << this->text << "\"" << std::endl;
     }
 }
+
+/*
+ *  vtables
+ */

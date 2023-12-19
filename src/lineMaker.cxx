@@ -278,6 +278,14 @@ std::vector<line> getLines(std::string fname)
         terminatorSCCL = '}';
         if(startsWith(content,"//"))
             terminatorLINE = '\n';
+        if(startsWith(content,"@"))
+        {
+            terminatorLINE = '\n';
+            terminatorSEMI = '\n';
+            terminatorCOLO = '\n';
+            terminatorSCOP = '\n';
+            terminatorSCCL = '\n';
+        }
         if(startsWith(content,"#"))
             terminatorLINE = '\n';
         if(startsWith(content,"template"))
@@ -354,6 +362,10 @@ std::vector<line> getLines(std::string fname)
                 leadingSpace++;
                 j++;
             }
+            else if(lineText[j] == '\n')
+            {
+                break;
+            }
             else
                 break;
         }
@@ -367,6 +379,7 @@ std::vector<line> getLines(std::string fname)
         L.text = lineText;
         L.file = fname;
         L.leadingSpaces = leadingSpace;
+        L.whitespace = leadingSpace;
         if(wasComment)
         {
             if(options::keepComments)
