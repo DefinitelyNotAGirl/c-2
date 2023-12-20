@@ -321,4 +321,13 @@ void CARGHANDLER_HELP(CARGPARSE_HANDLER_ARGS)
         std::cout << "      useless gibberish to anyone unfamiliar with the compilers inner workings";
         printOptReset();
     }
+    {//--msyntax=
+        printPreOptionSpaces();
+        std::cout << "--msyntax=<syntax>";
+        CSLLB+=18;printEvenSpaces();
+        std::cout << "set the output assembly syntax";
+        printOptReset();printEvenSpaces();
+        std::cout << "valid options are: Intel,gas,AT&T,ATT";
+        printOptReset();
+    }
 }

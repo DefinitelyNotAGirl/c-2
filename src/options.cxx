@@ -32,6 +32,7 @@
 #include <util.h>
 #include <options.h>
 #include <compiler.h>
+#include <codegen.h>
 #include <miscout.h>
 
 bool strToBool(std::string str)
@@ -160,6 +161,31 @@ void CARGHANDLER_VERSION(CARGPARSE_HANDLER_ARGS)
 void CARGHANDLER_INCLUDE(CARGPARSE_HANDLER_ARGS)
 {
     includeDirs.push_back(args.front());
+}
+
+void CARGHANDLER_MSYNTAX(CARGPARSE_HANDLER_ARGS)
+{
+    std::string syn = args.front();
+    if(syn == "Intel")
+    {
+        syntax = SYNTAX_INTEL;
+        return;
+    }
+    if(syn == "gas")
+    {
+        syntax = SYNTAX_GAS;
+        return;
+    }
+    if(syn == "AT&T")
+    {
+        syntax = SYNTAX_GAS;
+        return;
+    }
+    if(syn == "ATT")
+    {
+        syntax = SYNTAX_GAS;
+        return;
+    }
 }
 
 void CARGHANDLER_HELP(CARGPARSE_HANDLER_ARGS);
@@ -332,6 +358,8 @@ void cliOptions(int argc, char **argv)
     carg.addParameter(1,0,"--Help",&CARGHANDLER_HELP);
 
     carg.addParameter(1,0,"--help-pragma",&CARGHANDLER_HELP_PRAGMA);
+
+    carg.addParameter(0,1,"--msyntax=",&CARGHANDLER_MSYNTAX);
 
     carg.unknownHandler = &cargHandler_unknown;
 
