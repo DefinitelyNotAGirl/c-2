@@ -236,7 +236,15 @@ int main(int argc, char** argv)
         if(options::buildDir != "")
         {
             objOut = options::buildDir+rname+".o";
-            asmOut = options::buildDir+rname+".a86";//must be changed for intel syntax
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    asmOut = options::buildDir+rname+".a86";
+                    break;
+                case(SYNTAX_INTEL):
+                    asmOut = options::buildDir+rname+".i86";
+                    break;
+            }
             mdOut = options::buildDir+rname+".d";
             execOut = options::buildDir+rname+".exe";
             //use .exe on all platforms for now, should not cause issues (queue linux trying to load as PE executable)
@@ -245,7 +253,15 @@ int main(int argc, char** argv)
         {
             //no output destination specified
             objOut = rname+".o";
-            asmOut = rname+".a86";//must be changed for intel syntax
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    asmOut = rname+".a86";
+                    break;
+                case(SYNTAX_INTEL):
+                    asmOut = rname+".i86";
+                    break;
+            }
             mdOut = rname+".d";
             execOut = rname+".exe";
             //use .exe on all platforms for now, should not cause issues (queue linux trying to load as PE executable)

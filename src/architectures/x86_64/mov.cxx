@@ -77,7 +77,17 @@ namespace x86_64
             (((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x00) || ((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x02) || ((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x03)))
         {
             if(src != dst)
-                code->push_back(getIndent()+"mov %"+registerNAME(src)+", %"+registerNAME(dst));
+            {
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"mov %"+registerNAME(src)+", %"+registerNAME(dst));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"mov "+registerNAME(dst)+", "+registerNAME(src));
+                        break;
+                }
+            }
         }
         else
         {
@@ -109,7 +119,15 @@ namespace x86_64
 
     void mov(location src, location dst)
     {
-        code->push_back(getIndent()+"mov "+src.expr()+", "+dst.expr());
+        switch(syntax)
+        {
+            case(SYNTAX_GAS):
+                code->push_back(getIndent()+"mov "+src.expr()+", "+dst.expr());
+                break;
+            case(SYNTAX_INTEL):
+                code->push_back(getIndent()+"mov "+dst.expr()+", "+src.expr());
+                break;
+        }
     }
 
     void mov(uint64_t src, __register__ dst)
@@ -118,9 +136,29 @@ namespace x86_64
         if((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x00)
         {
             if(src != 0)
-                code->push_back(getIndent()+"mov $"+intToString(src)+", %"+registerNAME(dst));
+            {
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"mov $"+intToString(src)+", %"+registerNAME(dst));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"mov "+registerNAME(dst)+", "+intToString(src));
+                        break;
+                }
+            }
             else
-                code->push_back(getIndent()+"xor %"+registerNAME(dst)+", %"+registerNAME(dst));
+            {
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"xor %"+registerNAME(dst)+", %"+registerNAME(dst));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"xor "+registerNAME(dst)+", "+registerNAME(dst));
+                        break;
+                }
+            }
         }
         else if((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)dst) == 0x0100000000)
         {
@@ -135,12 +173,28 @@ namespace x86_64
 
     void mov(location src, __register__ dst)
     {
-        code->push_back(getIndent()+"mov "+src.expr()+", %"+registerNAME(dst));
+        switch(syntax)
+        {
+            case(SYNTAX_GAS):
+                code->push_back(getIndent()+"mov "+src.expr()+", %"+registerNAME(dst));
+                break;
+            case(SYNTAX_INTEL):
+                code->push_back(getIndent()+"mov "+registerNAME(dst)+", "+src.expr());
+                break;
+        }
     }
 
     void mov(__register__ src, location dst)
     {
-        code->push_back(getIndent()+"mov %"+registerNAME(src)+", "+dst.expr());
+        switch(syntax)
+        {
+            case(SYNTAX_GAS):
+                code->push_back(getIndent()+"mov %"+registerNAME(src)+", "+dst.expr());
+                break;
+            case(SYNTAX_INTEL):
+                code->push_back(getIndent()+"mov "+dst.expr()+", "+registerNAME(src));
+                break;
+        }
     }
 
     void mov(variable* src, __register__ dst)
@@ -191,21 +245,67 @@ namespace x86_64
             if(dst->dataType->size <= 2)
             {
                 x86_64::mov(_0,dst->reg);
-                code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(dst->reg,dst->dataType->size));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(dst->reg,dst->dataType->size));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"mov "+registerNAME(dst->reg,dst->dataType->size)+", "+location(src).expr());
+                        break;
+                }
             }
             else
-                code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(dst->reg,dst->dataType->size));
+            {
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(dst->reg,dst->dataType->size));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"mov "+registerNAME(dst->reg,dst->dataType->size)+", "+location(src).expr());
+                        break;
+                }
+            }
         }
         else if(src->storage == storageType::REGISTER && dst->storage == storageType::MEMORY)
         {
-            code->push_back(getIndent()+"mov %"+registerNAME(src->reg,src->dataType->size)+", "+location(dst).expr());
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"mov %"+registerNAME(src->reg,src->dataType->size)+", "+location(dst).expr());
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"mov "+location(dst).expr()+", "+registerNAME(src->reg,src->dataType->size));
+                    break;
+            }
         }
         else if(dst->storage == storageType::MEMORY && src->storage == storageType::MEMORY)
             x86_64::mov(location(src),location(dst));
         else if(dst->storage == storageType::MEMORY_ABSOLUTE && src->storage == storageType::REGISTER)
-            code->push_back(getIndent()+"mov %"+registerNAME(src->reg,src->dataType->size)+", "+location(dst).expr());
+        {
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"mov %"+registerNAME(src->reg,src->dataType->size)+", "+location(dst).expr());
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"mov "+location(dst).expr()+", "+registerNAME(src->reg,src->dataType->size));
+                    break;
+            }
+        }
         else if(src->storage == storageType::MEMORY_ABSOLUTE && dst->storage == storageType::REGISTER)
-            code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(dst->reg,dst->dataType->size));
+        {
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(dst->reg,dst->dataType->size));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"mov "+registerNAME(dst->reg,dst->dataType->size)+", %"+location(src).expr());
+                    break;
+            }
+        }
         else if(src->storage == storageType::MEMORY_ABSOLUTE && dst->storage == storageType::MEMORY_ABSOLUTE)
         {
             //cant move directly
@@ -218,8 +318,17 @@ namespace x86_64
                 reg = __register__::rax;
                 saveRegister(reg);
             }
-            code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(reg,src->dataType->size));
-            code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"mov "+location(src).expr()+", %"+registerNAME(reg,src->dataType->size));
+                    code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", "+location(src).expr());
+                    code->push_back(getIndent()+"mov "+location(dst).expr()+", "+registerNAME(reg,dst->dataType->size));
+                    break;
+            }
             if(rInvalid);
                 restoreRegisters();
         }
@@ -228,7 +337,15 @@ namespace x86_64
             if(src->immediateValue <= 0xFFFFFFFF)
             {
                 //imm32,imm16,imm8
-                code->push_back(getIndent()+"mov $"+intToString(src->immediateValue)+", "+location(dst).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"mov $"+intToString(src->immediateValue)+", "+location(dst).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"mov "+location(dst).expr()+", "+intToString(src->immediateValue));
+                        break;
+                }
             }
             else
             {
@@ -245,8 +362,17 @@ namespace x86_64
                     reg = __register__::rax;
                     saveRegister(reg);
                 }
-                code->push_back(getIndent()+"movabsq $"+intToString(src->immediateValue)+", %"+registerNAME(reg,8));
-                code->push_back(getIndent()+"mov %"+registerNAME(reg,8)+", "+location(dst).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"movabsq $"+intToString(src->immediateValue)+", %"+registerNAME(reg,8));
+                        code->push_back(getIndent()+"mov %"+registerNAME(reg,8)+", "+location(dst).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"mov "+registerNAME(reg,8)+", "+intToString(src->immediateValue));
+                        code->push_back(getIndent()+"mov "+location(dst).expr()+", "+registerNAME(reg,8));
+                        break;
+                }
                 restoreRegisters();
                 popRegSave();
             }
@@ -256,36 +382,122 @@ namespace x86_64
             switch(dst->dataType->size)
             {
                 case(1):
-                    code->push_back(getIndent()+"movb $"+intToString(src->immediateValue)+", "+location(dst).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movb $"+intToString(src->immediateValue)+", "+location(dst).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov byte "+location(dst).expr()+", "+intToString(src->immediateValue));
+                            break;
+                    }
                     break;
                 case(2):
-                    code->push_back(getIndent()+"movw $"+intToString(src->immediateValue)+", "+location(dst).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movw $"+intToString(src->immediateValue)+", "+location(dst).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov word "+location(dst).expr()+", "+intToString(src->immediateValue));
+                            break;
+                    }
                     break;
                 case(4):
-                    code->push_back(getIndent()+"movl $"+intToString(src->immediateValue)+", "+location(dst).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movl $"+intToString(src->immediateValue)+", "+location(dst).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov dword "+location(dst).expr()+", "+intToString(src->immediateValue));
+                            break;
+                    }
                     break;
                 case(8):
-                    code->push_back(getIndent()+"movq $"+intToString(src->immediateValue)+", "+location(dst).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movq $"+intToString(src->immediateValue)+", "+location(dst).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov qword "+location(dst).expr()+", "+intToString(src->immediateValue));
+                            break;
+                    }
                     break;
             }
         }
         else if(src->storage == storageType::IMMEDIATE && dst->storage == storageType::REGISTER)
         {
             if(dst->dataType->size < src->dataType->size)
-                code->push_back(getIndent()+"xor %"+registerNAME(dst->reg)+", %"+registerNAME(dst->reg));
-            code->push_back(getIndent()+"mov $"+intToString(src->immediateValue)+", %"+registerNAME(dst->reg,dst->dataType->size));
+            {
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"xor %"+registerNAME(dst->reg)+", %"+registerNAME(dst->reg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"xor "+registerNAME(dst->reg)+", "+registerNAME(dst->reg));
+                        break;
+                }
+            }
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"mov $"+intToString(src->immediateValue)+", %"+registerNAME(dst->reg,dst->dataType->size));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"mov "+registerNAME(dst->reg,dst->dataType->size)+", "+intToString(src->immediateValue));
+                    break;
+            }
         }
         else if(src->storage == storageType::SYMBOL && dst->storage == storageType::REGISTER)
         {
             if(dst->dataType->size <= 2)
-                code->push_back(getIndent()+"xor %"+registerNAME(dst->reg)+", %"+registerNAME(dst->reg));
-            code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(dst->reg,dst->dataType->size));
+            {
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"xor %"+registerNAME(dst->reg)+", %"+registerNAME(dst->reg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"xor "+registerNAME(dst->reg)+", "+registerNAME(dst->reg));
+                        break;
+                }
+            }
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(dst->reg,dst->dataType->size));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"mov "+registerNAME(dst->reg,dst->dataType->size)+", "+src->symbol);
+                    break;
+            }
         }
         else if(src->storage == storageType::SYMBOL_ADDR && dst->storage == storageType::REGISTER)
         {
             if(dst->dataType->size < src->dataType->size)
-                code->push_back(getIndent()+"xor %"+registerNAME(dst->reg)+", %"+registerNAME(dst->reg));
-            code->push_back(getIndent()+"mov $"+src->symbol+", %"+registerNAME(dst->reg,dst->dataType->size));
+            {
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"xor %"+registerNAME(dst->reg)+", %"+registerNAME(dst->reg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"xor "+registerNAME(dst->reg)+", "+registerNAME(dst->reg));
+                        break;
+                }
+            }
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"mov $"+src->symbol+", %"+registerNAME(dst->reg,dst->dataType->size));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"mov "+registerNAME(dst->reg,dst->dataType->size)+", offset "+src->symbol+"");
+                    break;
+            }
         }
         else if(src->storage == storageType::SYMBOL && dst->storage == storageType::SYMBOL)
         {
@@ -299,20 +511,56 @@ namespace x86_64
             switch(dst->dataType->size)
             {
                 case(1):
-                    code->push_back(getIndent()+"movb "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
-                    code->push_back(getIndent()+"movb %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movb "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                            code->push_back(getIndent()+"movb %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", byte "+src->symbol);
+                            code->push_back(getIndent()+"mov byte "+dst->symbol+", "+registerNAME(reg,dst->dataType->size));
+                            break;
+                    }
                     break;
                 case(2):
-                    code->push_back(getIndent()+"movw "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
-                    code->push_back(getIndent()+"movw %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movw "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                            code->push_back(getIndent()+"movw %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", word "+src->symbol);
+                            code->push_back(getIndent()+"mov word "+dst->symbol+", "+registerNAME(reg,dst->dataType->size));
+                            break;
+                    }
                     break;
                 case(4):
-                    code->push_back(getIndent()+"movd "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
-                    code->push_back(getIndent()+"movd %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movl "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                            code->push_back(getIndent()+"movl %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", dword "+src->symbol);
+                            code->push_back(getIndent()+"mov dword "+dst->symbol+", "+registerNAME(reg,dst->dataType->size));
+                            break;
+                    }
                     break;
                 case(8):
-                    code->push_back(getIndent()+"movq "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
-                    code->push_back(getIndent()+"movq %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movq "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                            code->push_back(getIndent()+"movq %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", qword "+src->symbol);
+                            code->push_back(getIndent()+"mov qword "+dst->symbol+", "+registerNAME(reg,dst->dataType->size));
+                            break;
+                    }
                     break;
             }
             restoreRegisters();
@@ -330,22 +578,60 @@ namespace x86_64
             switch(dst->dataType->size)
             {
                 case(1):
-                    code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
-                    x86_64::mov(_0,dst->reg);
-                    code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                            x86_64::mov(_0,dst->reg);
+                            code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", "+src->symbol);
+                            x86_64::mov(_0,dst->reg);
+                            code->push_back(getIndent()+"mov "+location(dst).expr()+", "+registerNAME(reg,dst->dataType->size));
+                            break;
+                    }
                     break;
                 case(2):
-                    code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
-                    x86_64::mov(_0,dst->reg);
-                    code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                            x86_64::mov(_0,dst->reg);
+                            code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", "+src->symbol);
+                            x86_64::mov(_0,dst->reg);
+                            code->push_back(getIndent()+"mov "+location(dst).expr()+", "+registerNAME(reg,dst->dataType->size));
+                            break;
+                    }
                     break;
                 case(4):
-                    code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
-                    code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                            code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", "+src->symbol);
+                            code->push_back(getIndent()+"mov "+location(dst).expr()+", "+registerNAME(reg,dst->dataType->size));
+                            break;
+                    }
                     break;
                 case(8):
-                    code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
-                    code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(reg,src->dataType->size));
+                            code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", "+src->symbol);
+                            code->push_back(getIndent()+"mov "+location(dst).expr()+", "+registerNAME(reg,dst->dataType->size));
+                            break;
+                    }
                     break;
             }
             restoreRegisters();
@@ -356,22 +642,62 @@ namespace x86_64
             switch(dst->dataType->size)
             {
                 case(1):
-                    code->push_back(getIndent()+"movb $"+std::to_string(src->immediateValue)+", "+dst->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movb $"+intToString(src->immediateValue)+", "+dst->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov byte "+dst->symbol+", "+intToString(src->immediateValue));
+                            break;
+                    }
                     break;
                 case(2):
-                    code->push_back(getIndent()+"movw $"+std::to_string(src->immediateValue)+", "+dst->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movw $"+intToString(src->immediateValue)+", "+dst->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov word "+dst->symbol+", "+intToString(src->immediateValue));
+                            break;
+                    }
                     break;
                 case(4):
-                    code->push_back(getIndent()+"movd $"+std::to_string(src->immediateValue)+", "+dst->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movd $"+intToString(src->immediateValue)+", "+dst->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov dword "+dst->symbol+", "+intToString(src->immediateValue));
+                            break;
+                    }
                     break;
                 case(8):
-                    code->push_back(getIndent()+"movq $"+std::to_string(src->immediateValue)+", "+dst->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movq $"+intToString(src->immediateValue)+", "+dst->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov qword ptr "+dst->symbol+", "+intToString(src->immediateValue));
+                            break;
+                    }
                     break;
             }
         }
         else if(src->storage == storageType::REGISTER && dst->storage == storageType::SYMBOL)
         {
-            code->push_back(getIndent()+"mov %"+registerNAME(src->reg,dst->dataType->size)+", "+dst->symbol);
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"mov %"+registerNAME(src->reg,dst->dataType->size)+", "+dst->symbol);
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"mov "+dst->symbol+", "+registerNAME(src->reg,dst->dataType->size));
+                    break;
+            }
         }
         else
         {

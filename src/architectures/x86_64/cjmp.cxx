@@ -36,11 +36,41 @@ namespace x86_64
     void cmp(variable* a, variable* b)
     {
         if(b->storage == storageType::REGISTER && a->storage == storageType::REGISTER)
-            code->push_back(getIndent()+"cmp %"+registerNAME(a->reg)+",%"+registerNAME(b->reg));
+        {
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"cmp %"+registerNAME(a->reg)+",%"+registerNAME(b->reg));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"cmp "+registerNAME(b->reg)+","+registerNAME(a->reg));
+                    break;
+            }
+        }
         else if(b->storage == storageType::REGISTER && a->storage == storageType::MEMORY)
-            code->push_back(getIndent()+"cmp %"+location(a->reg,a->offset).expr()+","+registerNAME(b->reg));
+        {
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"cmp %"+location(a->reg,a->offset).expr()+","+registerNAME(b->reg));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"cmp "+registerNAME(b->reg)+","+location(a->reg,a->offset).expr());
+                    break;
+            }
+        }
         else if(a->storage == storageType::REGISTER && b->storage == storageType::MEMORY)
-            code->push_back(getIndent()+"cmp %"+registerNAME(a->reg)+","+location(b).expr());
+        {
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"cmp %"+registerNAME(a->reg)+","+location(b).expr());
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"cmp "+location(b).expr()+","+registerNAME(a->reg));
+                    break;
+            }
+        }
         else if(b->storage == storageType::MEMORY && a->storage == storageType::MEMORY)
         {
             //cant compare directly
@@ -54,14 +84,42 @@ namespace x86_64
                 saveRegister(reg);
             }
             x86_64::mov(a,reg);
-            code->push_back(getIndent()+"cmp %"+registerNAME(reg)+","+location(b->reg,b->offset).expr());
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"cmp %"+registerNAME(reg)+","+location(b->reg,b->offset).expr());
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"cmp "+location(b->reg,b->offset).expr()+","+registerNAME(reg));
+                    break;
+            }
             if(rInvalid);
                 restoreRegisters();
         }
         else if(b->storage == storageType::MEMORY_ABSOLUTE && a->storage == storageType::REGISTER)
-            code->push_back(getIndent()+"cmp %"+registerNAME(a->reg)+","+location(b->offset).expr());
+        {
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"cmp %"+registerNAME(a->reg)+","+location(b->offset).expr());
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"cmp "+location(b->offset).expr()+","+registerNAME(a->reg));
+                    break;
+            }
+        }
         else if(a->storage == storageType::MEMORY_ABSOLUTE && b->storage == storageType::REGISTER)
-            code->push_back(getIndent()+"cmp "+location(a->offset).expr()+",%"+registerNAME(b->reg));
+        {
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"cmp "+location(a->offset).expr()+",%"+registerNAME(b->reg));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"cmp "+registerNAME(b->reg)+","+location(a->offset).expr());
+                    break;
+            }
+        }
         else if(a->storage == storageType::MEMORY_ABSOLUTE && b->storage == storageType::MEMORY_ABSOLUTE)
         {
             //cant cmp directly
@@ -75,45 +133,108 @@ namespace x86_64
                 saveRegister(reg);
             }
             x86_64::mov(a,reg);
-            code->push_back(getIndent()+"cmp %"+registerNAME(reg)+",%"+registerNAME(b->reg));
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"cmp %"+registerNAME(reg)+",%"+registerNAME(b->reg));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"cmp "+registerNAME(b->reg)+","+registerNAME(reg));
+                    break;
+            }
             if(rInvalid);
                 restoreRegisters();
         }
         else if(b->storage == storageType::MEMORY_ABSOLUTE && a->storage == storageType::IMMEDIATE)
         {
-            code->push_back(getIndent()+"cmp $"+std::to_string(a->immediateValue)+","+location(b->offset).expr());
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"cmp $"+intToString(a->immediateValue)+","+location(b->offset).expr());
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"cmp "+location(b->offset).expr()+",$"+intToString(a->immediateValue));
+                    break;
+            }
         }
         else if(b->storage == storageType::MEMORY && a->storage == storageType::IMMEDIATE)
         {
             std::string instr = "cmp";
-            switch(b->dataType->size)
+            switch(syntax)
             {
-                case(1):
-                    instr = "cmpb";
+                case(SYNTAX_GAS):
+                    switch(b->dataType->size)
+                    {
+                        case(1):
+                            instr = "cmpb";
+                            break;
+                        case(2):
+                            instr = "cmpw";
+                            break;
+                        case(4):
+                            instr = "cmpd";
+                            break;
+                        case(8):
+                            instr = "cmpq";
+                            break;
+                    }
+                    code->push_back(getIndent()+instr+" $"+intToString(a->immediateValue)+","+location(b).expr());
                     break;
-                case(2):
-                    instr = "cmpw";
-                    break;
-                case(4):
-                    instr = "cmpd";
-                    break;
-                case(8):
-                    instr = "cmpq";
+                case(SYNTAX_INTEL):
+                    switch(b->dataType->size)
+                    {
+                        case(1):
+                            instr = " byte ";
+                            break;
+                        case(2):
+                            instr = " word ";
+                            break;
+                        case(4):
+                            instr = " dword ";
+                            break;
+                        case(8):
+                            instr = " qword ";
+                            break;
+                    }
+                    code->push_back(getIndent()+"cmp "+location(b).expr()+","+instr+"ptr "+intToString(a->immediateValue));
                     break;
             }
-            code->push_back(getIndent()+instr+" $"+std::to_string(a->immediateValue)+","+location(b).expr());
         }
         else if(b->storage == storageType::REGISTER && a->storage == storageType::IMMEDIATE)
         {
-            code->push_back(getIndent()+"cmp $"+std::to_string(a->immediateValue)+",%"+registerNAME(b->reg));
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"cmp $"+intToString(a->immediateValue)+",%"+registerNAME(b->reg));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"cmp "+registerNAME(b->reg)+",$"+intToString(a->immediateValue));
+                    break;
+            }
         }
         else if(b->storage == storageType::SYMBOL && a->storage == storageType::REGISTER)
         {
-            code->push_back(getIndent()+"cmp "+b->symbol+",%"+registerNAME(a->reg,a->dataType->size));
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"cmp "+b->symbol+",%"+registerNAME(a->reg,a->dataType->size));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"cmp "+registerNAME(a->reg,a->dataType->size)+","+b->symbol);
+                    break;
+            }
         }
         else if(a->storage == storageType::SYMBOL && b->storage == storageType::REGISTER)
         {
-            code->push_back(getIndent()+"cmp %"+registerNAME(b->reg,b->dataType->size)+","+a->symbol);
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"cmp %"+registerNAME(b->reg,b->dataType->size)+","+a->symbol);
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"cmp "+a->symbol+","+registerNAME(b->reg,b->dataType->size));
+                    break;
+            }
         }
         else if(b->storage == storageType::IMMEDIATE)
         {
@@ -133,20 +254,56 @@ namespace x86_64
             switch(b->dataType->size)
             {
                 case(1):
-                    code->push_back(getIndent()+"movb "+b->symbol+", %"+registerNAME(reg));
-                    code->push_back(getIndent()+"cmpb %"+registerNAME(reg)+", "+a->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movb "+b->symbol+", %"+registerNAME(reg));
+                            code->push_back(getIndent()+"cmpb %"+registerNAME(reg)+", "+a->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg)+", byte "+b->symbol);
+                            code->push_back(getIndent()+"cmp byte "+a->symbol+", "+registerNAME(reg));
+                            break;
+                    }
                     break;
                 case(2):
-                    code->push_back(getIndent()+"movw "+b->symbol+", %"+registerNAME(reg));
-                    code->push_back(getIndent()+"cmpw %"+registerNAME(reg)+", "+a->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movw "+b->symbol+", %"+registerNAME(reg));
+                            code->push_back(getIndent()+"cmpw %"+registerNAME(reg)+", "+a->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg)+", word "+b->symbol);
+                            code->push_back(getIndent()+"cmp word "+a->symbol+", "+registerNAME(reg));
+                            break;
+                    }
                     break;
                 case(4):
-                    code->push_back(getIndent()+"movd "+b->symbol+", %"+registerNAME(reg));
-                    code->push_back(getIndent()+"cmpd %"+registerNAME(reg)+", "+a->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movl "+b->symbol+", %"+registerNAME(reg));
+                            code->push_back(getIndent()+"cmpl %"+registerNAME(reg)+", "+a->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg)+", dword "+b->symbol);
+                            code->push_back(getIndent()+"cmp dword "+a->symbol+", "+registerNAME(reg));
+                            break;
+                    }
                     break;
                 case(8):
-                    code->push_back(getIndent()+"movq "+b->symbol+", %"+registerNAME(reg));
-                    code->push_back(getIndent()+"cmpq %"+registerNAME(reg)+", "+a->symbol);
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"movb "+b->symbol+", %"+registerNAME(reg));
+                            code->push_back(getIndent()+"cmpb %"+registerNAME(reg)+", "+a->symbol);
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg)+", qword "+b->symbol);
+                            code->push_back(getIndent()+"cmp qword "+a->symbol+", "+registerNAME(reg));
+                            break;
+                    }
                     break;
             }
             restoreRegisters();
@@ -164,22 +321,60 @@ namespace x86_64
             switch(b->dataType->size)
             {
                 case(1):
-                    x86_64::mov(getImmediateVariable(0),reg);
-                    code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
-                    code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            x86_64::mov(getImmediateVariable(0),reg);
+                            code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
+                            code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            x86_64::mov(getImmediateVariable(0),reg);
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,b->dataType->size)+", %"+b->symbol);
+                            code->push_back(getIndent()+"cmp "+location(a).expr()+", "+registerNAME(reg,b->dataType->size));
+                            break;
+                    }
                     break;
                 case(2):
-                    x86_64::mov(getImmediateVariable(0),reg);
-                    code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
-                    code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            x86_64::mov(getImmediateVariable(0),reg);
+                            code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
+                            code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            x86_64::mov(getImmediateVariable(0),reg);
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,b->dataType->size)+", %"+b->symbol);
+                            code->push_back(getIndent()+"cmp "+location(a).expr()+", "+registerNAME(reg,b->dataType->size));
+                            break;
+                    }
                     break;
                 case(4):
-                    code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
-                    code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
+                            code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,b->dataType->size)+", %"+b->symbol);
+                            code->push_back(getIndent()+"cmp "+location(a).expr()+", "+registerNAME(reg,b->dataType->size));
+                            break;
+                    }
                     break;
                 case(8):
-                    code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
-                    code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"mov "+b->symbol+", %"+registerNAME(reg,b->dataType->size));
+                            code->push_back(getIndent()+"cmp %"+registerNAME(reg,b->dataType->size)+", "+location(a).expr());
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,b->dataType->size)+", %"+b->symbol);
+                            code->push_back(getIndent()+"cmp "+location(a).expr()+", "+registerNAME(reg,b->dataType->size));
+                            break;
+                    }
                     break;
             }
             restoreRegisters();

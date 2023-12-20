@@ -31,6 +31,12 @@
 
 #include <compiler.h>
 
+#define SYNTAX_INTEL 1
+#define SYNTAX_GAS 2
+#define SYNTAX_NASM 3
+#define SYNTAX_INVALID 0
+extern uint64_t syntax;
+
 extern std::vector<std::string>* code;
 extern functionStorage* fstore;
 extern function* codeGenFunc;

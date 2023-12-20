@@ -47,13 +47,40 @@ static std::string exprFV(variable* v)
     switch(v->storage)
     {
         case(REGISTER):
-            return "%"+registerNAME(v->reg,v->dataType->size);
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    return "%"+registerNAME(v->reg,v->dataType->size);
+                    break;
+                case(SYNTAX_INTEL):
+                    return registerNAME(v->reg,v->dataType->size);
+                    break;
+            }
         case(MEMORY):
             if(v->offsetType == REGISTER)
-                //return registerNAME(v->offsetReg)+"(%"+registerNAME(v->reg)+")";
-                return "(%"+registerNAME(v->reg)+",%"+registerNAME(v->offsetReg)+")";
+            {
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        return "(%"+registerNAME(v->reg)+",%"+registerNAME(v->offsetReg)+")";
+                        break;
+                    case(SYNTAX_INTEL):
+                        return "["+registerNAME(v->reg)+"+"+registerNAME(v->offsetReg)+"]";
+                        break;
+                }
+            }
             else if(v->offsetType == IMMEDIATE)
-                return intToString(v->offset)+"(%"+registerNAME(v->reg)+")";
+            {
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        return intToString(v->offset)+"(%"+registerNAME(v->reg)+")";
+                        break;
+                    case(SYNTAX_INTEL):
+                        return intToString(v->offset)+"["+registerNAME(v->reg)+"]";
+                        break;
+                }
+            }
             break;
         case(MEMORY_ABSOLUTE):
             return intToString(v->offset);
@@ -81,7 +108,15 @@ std::string location::expr()
         if(num[0] == '-')
             num = num.substr(1,num.length());
         res+=num;
-        res+="(%"+registerNAME(this->base)+")";
+        switch(syntax)
+        {
+            case(SYNTAX_GAS):
+                res+="(%"+registerNAME(this->base)+")";
+                break;
+            case(SYNTAX_INTEL):
+                res+="["+registerNAME(this->base)+"]";
+                break;
+        }
     }
     else
         res+=intToString(this->offset);

@@ -40,14 +40,42 @@ namespace x86_64
 
     void add(__register__ src, __register__ dst)
     {
-        code->push_back(getIndent()+"add %"+registerNAME(src)+", %"+registerNAME(dst));
+        switch(syntax)
+        {
+            case(SYNTAX_GAS):
+                code->push_back(getIndent()+"add %"+registerNAME(src)+", %"+registerNAME(dst));
+                break;
+            case(SYNTAX_INTEL):
+                code->push_back(getIndent()+"add "+registerNAME(dst)+", "+registerNAME(src));
+                break;
+        }
     }
     void add(uint64_t src, __register__ dst)
     {
         if(src > 1)
-            code->push_back(getIndent()+"add $"+std::to_string(src)+", %"+registerNAME(dst));
+        {
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"add $"+intToString(src)+", %"+registerNAME(dst));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"add "+registerNAME(dst)+", "+intToString(src));
+                    break;
+            }
+        }
         else if(src == 1)
-            code->push_back(getIndent()+"inc %"+registerNAME(dst));
+        {
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"inc %"+registerNAME(dst));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"inc "+registerNAME(dst));
+                    break;
+            }
+        }
     }
     void add(variable* dst, variable* a, variable* b)
     {
@@ -68,19 +96,63 @@ namespace x86_64
         switch(b->storage)
         {
             case(storageType::REGISTER):
-                code->push_back(getIndent()+"add %"+registerNAME(b->reg)+", %"+registerNAME(dstReg));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"add %"+registerNAME(b->reg)+", %"+registerNAME(dstReg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"add "+registerNAME(dstReg)+", "+registerNAME(b->reg));
+                        break;
+                }
                 break;
             case(storageType::MEMORY):
-                code->push_back(getIndent()+"add "+location(b->reg,b->offset).expr()+", %"+registerNAME(dstReg));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"add "+location(b->reg,b->offset).expr()+", %"+registerNAME(dstReg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"add "+registerNAME(dstReg)+", "+location(b->reg,b->offset).expr());
+                        break;
+                }
                 break;
             case(storageType::MEMORY_ABSOLUTE):
-                code->push_back(getIndent()+"add "+location(b->offset).expr()+", %"+registerNAME(dstReg));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"add "+location(b->offset).expr()+", %"+registerNAME(dstReg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"add "+registerNAME(dstReg)+", "+location(b->offset).expr());
+                        break;
+                }
                 break;
             case(storageType::IMMEDIATE):
                 if(b->immediateValue == 1)
-                    code->push_back(getIndent()+"inc %"+registerNAME(dstReg));
+                {
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"inc %"+registerNAME(dstReg));
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"inc "+registerNAME(dstReg));
+                            break;
+                    }
+                }
                 else
-                    code->push_back(getIndent()+"add $"+std::to_string(b->immediateValue)+", %"+registerNAME(dstReg));
+                {
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"add $"+intToString(b->immediateValue)+", %"+registerNAME(dstReg));
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"add "+registerNAME(dstReg)+", "+intToString(b->immediateValue));
+                            break;
+                    }
+                }
                 break;
         }
         restoreRegisters();
@@ -95,14 +167,42 @@ namespace x86_64
 
     void sub(__register__ src, __register__ dst)
     {
-        code->push_back(getIndent()+"sub %"+registerNAME(src)+", %"+registerNAME(dst));
+        switch(syntax)
+        {
+            case(SYNTAX_GAS):
+                code->push_back(getIndent()+"sub %"+registerNAME(src)+", %"+registerNAME(dst));
+                break;
+            case(SYNTAX_INTEL):
+                code->push_back(getIndent()+"sub "+registerNAME(dst)+", "+registerNAME(src));
+                break;
+        }
     }
     void sub(uint64_t src, __register__ dst)
     {
         if(src > 1)
-            code->push_back(getIndent()+"sub $"+std::to_string(src)+", %"+registerNAME(dst));
+        {
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"sub $"+intToString(src)+", %"+registerNAME(dst));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"sub "+registerNAME(dst)+", "+intToString(src));
+                    break;
+            }
+        }
         else if(src == 1)
-            code->push_back(getIndent()+"dec %"+registerNAME(dst));
+        {
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    code->push_back(getIndent()+"dec %"+registerNAME(dst));
+                    break;
+                case(SYNTAX_INTEL):
+                    code->push_back(getIndent()+"dec "+registerNAME(dst));
+                    break;
+            }
+        }
     }
     void sub(variable* dst, variable* a, variable* b)
     {
@@ -123,16 +223,63 @@ namespace x86_64
         switch(b->storage)
         {
             case(storageType::REGISTER):
-                code->push_back(getIndent()+"sub %"+registerNAME(b->reg)+", %"+registerNAME(dstReg));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"sub %"+registerNAME(b->reg)+", %"+registerNAME(dstReg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"sub "+registerNAME(dstReg)+", "+registerNAME(b->reg));
+                        break;
+                }
                 break;
             case(storageType::MEMORY):
-                code->push_back(getIndent()+"sub "+location(b->reg,b->offset).expr()+", %"+registerNAME(dstReg));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"sub "+location(b->reg,b->offset).expr()+", %"+registerNAME(dstReg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"sub "+registerNAME(dstReg)+", "+location(b->reg,b->offset).expr());
+                        break;
+                }
                 break;
             case(storageType::MEMORY_ABSOLUTE):
-                code->push_back(getIndent()+"sub "+location(b->offset).expr()+", %"+registerNAME(dstReg));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"sub "+location(b->offset).expr()+", %"+registerNAME(dstReg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"sub "+registerNAME(dstReg)+", "+location(b->offset).expr());
+                        break;
+                }
                 break;
             case(storageType::IMMEDIATE):
-                code->push_back(getIndent()+"sub $"+std::to_string(b->immediateValue)+", %"+registerNAME(dstReg));
+                if(b->immediateValue == 1)
+                {
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"dec %"+registerNAME(dstReg));
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"dec "+registerNAME(dstReg));
+                            break;
+                    }
+                }
+                else
+                {
+                    switch(syntax)
+                    {
+                        case(SYNTAX_GAS):
+                            code->push_back(getIndent()+"sub $"+intToString(b->immediateValue)+", %"+registerNAME(dstReg));
+                            break;
+                        case(SYNTAX_INTEL):
+                            code->push_back(getIndent()+"sub "+registerNAME(dstReg)+", "+intToString(b->immediateValue));
+                            break;
+                    }
+                }
                 break;
         }
 
@@ -173,7 +320,15 @@ namespace x86_64
         switch(left->storage)
         {
             case(storageType::REGISTER):
-                code->push_back(getIndent()+"mul %"+registerNAME(left->reg));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"mul %"+registerNAME(left->reg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"mul "+registerNAME(left->reg));
+                        break;
+                }
                 break;
             case(storageType::IMMEDIATE):
                 switch(left->immediateValue)
@@ -185,22 +340,70 @@ namespace x86_64
                         //multiplication by 1 can simply be ignored
                         break;
                     case(2):
-                        code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $1");
+                        switch(syntax)
+                        {
+                            case(SYNTAX_GAS):
+                                code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $1");
+                                break;
+                            case(SYNTAX_INTEL):
+                                code->push_back(getIndent()+"shl "+registerNAME(rreg)+", $1");
+                                break;
+                        }
                         break;
                     case(4):
-                        code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $2");
+                        switch(syntax)
+                        {
+                            case(SYNTAX_GAS):
+                                code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $2");
+                                break;
+                            case(SYNTAX_INTEL):
+                                code->push_back(getIndent()+"shl "+registerNAME(rreg)+", $2");
+                                break;
+                        }
                         break;
                     case(8):
-                        code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $3");
+                        switch(syntax)
+                        {
+                            case(SYNTAX_GAS):
+                                code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $3");
+                                break;
+                            case(SYNTAX_INTEL):
+                                code->push_back(getIndent()+"shl "+registerNAME(rreg)+", $3");
+                                break;
+                        }
                         break;
                     case(16):
-                        code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $4");
+                        switch(syntax)
+                        {
+                            case(SYNTAX_GAS):
+                                code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $4");
+                                break;
+                            case(SYNTAX_INTEL):
+                                code->push_back(getIndent()+"shl "+registerNAME(rreg)+", $4");
+                                break;
+                        }
                         break;
                     case(32):
-                        code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $5");
+                        switch(syntax)
+                        {
+                            case(SYNTAX_GAS):
+                                code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $5");
+                                break;
+                            case(SYNTAX_INTEL):
+                                code->push_back(getIndent()+"shl "+registerNAME(rreg)+", $5");
+                                break;
+                        }
                         break;
                     case(64):
-                        code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $6");
+                        switch(syntax)
+                        {
+                            case(SYNTAX_GAS):
+                                code->push_back(getIndent()+"shl %"+registerNAME(rreg)+", $6");
+                                break;
+                            case(SYNTAX_INTEL):
+                                code->push_back(getIndent()+"shl "+registerNAME(rreg)+", $6");
+                                break;
+                        }
                         break;
                     default:
                         __register__ tmp = fstore->getFreeRegister();
@@ -211,14 +414,38 @@ namespace x86_64
                                 saveRegister(r8);
                         }
                         x86_64::mov(left->immediateValue,tmp);
-                        code->push_back(getIndent()+"mul %"+registerNAME(tmp));
+                        switch(syntax)
+                        {
+                            case(SYNTAX_GAS):
+                                code->push_back(getIndent()+"mul %"+registerNAME(tmp));
+                                break;
+                            case(SYNTAX_INTEL):
+                                code->push_back(getIndent()+"mul "+registerNAME(tmp));
+                                break;
+                        }
                 }
                 break;
             case(storageType::MEMORY):
-                code->push_back(getIndent()+"mul "+location(rsp,left->offset).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"mul "+location(rsp,left->offset).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"mul "+location(rsp,left->offset).expr());
+                        break;
+                }
                 break;
             case(storageType::MEMORY_ABSOLUTE):
-                code->push_back(getIndent()+"mul "+location(left->offset).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"mul "+location(left->offset).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"mul "+location(left->offset).expr());
+                        break;
+                }
                 break;
         }
 
@@ -241,19 +468,51 @@ namespace x86_64
         switch(left->storage)
         {
             case(storageType::REGISTER):
-                code->push_back(getIndent()+"div %"+registerNAME(left->reg));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"div %"+registerNAME(left->reg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"div "+registerNAME(left->reg));
+                        break;
+                }
                 break;
             case(storageType::MEMORY):
-                code->push_back(getIndent()+"div "+location(left->reg,left->offset).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"div "+location(left->reg,left->offset).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"div "+location(left->reg,left->offset).expr());
+                        break;
+                }
                 break;
             case(storageType::MEMORY_ABSOLUTE):
-                code->push_back(getIndent()+"div "+location(left->offset).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"div "+location(left->offset).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"div "+location(left->offset).expr());
+                        break;
+                }
                 break;
             case(storageType::IMMEDIATE):
                 if(fstore->registerStatus(rcx) == 1)
                     saveRegister(rcx);
                 x86_64::mov(left,rcx);
-                code->push_back(getIndent()+"div %"+registerNAME(rcx));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"div %"+registerNAME(rcx));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"div "+registerNAME(rcx));
+                        break;
+                }
                 break;
         }
         x86_64::mov(rdx,dst);
@@ -279,19 +538,51 @@ namespace x86_64
         switch(right->storage)
         {
             case(storageType::REGISTER):
-                code->push_back(getIndent()+"div %"+registerNAME(right->reg));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"div %"+registerNAME(right->reg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"div "+registerNAME(right->reg));
+                        break;
+                }
                 break;
             case(storageType::MEMORY):
-                code->push_back(getIndent()+"div "+location(right->reg,right->offset).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"div "+location(right->reg,right->offset).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"div "+location(right->reg,right->offset).expr());
+                        break;
+                }
                 break;
             case(storageType::MEMORY_ABSOLUTE):
-                code->push_back(getIndent()+"div "+location(right->offset).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"div "+location(right->offset).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"div "+location(right->offset).expr());
+                        break;
+                }
                 break;
             case(storageType::IMMEDIATE):
                 if(fstore->registerStatus(rcx) == 1)
                     saveRegister(rcx);
                 x86_64::mov(right,rcx);
-                code->push_back(getIndent()+"div %"+registerNAME(rcx));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"div %"+registerNAME(rcx));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"div "+registerNAME(rcx));
+                        break;
+                }
                 break;
         }
         x86_64::mov(rax,dst);
@@ -309,13 +600,37 @@ namespace x86_64
         switch(target->storage)
         {
             case(storageType::REGISTER):
-                code->push_back(getIndent()+"inc %"+registerNAME(target->reg));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"inc %"+registerNAME(target->reg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"inc "+registerNAME(target->reg));
+                        break;
+                }
                 break;
             case(storageType::MEMORY):
-                code->push_back(getIndent()+"inc "+location(target->reg,target->offset).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"inc "+location(target->reg,target->offset).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"inc "+location(target->reg,target->offset).expr());
+                        break;
+                }
                 break;
             case(storageType::MEMORY_ABSOLUTE):
-                code->push_back(getIndent()+"inc "+location(target->offset).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"inc "+location(target->offset).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"inc "+location(target->offset).expr());
+                        break;
+                }
                 break;
             default:
                 std::cout << "tf this shit?" << std::endl;
@@ -328,13 +643,37 @@ namespace x86_64
         switch(target->storage)
         {
             case(storageType::REGISTER):
-                code->push_back(getIndent()+"dec %"+registerNAME(target->reg));
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"dec %"+registerNAME(target->reg));
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"dec "+registerNAME(target->reg));
+                        break;
+                }
                 break;
             case(storageType::MEMORY):
-                code->push_back(getIndent()+"dec "+location(target->reg,target->offset).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"dec "+location(target->reg,target->offset).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"dec "+location(target->reg,target->offset).expr());
+                        break;
+                }
                 break;
             case(storageType::MEMORY_ABSOLUTE):
-                code->push_back(getIndent()+"dec "+location(target->offset).expr());
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        code->push_back(getIndent()+"dec "+location(target->offset).expr());
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"dec "+location(target->offset).expr());
+                        break;
+                }
                 break;
             default:
                 std::cout << "tf this shit?" << std::endl;
