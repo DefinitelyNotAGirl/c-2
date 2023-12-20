@@ -191,6 +191,7 @@ uint64_t tokenType(std::string& s)
     else if(s == "noalloc")return 25;
     else if(s == "inline")return 21;
     else if(s == "const")return 20;
+    else if(s == "constexpr")return 20;
     else if(s == "extern")return 20;
     else if(s == "iteratable")return 20;
     else if(s == "stringifyable")return 20;
@@ -369,8 +370,14 @@ token line::nextToken()
                     goto __default;
             case('<'):
             case('>'):
+                goto skipManglerAndAbiCheck;
             case('-'):
+                if(t.text == "ABI")
+                    goto __default;
+                if(t.text == "mangling")
+                    goto __default;
             case('+'):
+                skipManglerAndAbiCheck:;
             case('|'):
             case('&'):
                 if(t.text.substr(0,strlen("operator")) == "operator" && t.text.back() == this->text[I])
@@ -386,6 +393,10 @@ token line::nextToken()
             case('!'):
                 skipPointerTypeCheck:;
                 if(t.text == "operator")
+                    goto __default;
+                if(t.text.substr(0,strlen("ABI-")) == "ABI-")
+                    goto __default;
+                if(t.text.substr(0,strlen("mangling-")) == "mangling-")
                     goto __default;
             case('('):
             case(')'):

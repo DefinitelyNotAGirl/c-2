@@ -57,6 +57,18 @@ void enableWarningSet(std::string name)
             i->enablers.push_back(name);
         }
     }
+    else if(name == "autodecl")
+    {
+        enableWarningSet("autodecl-nodef");
+    }
+    else if(name == "autodecl-nodef")
+    {
+        enableWarning("autodecl-nodef-uint","autodecl-nodef");
+        enableWarning("autodecl-nodef-sint","autodecl-nodef");
+        enableWarning("autodecl-nodef-bool","autodecl-nodef");
+        enableWarning("autodecl-nodef-float","autodecl-nodef"); 
+        enableWarning("autodecl-nodef-char","autodecl-nodef");
+    }
     else
         enableWarning(name,name);
 }
@@ -86,6 +98,18 @@ void disableWarningSet(std::string name)
         {
             i->enabled = false;
         }
+    }
+    else if(name == "autodecl")
+    {
+        disableWarningSet("autodecl-nodef");
+    }
+    else if(name == "autodecl-nodef")
+    {
+        disableWarning("autodecl-nodef-uint");
+        disableWarning("autodecl-nodef-sint");
+        disableWarning("autodecl-nodef-bool");
+        disableWarning("autodecl-nodef-float"); 
+        disableWarning("autodecl-nodef-char");
     }
     else
         disableWarning(name);

@@ -51,4 +51,11 @@ void initWarnings()
 
     //stack
     warnings.push_back(new warning("stack-pointer-storage",true,false));
+
+    //autodecl
+    warnings.push_back(new warning("autodecl-nodef-uint",true,false));
+    warnings.push_back(new warning("autodecl-nodef-bool",true,false));
+    warnings.push_back(new warning("autodecl-nodef-sint",true,false));
+    warnings.push_back(new warning("autodecl-nodef-float",true,false));
+    warnings.push_back(new warning("autodecl-nodef-char",true,false));
 }

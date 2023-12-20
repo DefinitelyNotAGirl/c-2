@@ -451,6 +451,7 @@ std::vector<templateArg*> templateArgs;
 uint64_t dbgFileMax = 0;
 std::stack<uint64_t> dbgFile;
 extern std::string __reqFileVSTC;
+bool isConstExprAssignment = false;
 void parse(std::vector<line> lines) {
     if(lines.size() == 0)
         return;
@@ -903,61 +904,71 @@ void parse(std::vector<line> lines) {
 						}
 						if (size > 0) {
                             if(defaultUnsignedIntegerType != nullptr){
-                            if(defaultUnsignedIntegerType->name != name){
-                                l.text = L.restText() + "primitiveAssign primitiveInPlace void operator=(" + name + "," + defaultUnsignedIntegerType->name + ");";
-						    	gLines.push_back(l);
-                            }}
-							l.text = L.restText() + "primitiveMul " + name +
+                                if(defaultUnsignedIntegerType->name != name){
+                                    l.text = L.restText() + " primitiveAssign primitiveInPlace void operator=(" + name + "," + defaultUnsignedIntegerType->name + ");";
+						        	gLines.push_back(l);
+                                    //std::cout << "gline: " << l.text << std::endl;
+                                }
+                                //else
+                                //{
+                                //    std::cout << "\""<<name<<"\" == \"" << defaultUnsignedIntegerType->name << "\"" << std::endl;
+                                //}
+                            }
+                            else
+                            {
+                                warn(getWarning("autodecl-nodef-uint"),&L,"\"#autodecl integer\" used before assigning a default unsigned integer type.");
+                            }
+							l.text = L.restText() + " primitiveMul " + name +
 									 " operator*(" + name + "," + name + ");";
 							gLines.push_back(l);
-							l.text = L.restText() + "primitiveDiv " + name +
+							l.text = L.restText() + " primitiveDiv " + name +
 									 " operator/(" + name + "," + name + ");";
 							gLines.push_back(l);
-							l.text = L.restText() + "primitiveAdd " + name +
+							l.text = L.restText() + " primitiveAdd " + name +
 									 " operator+(" + name + "," + name + ");";
 							gLines.push_back(l);
-							l.text = L.restText() + "primitiveSub " + name +
+							l.text = L.restText() + " primitiveSub " + name +
 									 " operator-(" + name + "," + name + ");";
 							gLines.push_back(l);
-							l.text = L.restText() + "primitiveMod " + name +
+							l.text = L.restText() + " primitiveMod " + name +
 									 " operator%(" + name + "," + name + ");";
 							gLines.push_back(l);
 							l.text = L.restText() +
-									 "primitiveMul primitiveInPlace void "
+									 " primitiveMul primitiveInPlace void "
 									 "operator*=(" +
 									 name + "," + name + ");";
 							gLines.push_back(l);
 							l.text = L.restText() +
-									 "primitiveDiv primitiveInPlace void "
+									 " primitiveDiv primitiveInPlace void "
 									 "operator/=(" +
 									 name + "," + name + ");";
 							gLines.push_back(l);
 							l.text = L.restText() +
-									 "primitiveAdd primitiveInPlace void "
+									 " primitiveAdd primitiveInPlace void "
 									 "operator+=(" +
 									 name + "," + name + ");";
 							gLines.push_back(l);
 							l.text = L.restText() +
-									 "primitiveSub primitiveInPlace void "
+									 " primitiveSub primitiveInPlace void "
 									 "operator-=(" +
 									 name + "," + name + ");";
 							gLines.push_back(l);
 							l.text = L.restText() +
-									 "primitiveMod primitiveInPlace void "
+									 " primitiveMod primitiveInPlace void "
 									 "operator%=(" +
 									 name + "," + name + ");";
 							gLines.push_back(l);
-                            l.text = L.restText() +"primitiveEqual "+defaultBooleanType->name+" operator==(" + name +"," + name + ");";
+                            l.text = L.restText() +" primitiveEqual "+defaultBooleanType->name+" operator==(" + name +"," + name + ");";
 							gLines.push_back(l);
-                            l.text = L.restText() +"primitiveGreater "+defaultBooleanType->name+" operator>(" + name + "," + name + ");";
+                            l.text = L.restText() +" primitiveGreater "+defaultBooleanType->name+" operator>(" + name + "," + name + ");";
 							gLines.push_back(l);
-                            l.text = L.restText() +"primitiveGreaterEqual "+defaultBooleanType->name+" operator>=(" + name + "," + name + ");";
+                            l.text = L.restText() +" primitiveGreaterEqual "+defaultBooleanType->name+" operator>=(" + name + "," + name + ");";
 							gLines.push_back(l);
-                            l.text = L.restText() +"primitiveLessEqual "+defaultBooleanType->name+" operator<=(" + name + "," + name + ");";
+                            l.text = L.restText() +" primitiveLessEqual "+defaultBooleanType->name+" operator<=(" + name + "," + name + ");";
 							gLines.push_back(l);
-                            l.text = L.restText() +"primitiveLess "+defaultBooleanType->name+" operator<(" + name + "," + name + ");";
+                            l.text = L.restText() +" primitiveLess "+defaultBooleanType->name+" operator<(" + name + "," + name + ");";
 							gLines.push_back(l);
-                            l.text = L.restText() +"primitiveNotEqual "+defaultBooleanType->name+" operator!=(" + name + "," + name + ");";
+                            l.text = L.restText() +" primitiveNotEqual "+defaultBooleanType->name+" operator!=(" + name + "," + name + ");";
 							gLines.push_back(l);
 							l.text = L.restText() +
 									 " primitiveAssign primitiveInPlace void "
@@ -976,56 +987,56 @@ void parse(std::vector<line> lines) {
 							gLines.push_back(l);
                             if(name != defaultUnsignedIntegerType->name)
                             {
-                                    l.text = L.restText() + "primitiveMul " + name +
+                                    l.text = L.restText() + " primitiveMul " + name +
 							    		 " operator*(" + name + ",__defuint);";
 							    gLines.push_back(l);
-							    l.text = L.restText() + "primitiveDiv " + name +
+							    l.text = L.restText() + " primitiveDiv " + name +
 							    		 " operator/(" + name + ",__defuint);";
 							    gLines.push_back(l);
-							    l.text = L.restText() + "primitiveAdd " + name +
+							    l.text = L.restText() + " primitiveAdd " + name +
 							    		 " operator+(" + name + ",__defuint);";
 							    gLines.push_back(l);
-							    l.text = L.restText() + "primitiveSub " + name +
+							    l.text = L.restText() + " primitiveSub " + name +
 							    		 " operator-(" + name + ",__defuint);";
 							    gLines.push_back(l);
-							    l.text = L.restText() + "primitiveMod " + name +
+							    l.text = L.restText() + " primitiveMod " + name +
 							    		 " operator%(" + name + ",__defuint);";
 							    gLines.push_back(l);
 							    l.text = L.restText() +
-							    		 "primitiveMul primitiveInPlace void "
+							    		 " primitiveMul primitiveInPlace void "
 							    		 "operator*=(" +
 							    		 name + ",__defuint);";
 							    gLines.push_back(l);
 							    l.text = L.restText() +
-							    		 "primitiveDiv primitiveInPlace void "
+							    		 " primitiveDiv primitiveInPlace void "
 							    		 "operator/=(" +
 							    		 name + ",__defuint);";
 							    gLines.push_back(l);
 							    l.text = L.restText() +
-							    		 "primitiveAdd primitiveInPlace void "
+							    		 " primitiveAdd primitiveInPlace void "
 							    		 "operator+=(" +
 							    		 name + ",__defuint);";
 							    gLines.push_back(l);
 							    l.text = L.restText() +
-							    		 "primitiveSub primitiveInPlace void "
+							    		 " primitiveSub primitiveInPlace void "
 							    		 "operator-=(" +
 							    		 name + ",__defuint);";
 							    gLines.push_back(l);
 							    l.text = L.restText() +
-							    		 "primitiveMod primitiveInPlace void "
+							    		 " primitiveMod primitiveInPlace void "
 							    		 "operator%=(" +
 							    		 name + ",__defuint);";
-                                l.text = L.restText() +"primitiveEqual "+defaultBooleanType->name+" operator==(" + name +",__defuint);";
+                                l.text = L.restText() +" primitiveEqual "+defaultBooleanType->name+" operator==(" + name +",__defuint);";
                                 gLines.push_back(l);
-                                l.text = L.restText() +"primitiveGreater "+defaultBooleanType->name+" operator>(" + name + ",__defuint);";
+                                l.text = L.restText() +" primitiveGreater "+defaultBooleanType->name+" operator>(" + name + ",__defuint);";
                                 gLines.push_back(l);
-                                l.text = L.restText() +"primitiveGreaterEqual "+defaultBooleanType->name+" operator>=(" + name + ",__defuint);";
+                                l.text = L.restText() +" primitiveGreaterEqual "+defaultBooleanType->name+" operator>=(" + name + ",__defuint);";
                                 gLines.push_back(l);
-                                l.text = L.restText() +"primitiveLessEqual "+defaultBooleanType->name+" operator<=(" + name + ",__defuint);";
+                                l.text = L.restText() +" primitiveLessEqual "+defaultBooleanType->name+" operator<=(" + name + ",__defuint);";
                                 gLines.push_back(l);
-                                l.text = L.restText() +"primitiveLess "+defaultBooleanType->name+" operator<(" + name + ",__defuint);";
+                                l.text = L.restText() +" primitiveLess "+defaultBooleanType->name+" operator<(" + name + ",__defuint);";
                                 gLines.push_back(l);
-                                l.text = L.restText() +"primitiveNotEqual "+defaultBooleanType->name+" operator!=(" + name + ",__defuint);";
+                                l.text = L.restText() +" primitiveNotEqual "+defaultBooleanType->name+" operator!=(" + name + ",__defuint);";
                                 gLines.push_back(l);
                             }
 						}
@@ -2193,6 +2204,7 @@ void parse(std::vector<line> lines) {
 							bool isStatic	  = false;
 							bool isExtern	  = false;
 							bool isConst	  = false;
+                            bool isConstExpr  = false;
 							bool isVolatile	  = false;
 							bool noalloc	  = false;
 							uint8_t access	  = 0;
@@ -2243,7 +2255,6 @@ void parse(std::vector<line> lines) {
 												<< it->name << "\"!"
 												<< std::endl;
 										}
-
 										var->storage = storageType::REGISTER;
 										var->reg	 = reg;
 									}
@@ -2270,6 +2281,7 @@ void parse(std::vector<line> lines) {
 								else if (attr.text == "protected") access = 1;
 								else if (attr.text == "private") access = 2;
 								else if (attr.text == "const") isConst = true;
+                                else if (attr.text == "constexpr") isConstExpr = true;
 								else if (attr.text == "extern") isExtern = true;
 								else if (attr.text == "noalloc") noalloc = true;
 								else if (attr.text == "volatile")
@@ -2509,7 +2521,9 @@ void parse(std::vector<line> lines) {
 									tmpLine.stripTokens(attribs.size() + 1);
 									std::vector<line> tmpLines;
 									tmpLines.push_back(tmpLine);
+                                    isConstExprAssignment = isConstExpr;
 									parse(tmpLines);
+                                    isConstExprAssignment = false;
 									break;
 								}
                                 case(6):
@@ -2527,11 +2541,20 @@ void parse(std::vector<line> lines) {
                                     args.push_back(result);
                                     function* func = getFunction("operator=", args);
 							        if (func != nullptr) {
-							        	if (func->isDeprecated)
-							        		warn(getWarning("deprecated"), &L,
-							        			 "call to deprecated function \"" +
-							        				 func->name + "\"");
-							        	call(func, args);
+                                        if(isConstExpr)
+                                        {
+                                            var->storage = storageType::IMMEDIATE;
+                                            var->immediateValue = result->immediateValue;
+                                            //std::cout << "assigned \""<<result->immediateValue<<"\" to constexpr \""<<var->name <<"\""<< std::endl;
+                                        }
+                                        else
+                                        {
+							        	    if (func->isDeprecated)
+							        	    	warn(getWarning("deprecated"), &L,
+							        	    		 "call to deprecated function \"" +
+							        	    			 func->name + "\"");
+							        	    call(func, args);
+                                        }
 							        }
                                     else
                                         error::functionNotFound(L);
@@ -2692,6 +2715,8 @@ void parse(std::vector<line> lines) {
 				//		}
                 //        break;
 				//}
+                if(isConstExprAssignment)
+                    std::cout << "assigning constexpr" << std::endl;
                 resolve(t);
 				break;
 			}

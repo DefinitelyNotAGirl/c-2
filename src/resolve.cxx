@@ -90,6 +90,7 @@ uint64_t(*numberSystems[256])(std::string& text, uint64_t* numlen) = {nullptr};
 char defaultNumberSystem = 'd';
 extern std::string __reqFileVSTC;
 extern bool vstcDisableSend;
+extern bool isConstExprAssignment;
 variable* resolveIMM(token& t)
 {
     if(options::ddebug)

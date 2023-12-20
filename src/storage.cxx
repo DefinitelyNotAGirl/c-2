@@ -42,26 +42,53 @@ functionStorage::functionStorage()
     for(__register__ I : registers)
         if((uint64_t)I & ARCH_REGISTER_MASK != 0)
             i++;
-    this->regData = (uint64_t*)malloc(i*16);
-    memset(this->regData,0,i*16);
+    this->regData = (uint64_t*)malloc(i*24);
+    memset(this->regData,0,i*24);
     uint64_t rd = (uint64_t)this->regData;
     for(__register__ I : registers)
     {
         if((uint64_t)I & ARCH_REGISTER_MASK != 0)
         {
             *((uint64_t*)rd) = (uint64_t)I;
-            rd+=(uint64_t)16;
+            rd+=(uint64_t)24;
         }
     }
-
-    //rd = this->regData;
-    //std::cout << "registers:" << std::endl;
-    //while(*((uint64_t*)rd) != 0)
-    //{
-    //    std::cout << "    " << registerNAME((__register__)*((uint64_t*)rd)) << std::endl;
-    //    rd+=16;
-    //}
 }
+
+//void functionStorage::registerStoredVariable(__register__ reg,variable* var)
+//{
+//    if(options::ddebug)
+//        std::cout << "fetching variable stored in " << registerNAME(reg) << std::endl;
+//    uint64_t rd = (uint64_t)this->regData;
+//    while(*((uint64_t*)(rd)) != 0)
+//    {
+//        if(*((uint64_t*)(rd)) == (uint64_t)reg)
+//        {
+//            *((variable*)(rd+16)) = var;
+//            return;
+//        }
+//        else
+//            rd+=24;
+//    }
+//    std::cout << "ERROR, register not found!" << std::endl;
+//}
+//
+//variable* functionStorage::registerStoredVariable(__register__ reg)
+//{
+//    if(options::ddebug)
+//        std::cout << "fetching variable stored in " << registerNAME(reg) << std::endl;
+//    uint64_t rd = (uint64_t)this->regData;
+//    while(*((uint64_t*)(rd)) != 0)
+//    {
+//        if(*((uint64_t*)(rd)) == (uint64_t)reg)
+//        {
+//            return *((variable*)(rd+16));
+//        }
+//        else
+//            rd+=24;
+//    }
+//    std::cout << "ERROR, register not found!" << std::endl;
+//}
 
 void functionStorage::registerStatus(__register__ reg,uint64_t value)
 {
@@ -76,7 +103,7 @@ void functionStorage::registerStatus(__register__ reg,uint64_t value)
             return;
         }
         else
-            rd+=16;
+            rd+=24;
     }
     std::cout << "ERROR, register not found!" << std::endl;
 }
@@ -91,7 +118,7 @@ uint64_t functionStorage::registerStatus(__register__ reg)
             return *((uint64_t*)(rd+8));
         }
         else
-            rd+=16;
+            rd+=24;
     }
     return 2;
 }

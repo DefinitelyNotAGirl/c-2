@@ -54,6 +54,9 @@ public:
     uint64_t registerStatus(__register__);
     void registerStatus(__register__ reg,uint64_t value);
 
+    //variable* registerStoredVariable(__register__);
+    //void registerStoredVariable(__register__ reg,variable* var);
+
     __register__ getFreeRegister();
 
     void setStorage(function* func, variable* var);

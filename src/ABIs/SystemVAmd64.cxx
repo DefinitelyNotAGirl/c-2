@@ -35,6 +35,9 @@
 
 #include <codegen.h>
 
+extern std::stack<std::vector<__register__>> savedRegisters;
+extern std::stack<std::vector<uint64_t>> savedRegisterOffsets;
+
 namespace __ABI__{
 using enum __register__;
 
@@ -125,11 +128,34 @@ static void setArgStorages(function* func,std::vector<variable*>& args)
     }
 }
 
-static void moveArguments(function* func,std::vector<variable*>& args)
+static void moveArguments(function* func,std::vector<variable*>& args__)
 {
     std::list<__register__> IAP = integerArgPass;
     std::list<__register__> FAP = floatArgPass;
+    std::vector<variable*> args;
+    args.resize(args__.size());
+    uint64_t II = 0;
+    for(variable* arg : args__)
+    {
+        args[II] = (variable*)malloc(sizeof(variable));
+        memcpy(args[II],arg,sizeof(variable));
+        II++;
+    }
     variable* nvar = nullptr;
+    II = 0;
+    for(__register__ I : savedRegisters.top())
+    {
+        for(variable* arg : args)
+        {
+            if(arg->reg == I)
+            {
+                arg->storage = storageType::MEMORY;
+                arg->reg = StackPointer;
+                arg->offset = savedRegisterOffsets.top()[II];
+            }
+        }
+        II++;
+    }
     for(variable* I : args)
     {
         nvar = (variable*)malloc(sizeof(variable));
@@ -168,6 +194,8 @@ static void moveArguments(function* func,std::vector<variable*>& args)
                 break;
         }
         mov(I,nvar);
+        free(nvar);
+        free(I);
     }
 }
 

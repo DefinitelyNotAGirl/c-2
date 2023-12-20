@@ -156,7 +156,7 @@ int main(int argc, char** argv)
         //    std::cout << "initialized format: " << f->name << std::endl;
 
     //set stdlib include dir
-    if(!options::ffreestanding)
+    if(!(options::ffreestanding || options::fnostdlib))
         includeDirs.push_back("/usr/local/include/cpe2/");
 
     for(std::string i : sourceFiles)
