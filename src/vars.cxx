@@ -31,6 +31,7 @@
 #include <common.h>
 #include <compiler.h>
 #include <miscout.h>
+#include <codegen.h>
 #include <mangling.h>
 #include <stack>
 #include <error.h>
@@ -100,6 +101,8 @@ char c_newline              = 0x0A;
 char c_cariagereturn        = 0x0D;
 char c_horizontaltab        = 0x09;
 char c_verticaltab          = 0x0B;
+
+uint64_t syntax = SYNTAX_INVALID;
 
 std::string objOut = "";
 std::string execOut = "";

@@ -38,6 +38,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <util.h>
+#include <codegen.h>
 
 void genOutput(std::string& i)
 {
@@ -122,7 +123,16 @@ void genOutput(std::string& i)
     }
     endAsmOutput:;
     //invoke assembler
-    std::string ASMcmd = "as --gstabs -o "+objOut+" "+asmOut;
+    std::string ASMcmd;
+    switch(syntax)
+    {
+        case(SYNTAX_GAS):
+            ASMcmd = "as --gstabs -o "+objOut+" "+asmOut;
+            break;
+        case(SYNTAX_INTEL):
+            ASMcmd = "as -msyntax=intel -mnaked-reg --gstabs -o "+objOut+" "+asmOut;
+            break;
+    }
     if(options::ddebug && !options::aso)
         std::cout << "as: " << ASMcmd  << std::endl;
     if(!options::aso)

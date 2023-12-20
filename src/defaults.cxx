@@ -59,4 +59,5 @@ void setDefaults()
         std::cout << "ERROR: could not find default system (gnu-linux), aborting!" << std::endl;
         exit(-1);
     }
+    syntax = SYNTAX_INTEL;
 }
