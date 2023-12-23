@@ -44,7 +44,7 @@ public:
     void (*putComment)(std::string comment);
     void(*activate)();
 
-    void(*cmp)(variable* a, variable* b);
+    uint64_t(*cmp)(variable* a, variable* b);
     void(*jmp)(std::string symbol);
     void(*jnz)(std::string symbol);
     void(*jne)(std::string symbol);

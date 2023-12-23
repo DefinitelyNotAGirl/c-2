@@ -38,7 +38,7 @@ void updateCurrentScope(scope* sc);
 
 namespace x86_64
 {
-    void cmp(variable*,variable*);
+    uint64_t cmp(variable*,variable*);
     void jmp(std::string symbol);
     variable* primitiveCall(function* func,std::vector<variable*> args)
     {
@@ -301,7 +301,7 @@ namespace x86_64
                 }
                 case(primitiveOP::Less):
                 {
-                    x86_64::cmp(args[0],args[1]);
+                    x86_64::cmp(args[1],args[0]);
                     boolRetCJmp = currentArch->jl;
                     goto BOOLRET;
                 }
@@ -313,8 +313,28 @@ namespace x86_64
                 }
                 case(primitiveOP::Greater):
                 {
-                    x86_64::cmp(args[0],args[1]);
-                    boolRetCJmp = currentArch->jge;
+                    uint64_t result = x86_64::cmp(args[1],args[0]);
+                    switch(result)
+                    {
+                        case(0):
+                        {
+                            //success
+                            boolRetCJmp = currentArch->jge;
+                            break;
+                        }
+                        case(1):
+                        {
+                            //cant use immediate as 2nd argument to cmp instruction
+                            //flip arguments and execute reverse instruction
+                            x86_64::cmp(args[0],args[1]);
+                            boolRetCJmp = currentArch->jl;
+                            break;
+                        }
+                        default:
+                        {
+                            errorCompilerBug;
+                        }
+                    }
                     goto BOOLRET;
                 }
                 case(primitiveOP::NotEqual):
@@ -328,6 +348,10 @@ namespace x86_64
                     break;
                 {
                     BOOLRET:;
+                    if(boolRetCJmp == nullptr)
+                    {
+                        std::cout << "error: brcj == nullptr" << std::endl;
+                    }
                     std::vector<std::string>* codeBlock = new std::vector<std::string>;
                     std::string entSymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"boolRetConditional"+std::to_string(currentScope->booleanReturnCounter++);
                     std::string retSymbol = entSymbol+CPE2_SYMBOL_SCOPE_SEP"reentry";
