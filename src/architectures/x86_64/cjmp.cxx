@@ -240,7 +240,7 @@ namespace x86_64
         {
             //std::cout << "b: " << std::endl;
             //printVariable(b);
-            std::cout << "ERROR: cant put immediate on right side of cmp instruction!" << std::endl;
+            //std::cout << "ERROR: cant put immediate on right side of cmp instruction!" << std::endl;
             return 1;//cant put immediate on right side of cmp instruction
         }
         else if(b->storage == storageType::SYMBOL && a->storage == storageType::SYMBOL)
