@@ -567,14 +567,40 @@ void parse(std::vector<line> lines) {
                             //    code = ts->extraCodeBlocks[1];
                             //else
                             //    code = ts->extraCodeBlocks.back();
-                            jump(ts->reentrySymbol);
                             //code = &currentScope->func->code;
-                            for(std::vector<std::string>* block : ts->extraCodeBlocks)
+                            if(EXPR_GETBIT_00(ts->miscData))
                             {
-                                ts->parent->extraCodeBlocks.push_back(block);
+                                uint64_t IV = 0;
+                                for(std::string& V : *ts->extraCodeBlocks[1])
+                                {
+                                    ts->extraCodeBlocks[0]->push_back(V);
+                                }
+                                for(std::vector<std::string>* block : ts->extraCodeBlocks)
+                                {
+                                    if(IV != 1)
+                                    {
+                                        ts->parent->extraCodeBlocks.push_back(block);
+                                        //info("for loop body block: (IV)"+std::to_string(IV));
+                                        //for(std::string& i : *block)
+                                        //    info("    "+i);
+                                    }
+                                    //ts->parent->extraCodeBlocks.push_back(block);
+                                    IV++;
+                                }
+                                if(ts->fstore->stackSize > ts->parent->fstore->stackSize)
+                                    ts->parent->fstore->stackSize = ts->fstore->stackSize;
+                                jump(ts->reentrySymbol);
                             }
-                            if(ts->fstore->stackSize > ts->parent->fstore->stackSize)
-                                ts->parent->fstore->stackSize = ts->fstore->stackSize;
+                            else
+                            {
+                                for(std::vector<std::string>* block : ts->extraCodeBlocks)
+                                {
+                                    ts->parent->extraCodeBlocks.push_back(block);
+                                }
+                                if(ts->fstore->stackSize > ts->parent->fstore->stackSize)
+                                    ts->parent->fstore->stackSize = ts->fstore->stackSize;
+                                jump(ts->reentrySymbol);
+                            }
                             //else
                             //    std::cout << ts->fstore->stackSize << " <= " << ts->parent->fstore->stackSize << std::endl;
                             //if(ts->fstore->stackOffset > ts->parent->fstore->stackOffset)
@@ -615,7 +641,6 @@ void parse(std::vector<line> lines) {
 					} else if (ts->t == scopeType::NAMESPACE) {
                         //std::cout << "ended namespace body: " << ts->name << std::endl;
 					}
-                    
                     ////clean up memory
                     //switch(ts->t)
                     //{
@@ -1508,6 +1533,7 @@ void parse(std::vector<line> lines) {
                         sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"body";
                         sc->parent = currentScope;
                         sc->isIndentBased = true;
+                        SETBIT_00(sc->miscData);
                         sc->t = scopeType::CONDITIONAL_BLOCK;
                         sc->fstore = new functionStorage;
                         sc->func = new function;

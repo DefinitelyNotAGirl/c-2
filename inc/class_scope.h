@@ -35,6 +35,13 @@ enum class scopeType : uint64_t
     INVALID,GLOBAL,FUNCTION,CLASS,NAMESPACE,ENUM,CONDITIONAL_BLOCK,LOGICAL,DUMMY
 };
 
+/*
+    miscData:
+        0: is for loop body
+        1: is for while body
+        2-63: reserved (MBZ)
+*/
+
 class scope
 {
 public:
@@ -42,6 +49,7 @@ public:
     bool isIndentBased = false;
     bool templateMode = false;
     uint64_t leadingSpace = 0;
+    uint64_t miscData = 0;
     std::vector<variable*> variables;
     scopeType t = scopeType::GLOBAL;
     std::vector<function*> functions;

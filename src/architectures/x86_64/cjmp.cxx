@@ -33,7 +33,7 @@
 
 namespace x86_64
 {
-    void cmp(variable* a, variable* b)
+    uint64_t cmp(variable* a, variable* b)
     {
         if(b->storage == storageType::REGISTER && a->storage == storageType::REGISTER)
         {
@@ -238,9 +238,10 @@ namespace x86_64
         }
         else if(b->storage == storageType::IMMEDIATE)
         {
-            std::cout << "b: " << std::endl;
-            printVariable(b);
-            std::cout << "ERROR: cant put immediate on left side of cmp!" << std::endl;
+            //std::cout << "b: " << std::endl;
+            //printVariable(b);
+            std::cout << "ERROR: cant put immediate on right side of cmp instruction!" << std::endl;
+            return 1;//cant put immediate on right side of cmp instruction
         }
         else if(b->storage == storageType::SYMBOL && a->storage == storageType::SYMBOL)
         {
@@ -386,6 +387,7 @@ namespace x86_64
             std::cout << "a: " << (uint64_t)a->storage << std::endl;
             std::cout << "b: " << (uint64_t)b->storage << std::endl;
         }
+        return 0;
     }
     void jnz(std::string symbol){code->push_back(getIndent()+"jnz "+symbol);}
     void jne(std::string symbol){code->push_back(getIndent()+"jne "+symbol);}
