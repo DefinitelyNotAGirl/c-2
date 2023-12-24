@@ -60,6 +60,11 @@ enum class primitiveOP : uint64_t
     SYSCALL
 };
 
+/*
+    miscData:
+        0: is cast function
+        1-63: reserved MBZ
+*/
 class function
 {
 public:
@@ -70,6 +75,7 @@ public:
     std::string returnDesc;
 
     type* returnType;
+    uint64_t miscData = 0;
     std::vector<type*> parameters;
     std::vector<variable*> vparams;
     std::vector<std::string> code;
@@ -89,4 +95,11 @@ public:
     bool doExport = false;
 
     bool ignoreCall = false;
+};
+
+struct castFunction
+{
+    type* input;
+    type* output;
+    function* func;
 };

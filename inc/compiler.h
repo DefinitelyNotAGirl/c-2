@@ -59,6 +59,8 @@ extern std::vector<std::string> DebugCode;
 extern std::vector<std::string> DebugAbbrevCode;
 extern uint64_t debugInfoSize;
 
+extern std::vector<castFunction*> castFunctions;
+
 extern std::string currentFile;
 
 extern std::vector<std::string> startObjFiles;
@@ -75,6 +77,7 @@ variable* getVariable(std::string name);
 function* getFunction(std::string name);
 function* getFunction(const char* name, std::vector<variable*>& args);
 function* getFunction(std::string& name, std::vector<variable*>& args);
+function* getFunction(type* returnType, std::string& name, std::vector<variable*>& args);
 uint64_t tokenType(std::string& s);
 std::string manglePseudoName(std::string& s);
 std::string mangleTypeName(std::string& s);

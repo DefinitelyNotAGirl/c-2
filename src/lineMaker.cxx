@@ -96,14 +96,17 @@ std::vector<line> getLines(std::string fname)
         {
             switch(__content[i])
             {
+                case('`'):
                 case('"'):
+                {
+                    char limiter = __content[i];
                     while(whitespace > 0)
                     {
                         content__[ii++] = ' ';
                         whitespace--;
                     }
                     content__[ii++] = __content[i++];
-                    while(__content[i] != '"' && __content[i] != 0x00)
+                    while(__content[i] != limiter && __content[i] != 0x00)
                     {
                         switch(__content[i])
                         {
@@ -149,6 +152,7 @@ std::vector<line> getLines(std::string fname)
                     }
                     content__[ii++] = __content[i];
                     break;
+                }
                 case('\''):
                     while(whitespace > 0)
                     {
@@ -314,13 +318,50 @@ std::vector<line> getLines(std::string fname)
             && content[i] != terminatorSCCL
             && content[i] != 0x00)
         {
-            if(content[i] == '\n')
+            switch(content[i])
             {
-                lineText.push_back(content[i]);
-                Line++;
+                case('\''):
+                case('`'):
+                case('"'):
+                {
+                    char limiter = content[i];
+                    lineText.push_back(content[i++]);
+                    while(true)
+                    {
+                        switch(content[i])
+                        {
+                            case('\\'):
+                                lineText.push_back(content[i]);
+                                lineText.push_back(content[++i]);
+                                break;
+                            case(0x00):
+                                goto textEnd;
+                            default:
+                                if(content[i] == limiter)
+                                {
+                                    lineText.push_back(content[i]);
+                                    goto endString;
+                                }
+                                else
+                                {
+                                    lineText.push_back(content[i]);
+                                }
+                        }
+                        i++;
+                    }
+                    endString:;
+                    textEnd:;
+                    //std::cout << "string: " << t.text << std::endl;
+                    break;
+                }
+                case('\n'):
+                    lineText.push_back(content[i]);
+                    Line++;
+                    break;
+                default:
+                    lineText.push_back(content[i]);
+                    break;
             }
-            else
-                lineText.push_back(content[i]);
             i++;
         }
         if(content[i] == 0x00)
