@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Saturday December 23rd 2023 6:44:40 pm
+ * Last Modified: Sunday December 24th 2023 5:49:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -186,6 +186,50 @@ function* getFunction(std::string& name, std::vector<variable*>& args) {
 			notThisFunction:;
 				candidates.push_back(i);
 			}
+			//else
+			//    std::cout << i->name <<" != "<< name << std::endl;
+		}
+		sc = sc->parent;
+	}
+    error::candidateExpressions.clear();
+    error::functionExpr = getFunctionExpression(name, args);
+	for (function* candidate : candidates)
+		error::candidateExpressions.push_back(getFunctionExpression(candidate));
+	return nullptr;
+}
+
+function* getFunction(type* returnType, std::string& name, std::vector<variable*>& args) {
+	scope* sc = currentScope;
+	std::vector<function*> candidates;
+	while (sc != nullptr) {
+		for (function* i : sc->functions) {
+            if(i->returnType == returnType)
+            {
+                //PRINT_DEBUG
+			    if (i->name == name) {
+                    //PRINT_DEBUG
+			    	if (i->parameters.size() == args.size()) {
+                        //PRINT_DEBUG
+			    		for (uint64_t II = 0; II < i->parameters.size(); II++){
+                            //PRINT_DEBUG
+                            //std::cout << "name: " << name << std::endl;
+                            //std::cout << "II: " << II << std::endl;
+                            //std::cout << "args size: " << args.size() << std::endl;
+                            //std::cout << "params size: " << i->parameters.size() << std::endl;
+                            //std::cout << "aII: " <<std::hex << (void*)args[II] << std::endl;
+                            //std::cout << "aII->dt: " <<std::hex << (void*)args[II]->dataType << std::endl;
+			    			if (i->parameters[II] != args[II]->dataType)
+			    				goto notThisFunction;
+                        }
+			    		// else
+			    		//     std::cout <<std::hex<<i->parameters[II]<< " != " <<
+			    		//     args[II] << std::endl;
+			    		return i;
+			    	}
+			    }
+                notThisFunction:;
+			    	candidates.push_back(i);
+            }
 			//else
 			//    std::cout << i->name <<" != "<< name << std::endl;
 		}
@@ -1888,6 +1932,7 @@ void parse(std::vector<line> lines) {
 							bool isPrimitive	  = false;
 							bool primitiveFloat	  = false;
 							bool primitiveInPlace = false;
+                            bool isTypeCast       = false;
 							primitiveOP op		  = primitiveOP::invalid;
 							uint8_t access		  = 0;
 							ABI* abi = defaultABI;
@@ -1901,6 +1946,7 @@ void parse(std::vector<line> lines) {
 								else if (attr.text == "const") isConst = true;
 								else if (attr.text == "extern") isExtern = true;
 								else if (attr.text == "noop") isNoop = true;
+                                else if (attr.text == "typecast") isTypeCast = true;
                                 else if (attr.text == "noreturn") isNoReturn = true;
 								else if (attr.text == "nodoc") nodoc = true;
 								else if (attr.text == "export") doExport = true;
@@ -2074,6 +2120,26 @@ void parse(std::vector<line> lines) {
 							func->name			   = name;
 							func->parameters	   = paramTypes;
 							func->vparams		   = arguments;
+                            func->returnType	   = returnType;
+                            if(isTypeCast)
+                            {
+                                SETBIT_00(func->miscData);//set cast bit
+                                if(func->parameters.size() == 1)
+                                {
+                                    castFunction* ncf = new castFunction;
+                                    ncf->input = func->parameters[0];
+                                    ncf->output = func->returnType;
+                                    ncf->func = func;
+                                    //std::cout << "declared type cast function: \"" << (void*)func->parameters[0] << "\" ==> \"" << (void*)func->returnType << "\"" << std::endl;
+                                    //std::cout << "declared type cast function: \"" << func->parameters[0]->name << "\" ==> \"" << func->returnType->name << "\"" << std::endl;
+                                    castFunctions.push_back(ncf);
+                                }
+                                else
+                                {
+                                    std::cout << "ERROR: typecast must take exactly 1 argument" << std::endl;
+                                    goto ERRORENDLINE;
+                                }
+                            }
                             for(variable* vp : func->vparams)
                             {
                                 for(pdobj* o : currentd->params)
@@ -2085,7 +2151,6 @@ void parse(std::vector<line> lines) {
                                 }
                             }
                             resetCurrentD();
-							func->returnType	   = returnType;
 							func->fstore		   = new functionStorage;
 							func->isDeprecated	   = isDeprecated;
 							func->isPrimitive	   = isPrimitive;

@@ -91,6 +91,22 @@ char defaultNumberSystem = 'd';
 extern std::string __reqFileVSTC;
 extern bool vstcDisableSend;
 extern bool isConstExprAssignment;
+function* getTypeCastFunction(type* in, type* out)
+{
+    for(castFunction* i : castFunctions)
+        if(i->input == in && i->output == out)
+            return i->func;
+    //std::cout << "no type cast function found!" << std::endl;
+    return nullptr;
+}
+variable* typecastVariable(variable* in, type* targetType)
+{
+    function* castfunc = getTypeCastFunction(in->dataType,targetType);
+    if(!castfunc)
+        return (variable*)castfunc;
+    std::vector<variable*> args = {in};
+    return call(castfunc,args);
+}
 variable* resolveIMM(token& t)
 {
     if(options::ddebug)
@@ -131,14 +147,29 @@ variable* resolveIMM(token& t)
             }
             goto breakResNumeric;
         case('`'):{
+                //std::cout << "resolving grave string" << std::endl;
                 //grave string
-                std::string strSym = getNewName();
-                DataCode.push_back(strSym+":");
                 //LSS = &DataCode.back();
                 uint64_t tpos = 1;
                 //std::cout << "resolving string: " << t.text << std::endl;
+                bool strHasSymbol = false;
+                type* charPointerType = getType(defaultCharType->name+"*");
+                std::string strSym = getNewName();
+                variable* tvar = new variable;
+                tvar->storage = storageType::SYMBOL_ADDR;
+                tvar->dataType = charPointerType;
+                tvar->name = strSym;
+                tvar->symbol = strSym;
+                bool needsStringConcat = false;
                 while(1)
                 {
+                    if(!strHasSymbol)
+                    {
+                        if(strSym == "")
+                            strSym = getNewName();
+                        DataCode.push_back(strSym+":");
+                        strHasSymbol = true;
+                    }
                     switch(t.text[tpos])
                     {
                         case('`'):
@@ -146,7 +177,105 @@ variable* resolveIMM(token& t)
                             if(options::asmVerbose >= 2){
                                 DataCode.back()+=" # terminate string";
                             }
+                            if(needsStringConcat)
+                            {
+                                variable* estrv = new variable;
+                                estrv->storage = storageType::SYMBOL_ADDR;
+                                estrv->dataType = charPointerType;
+                                estrv->name = strSym;
+                                estrv->symbol = strSym;
+                                //concat previous string with expression
+                                std::vector<variable*> args = {tvar,estrv};
+                                std::string funcName = "operator+";
+                                function* concatFunction = getFunction(charPointerType,funcName,args);
+                                if(!concatFunction)
+                                {
+                                    std::cout << "ERROR: could not find string concat function" << std::endl;
+                                    return (variable*)concatFunction;
+                                }
+                                tvar = call(concatFunction,args);
+                            }
                             goto endLoop2;
+                        case('$'):
+                        {
+                            switch(t.text[tpos+1])
+                            {
+                                case('{'):
+                                {
+                                    needsStringConcat = true;
+                                    //${expression}
+                                    //end current string
+                                    DataCode.push_back("\t.byte 0");
+                                    if(options::asmVerbose >= 2){
+                                        DataCode.back()+=" # terminate string";
+                                    }
+                                    strHasSymbol = false;
+                                    strSym = "";
+                                    //get expression
+                                    tpos+=2;
+                                    uint64_t cbracec = 0;
+                                    std::string expression = "";
+                                    while(true)
+                                    {
+                                        switch(t.text[tpos])
+                                        {
+                                            case(0x00):
+                                                //error, end of text buffer mid expression
+                                                std::cout << "error: end of text buffer mid expression" << std::endl;
+                                                goto endLoop2;
+                                            case('}'):
+                                                if(cbracec==0)
+                                                    goto expressionEnded;
+                                                cbracec--;
+                                            case('{'):
+                                                cbracec++;
+                                            default:
+                                                expression.push_back(t.text[tpos]);
+                                        }
+                                        tpos++;
+                                    }
+                                    expressionEnded:;
+                                    tpos++;
+                                    //std::cout << "expression: \"" << expression <<"\""<< std::endl;
+                                    line L = *t.Line;
+                                    L.text = expression;
+                                    L.tpos = 0;
+                                    L.ccol = 0;
+                                    token exprt = L.nextToken();
+                                    variable* rexpr = resolve(exprt);
+                                    if(rexpr == nullptr)
+                                    {
+                                        std::cout << "ERROR: could not resolve expression" << std::endl;
+                                        return nullptr;
+                                    }
+                                    //cast expression to string (char*)
+                                    if(rexpr->dataType != charPointerType)
+                                    {
+                                        //std::cout << "casting expression to char*" << std::endl;
+                                        rexpr = typecastVariable(rexpr,charPointerType);
+                                        if(rexpr == nullptr)
+                                        {
+                                            std::cout << "type cast failed" << std::endl;
+                                            return rexpr;
+                                        }
+                                    }
+                                    //concat previous string with expression
+                                    std::vector<variable*> args = {tvar,rexpr};
+                                    std::string funcName = "operator+";
+                                    function* concatFunction = getFunction(charPointerType,funcName,args);
+                                    if(!concatFunction)
+                                    {
+                                        std::cout << "ERROR: could not find string concat function" << std::endl;
+                                        return (variable*)concatFunction;
+                                    }
+                                    tvar = call(concatFunction,args);
+                                    break;
+                                }
+                                default:
+                                    goto gsr_default;
+                            }
+                            break;
+                        }
                         case('\\'):
                             tpos++;
                             switch(t.text[tpos])
@@ -232,6 +361,7 @@ variable* resolveIMM(token& t)
                         case(0x00):
                             goto endLoop2;
                         default:
+                            gsr_default:;
                             DataCode.push_back("\t.byte "+std::to_string((uint8_t)t.text[tpos]));
                             if(options::asmVerbose >= 2){
                                 DataCode.back()+=" # '";
@@ -242,11 +372,6 @@ variable* resolveIMM(token& t)
                     }
                 }
                 endLoop2:;
-                variable* tvar = new variable;
-                tvar->storage = storageType::SYMBOL_ADDR;
-                tvar->dataType = getType(defaultCharType->name+"*");
-                tvar->name = strSym;
-                tvar->symbol = strSym;
                 return tvar;
                 break;
                 }
@@ -500,6 +625,7 @@ variable* resolve(token& t)
             case(0x00):
             case(')'):
                 goto endTokenCollector;
+            case('`'):
             case('"'):
                 working.push_back(t.text[i++]);
                 while(1)

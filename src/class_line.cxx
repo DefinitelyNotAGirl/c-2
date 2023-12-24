@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Sunday December 24th 2023 5:49:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -132,7 +132,7 @@ uint64_t tokenType(std::string& s)
     {
         if(s.front() == '"')
         {
-            s = s.substr(1, s.size() - 2);
+            //s = s.substr(1, s.size() - 2);
             return 6;
         }
         else if(s.front() == 'W' || s.front() == 'L')
@@ -148,7 +148,7 @@ uint64_t tokenType(std::string& s)
     {
         if(s.front() == '`')
         {
-            s = s.substr(1, s.size() - 2);
+            //s = s.substr(1, s.size() - 2);
             return 6;
         }
     }
@@ -204,6 +204,7 @@ uint64_t tokenType(std::string& s)
     else if(s == "iteratable")return 20;
     else if(s == "stringifyable")return 20;
     else if(s == "noreturn")return 21;
+    else if(s == "typecast")return 21;
     else if(s == "noop")return 21;
     else if(s == "nodoc")return 21;
     else if(s == "deprecated")return 21;
@@ -515,8 +516,8 @@ token line::nextToken()
     if(t.type == 60)
         t.type = 10;//change to variable name before returning to compiler
 
-    if(t.type == 6)
-        t.text = "\""+t.text+"\"";
+    //if(t.type == 6)
+    //    t.text = "\""+t.text+"\"";
 
     if(options::ddebug)
     {
