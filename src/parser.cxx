@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Saturday December 23rd 2023 6:44:40 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -1607,6 +1607,7 @@ void parse(std::vector<line> lines) {
                         token cond;
                         if(t.type == 30)
                         {
+                            //PRINT_DEBUG
                             t = L.nextToken();
                             cond = t;
                             //while(cond.type != 31)//while != )
@@ -1631,17 +1632,22 @@ void parse(std::vector<line> lines) {
                         }
                         else
                         {
+                            //PRINT_DEBUG
                             cond = t;
+                            uint64_t otpos = L.tpos;
                             while(cond.type != 40)//while != :
                             {
+                                //PRINT_DEBUG
                                 cond = L.nextToken();
                                 //if(cond.type != 40) {
                                 //    cl.text += cond.text;
                                 //}
                             }
                             //cl.tpos = 0;
+                            L.tpos = otpos;
                             for(char c : L.restText())
                             {
+                                //PRINT_DEBUG
                                 switch(c)
                                 {
                                     case(':'):
@@ -1653,7 +1659,7 @@ void parse(std::vector<line> lines) {
                             endCLine1:;
                         }
                         cond = cl.nextToken();
-                        //std::cout << "condition: " << cond.text << std::endl;
+                        //std::cout << "condition: " << cl.text << std::endl;
                         variable* condition = resolve(cond);
                         //cmp(__false__,condition);
                         jc(sc->name);

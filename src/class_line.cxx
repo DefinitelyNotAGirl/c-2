@@ -144,6 +144,14 @@ uint64_t tokenType(std::string& s)
             }
         }
     }
+    else if(s.back() == '`')
+    {
+        if(s.front() == '`')
+        {
+            s = s.substr(1, s.size() - 2);
+            return 6;
+        }
+    }
     //storage flags (ex. (rax) or (+28))
     else if(s.front() == '(' && s.back() == ')')return 25;
     //operators
@@ -397,6 +405,8 @@ token line::nextToken()
                 if(t.text.substr(0,strlen("ABI-")) == "ABI-")
                     goto __default;
                 if(t.text.substr(0,strlen("mangling-")) == "mangling-")
+                    goto __default;
+                if(t.text.substr(0,strlen("SYMBOL-")) == "SYMBOL-")
                     goto __default;
             case('('):
             case(')'):
