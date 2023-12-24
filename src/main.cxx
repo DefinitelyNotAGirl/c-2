@@ -54,7 +54,7 @@ void initWarnings();
 void setDefaults();
 
 void HANDLER_SIGSEGV(int sig) {
-    void *array[10];
+    void *array[50];
     size_t size;
 
     // get void*'s for all entries on the stack

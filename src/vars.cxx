@@ -54,6 +54,8 @@ uint64_t ARCH_REGISTER_MASK = 0;
 
 std::vector<std::string> startObjFiles;
 
+std::vector<castFunction*> castFunctions;
+
 std::vector<format> formats;
 std::vector<format*> ClassesOutformats;
 std::vector<format*> FunctionsOutformats;

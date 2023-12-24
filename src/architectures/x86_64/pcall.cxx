@@ -2,7 +2,7 @@
  * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday September 17th 2023 5:19:35 am
+ * Last Modified: Saturday December 23rd 2023 6:44:40 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -38,7 +38,7 @@ void updateCurrentScope(scope* sc);
 
 namespace x86_64
 {
-    void cmp(variable*,variable*);
+    uint64_t cmp(variable*,variable*);
     void jmp(std::string symbol);
     variable* primitiveCall(function* func,std::vector<variable*> args)
     {
@@ -289,38 +289,158 @@ namespace x86_64
                     break;
                 case(primitiveOP::equal):
                 {
-                    x86_64::cmp(args[0],args[1]);
-                    boolRetCJmp = currentArch->je;
+                    uint64_t result = x86_64::cmp(args[1],args[0]);
+                    switch(result)
+                    {
+                        case(0):
+                        {
+                            //success
+                            boolRetCJmp = currentArch->je;
+                            break;
+                        }
+                        case(1):
+                        {
+                            //cant use immediate as 2nd argument to cmp instruction
+                            //flip arguments and execute reverse instruction
+                            x86_64::cmp(args[0],args[1]);
+                            boolRetCJmp = currentArch->je;
+                            break;
+                        }
+                        default:
+                        {
+                            errorCompilerBug;
+                        }
+                    }
                     goto BOOLRET;
                 }
                 case(primitiveOP::LessEqual):
                 {
-                    x86_64::cmp(args[0],args[1]);
-                    boolRetCJmp = currentArch->jle;
+                    uint64_t result = x86_64::cmp(args[1],args[0]);
+                    switch(result)
+                    {
+                        case(0):
+                        {
+                            //success
+                            boolRetCJmp = currentArch->jle;
+                            break;
+                        }
+                        case(1):
+                        {
+                            //cant use immediate as 2nd argument to cmp instruction
+                            //flip arguments and execute reverse instruction
+                            x86_64::cmp(args[0],args[1]);
+                            boolRetCJmp = currentArch->jge;
+                            break;
+                        }
+                        default:
+                        {
+                            errorCompilerBug;
+                        }
+                    }
                     goto BOOLRET;
                 }
                 case(primitiveOP::Less):
                 {
-                    x86_64::cmp(args[0],args[1]);
-                    boolRetCJmp = currentArch->jl;
+                    uint64_t result = x86_64::cmp(args[1],args[0]);
+                    switch(result)
+                    {
+                        case(0):
+                        {
+                            //success
+                            boolRetCJmp = currentArch->jl;
+                            break;
+                        }
+                        case(1):
+                        {
+                            //cant use immediate as 2nd argument to cmp instruction
+                            //flip arguments and execute reverse instruction
+                            x86_64::cmp(args[0],args[1]);
+                            boolRetCJmp = currentArch->jg;
+                            break;
+                        }
+                        default:
+                        {
+                            errorCompilerBug;
+                        }
+                    }
                     goto BOOLRET;
                 }
                 case(primitiveOP::GreaterEqual):
                 {
-                    x86_64::cmp(args[0],args[1]);
-                    boolRetCJmp = currentArch->jge;
+                    uint64_t result = x86_64::cmp(args[1],args[0]);
+                    switch(result)
+                    {
+                        case(0):
+                        {
+                            //success
+                            boolRetCJmp = currentArch->jge;
+                            break;
+                        }
+                        case(1):
+                        {
+                            //cant use immediate as 2nd argument to cmp instruction
+                            //flip arguments and execute reverse instruction
+                            x86_64::cmp(args[0],args[1]);
+                            boolRetCJmp = currentArch->jl;
+                            break;
+                        }
+                        default:
+                        {
+                            errorCompilerBug;
+                        }
+                    }
                     goto BOOLRET;
                 }
                 case(primitiveOP::Greater):
                 {
-                    x86_64::cmp(args[0],args[1]);
-                    boolRetCJmp = currentArch->jge;
+                    uint64_t result = x86_64::cmp(args[1],args[0]);
+                    switch(result)
+                    {
+                        case(0):
+                        {
+                            //success
+                            boolRetCJmp = currentArch->jg;
+                            break;
+                        }
+                        case(1):
+                        {
+                            //cant use immediate as 2nd argument to cmp instruction
+                            //flip arguments and execute reverse instruction
+                            x86_64::cmp(args[0],args[1]);
+                            boolRetCJmp = currentArch->jl;
+                            break;
+                        }
+                        default:
+                        {
+                            errorCompilerBug;
+                        }
+                    }
                     goto BOOLRET;
                 }
                 case(primitiveOP::NotEqual):
                 {
-                    x86_64::cmp(args[0],args[1]);
-                    boolRetCJmp = currentArch->jne;
+                    uint64_t result = x86_64::cmp(args[1],args[0]);
+                    switch(result)
+                    {
+                        case(0):
+                        {
+                            //success
+                            boolRetCJmp = currentArch->jne;
+                            break;
+                        }
+                        case(1):
+                        {
+                            //cant use immediate as 2nd argument to cmp instruction
+                            //flip arguments and execute reverse instruction
+                            x86_64::cmp(args[0],args[1]);
+                            boolRetCJmp = currentArch->jne;
+                            break;
+                        }
+                        default:
+                        {
+                            errorCompilerBug;
+                        }
+                    }
                     goto BOOLRET;
                 }
                 default:
@@ -328,6 +448,10 @@ namespace x86_64
                     break;
                 {
                     BOOLRET:;
+                    if(boolRetCJmp == nullptr)
+                    {
+                        std::cout << "error: brcj == nullptr" << std::endl;
+                    }
                     std::vector<std::string>* codeBlock = new std::vector<std::string>;
                     std::string entSymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"boolRetConditional"+std::to_string(currentScope->booleanReturnCounter++);
                     std::string retSymbol = entSymbol+CPE2_SYMBOL_SCOPE_SEP"reentry";
