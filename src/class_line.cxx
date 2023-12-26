@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday December 24th 2023 5:49:12 pm
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -384,6 +384,8 @@ token line::nextToken()
                 if(t.text == "ABI")
                     goto __default;
                 if(t.text == "mangling")
+                    goto __default;
+                if(t.text == "SYMBOL")
                     goto __default;
             case('+'):
                 skipManglerAndAbiCheck:;
