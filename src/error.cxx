@@ -301,7 +301,7 @@ void expectedTemplateArg(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout   << "\033[31mERROR:\033[0m expected type name instead of " 
+    std::cout   << "\033[31mERROR:\033[0m expected template arg type name instead of " 
                 << getTokenTypename(t) 
                 << " \"" << t.text << "\"" 
                 << std::endl;

@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday December 24th 2023 5:49:12 pm
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -257,6 +257,7 @@ void printVariable(variable* v)
     std::cout << "####################" << std::endl;
 }
 
+std::vector<variable*> tempVariables;
 variable* getVariable(std::string name) {
 	scope* sc = currentScope;
 	while (sc != nullptr) {
@@ -266,6 +267,10 @@ variable* getVariable(std::string name) {
             //else std::cout << "\"" << i->name << "\" != \"" << name << "\"" << std::endl;
 		sc = sc->parent;
 	}
+    for(variable* i : tempVariables)
+    {
+        if(i->name == name) return i;
+    }
 	return nullptr;
 }
 
@@ -292,11 +297,123 @@ void declareDwarfType(type* t)
     DebugAbbrevCode.push_back(getIndent()+".uleb128 0");
 popANB();}
 
+struct targtype 
+{
+    std::string tname = "";
+    type* rtype = nullptr;
+};
+std::vector<targtype*> targTypes;
+
+void updateCurrentScope(scope* sc);
+variable* resolveIMM(token& t);
+type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std::string argstring)
+{
+    //std::cout << "creating template instance \"" << instanceString << "\"" << std::endl;
+    //fetch argument expressions and resolve them
+    argstring.push_back(',');
+    std::string working = "";
+    uint64_t i = 0;
+    for(char c : argstring)
+    {
+        switch(c)
+        {
+            case(0x00):
+                goto ctti_endText;
+            case(','):
+            {
+                line L;
+                L.lineNum = 0;
+                L.leadingSpaces = 0;
+                L.text = working;
+                token TAT = L.nextToken();
+                if(tt->tArgs[i]->Type == 1)
+                {
+                    variable* RTA = resolveIMM(TAT);
+                    if(RTA == nullptr)
+                    {
+                        //error, cant resolve template argument
+                        std::cout << "ERROR: cant resolve template argument \"" << working << "\"" << std::endl;
+                        return (type*)RTA;
+                    }
+                    if(RTA->dataType != defaultUnsignedIntegerType)
+                    {
+                        std::cout << "ERROR: value for integer template argument must be of type u64 or i64" << std::endl;
+                        return nullptr;
+                    }
+                    RTA->name = tt->tArgs[i]->name;
+                    tempVariables.push_back(RTA);
+                }
+                else if(tt->tArgs[i]->Type == 2)
+                {
+                    targtype* tat = new targtype;
+                    type* rtype = getType(working);
+                    if(rtype == nullptr)
+                    {
+                        return rtype;
+                    }
+                    tat->rtype = rtype;
+                    tat->tname = tt->tArgs[i]->name;
+                }
+                else if(tt->tArgs[i]->Type == 3)
+                {
+                    errorCompilerBug;
+                }
+                //prepare for next argument
+                working = "";
+                i++;
+                break;
+            }
+            default:
+                working.push_back(c);
+        }
+    }
+    ctti_endText:;
+    //create template instance type
+    type* tti = new type;
+    tti->name = instanceString;
+    std::vector<line> code;
+    scope* ttiScope = new scope;
+    ttiScope->t = scopeType::CLASS;
+    ttiScope->cl = tti;
+    ttiScope->isIndentBased = true;
+    ttiScope->parent = tt->sc;
+    scope* trueCurrentScope = currentScope;
+    updateCurrentScope(ttiScope);
+    parse(tt->code);
+    //ts->cl->incomplete = false;
+	//mOUT(moClassID, ts->cl);
+    updateCurrentScope(trueCurrentScope);
+    return nullptr;
+}
+
 type* getType(std::string name) {
     if(name == "operator*")
         return nullptr;
+    for(targtype* i : targTypes)
+    {
+        if(name == i->tname)
+        {
+            name = i->rtype->name;
+            break;
+        }
+    }
 	for (type* t : types)
 		if (t->name == name) return t;
+    {
+        //check for template
+        uint64_t tname_start = name.find_first_of('<');
+        if(tname_start != std::string::npos)
+        {
+            std::string tname = name.substr(0,tname_start);
+            for(typeTemplate* i : typeTemplates)
+            {
+                if(i->name == tname)
+                {
+                    return createTypeTemplateInstance(name,i,name.substr(tname_start+1,name.find_last_of('>')-1));
+                }
+            }
+        }
+    }
 	if (name.back() == '*') {
 		// unknown pointer type, create a new type
 		type* t = new type;
@@ -482,6 +599,33 @@ void resetCurrentD()
     currentd = new dObj;
 }
 
+std::string TemplateArgTypename(uint64_t n)
+{
+    switch(n)
+    {
+        case(1): return "int";
+        case(2): return "typename";
+        case(3): return "float";
+    }
+    return "invalid";
+}
+
+void printTypeTemplate(typeTemplate* tt)
+{
+    std::cout << "type template: " << tt->name << std::endl;
+    std::cout << "args: "  << std::endl;
+    for(templateArg* i : tt->tArgs)
+    {
+        std::cout << "    " << TemplateArgTypename(i->Type) << " " << i->name << std::endl;
+    }
+    std::cout << "code: "  << std::endl;
+    for(line& i : tt->code)
+    {
+        std::cout << "    " << i.text << std::endl;
+    }
+    std::cout << "########" << std::endl;
+}
+
 variable* __false__ = getImmediateVariable(0);
 
 revstack<std::string> scopenames;
@@ -525,12 +669,12 @@ void parse(std::vector<line> lines) {
 		std::vector<token> attribs;
         if(lastTemplateMode != templateMode)
         {
-            std::cout << "template mode changed: " << lastTemplateMode << " -> " << templateMode << std::endl;
+            //std::cout << "template mode changed: " << lastTemplateMode << " -> " << templateMode << std::endl;
             lastTemplateMode = templateMode;
         }
         if(lastCSTM != currentScope->templateMode)
         {
-            std::cout << "CSTM changed: " << lastCSTM << " -> " << currentScope->templateMode << std::endl;
+            //std::cout << "CSTM changed: " << lastCSTM << " -> " << currentScope->templateMode << std::endl;
             lastCSTM = currentScope->templateMode;
         }
         for(token& i : currentScope->attribs)
@@ -563,6 +707,11 @@ void parse(std::vector<line> lines) {
                         if(ts->templateMode)
                         {
                             std::cout << "template complete" << std::endl;
+                            if(templateMode == 1)
+                            {
+                                printTypeTemplate(__typeTemplate);
+                                typeTemplates.push_back(__typeTemplate);
+                            }
                             templateArgs.clear();
                             __typeTemplate = nullptr;
                             __functionTemplate = nullptr;
@@ -682,6 +831,19 @@ void parse(std::vector<line> lines) {
                         //std::cout << "ended class body: " << ts->cl->mangledName << std::endl;
 						ts->cl->incomplete = false;
 						mOUT(moClassID, ts->cl);
+                        if(ts->templateMode)
+                        {
+                            //std::cout << "template complete" << std::endl;
+                            if(templateMode == 1)
+                            {
+                                //printTypeTemplate(__typeTemplate);
+                                typeTemplates.push_back(__typeTemplate);
+                            }
+                            templateArgs.clear();
+                            __typeTemplate = nullptr;
+                            __functionTemplate = nullptr;
+                            templateMode = 0;
+                        }
 					} else if (ts->t == scopeType::NAMESPACE) {
                         //std::cout << "ended namespace body: " << ts->name << std::endl;
 					}
@@ -1362,6 +1524,7 @@ void parse(std::vector<line> lines) {
                                         __typeTemplate = new typeTemplate;
                                         __typeTemplate->tArgs = templateArgs;
                                         __typeTemplate->name = ntype->name;
+                                        __typeTemplate->sc = currentScope;
                                         templateMode = 1;
                                     }
 									updateCurrentScope(sc);
@@ -1379,8 +1542,8 @@ void parse(std::vector<line> lines) {
 								    types.push_back(ntype);
                                     if(is_vstc_send)std::cout << "0001\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<ntype->__declared_file<<'\x0c'<<std::to_string(ntype->__declared_line)<<'\x0c'<<ntype->desc<<'\n';
                                 }
-                                else
-                                    std::cout << "template mode: " << templateMode << std::endl;
+                                //else
+                                //    std::cout << "template mode: " << templateMode << std::endl;
                                 //std::cout << "most recent type: " << types.back()->name << std::endl;
 								break;
 							}
@@ -1827,6 +1990,7 @@ void parse(std::vector<line> lines) {
                             while (true) {
 								t = L.nextToken();
                                 templateArg* ta = new templateArg;
+                                //printToken(t);
 								switch (t.type) {
 									case (50):
 										if(t.text == "typename")
@@ -1849,10 +2013,17 @@ void parse(std::vector<line> lines) {
 										goto ERRORENDLINE;
 								}
                                 t = L.nextToken();
+                                //printToken(t);
                                 switch (t.type) {
                                     case(1):
                                         ta->name = t.text;
                                         t = L.nextToken();
+                                        //printToken(t);
+                                        if(t.type == 35)
+                                        {
+                                            templateArgs.push_back(ta);
+                                            goto TEMPLATENOARGS;
+                                        }
                                         break;
                                     case(35):
                                         goto TEMPLATENOARGS;

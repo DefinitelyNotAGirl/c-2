@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Tuesday December 26th 2023 3:14:28 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -377,8 +377,55 @@ token line::nextToken()
                 }
                 if(t.text == "operator==")
                     goto __default;
+                goto skipTemplateCheck;
             case('<'):
+                for(typeTemplate* i : typeTemplates)
+                {
+                    if(t.text == i->name)
+                        goto isTemplateInstance;
+                    //else
+                    //    std::cout << "\"" << t.text << "\" !=  \"" << i->name << "\"" << std::endl;
+                }
+                for(functionTemplate* i : functionTemplates)
+                {
+                    if(t.text == i->name)
+                        goto isTemplateInstance;
+                }
+                //std::cout << "could not find template \"" << t.text <<"\""<< std::endl;
+                goto isNoTemplateInstance;
+                {
+                    isTemplateInstance:;
+                    uint64_t cbracec = 0;
+                    while(true)
+                    {
+                        t.text.push_back(this->text[I++]);
+                        switch(this->text[I])
+                        {
+                            case(0x00):
+                                //error, end of text buffer mid expression
+                                std::cout << "error: end of text buffer mid template expression" << std::endl;
+                                goto textEnd;
+                            case('>'):
+                                t.text.push_back(this->text[I]);
+                                if(cbracec==0)
+                                    goto expressionEnded;
+                                cbracec--;
+                                break;
+                            case('<'):
+                                cbracec++;
+                            default:
+                                t.text.push_back(this->text[I]);
+                        }
+                        I++;
+                    }
+                    expressionEnded:;
+                    I++;
+                    //std::cout << "token: " << t.text << std::endl;
+                    goto tokenBreak;
+                }
+                isNoTemplateInstance:;
             case('>'):
+                skipTemplateCheck:;
                 goto skipManglerAndAbiCheck;
             case('-'):
                 if(t.text == "ABI")

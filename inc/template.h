@@ -43,10 +43,20 @@ public:
     std::string name;
 };
 
+class templateInstance
+{
+public:
+    void* ft = nullptr;// ft = ttype ? type* : function*
+    bool ttype = false;
+    std::string mangled = "";//`template_${function/type.name}_${args seperated by underscores}`
+};
+
 class typeTemplate
 {
 public:
+    scope* sc;
     std::string name;
+    std::vector<templateInstance*> instances;
     std::vector<templateArg*> tArgs;
     std::vector<line> code;
 };
@@ -54,6 +64,7 @@ public:
 class functionTemplate
 {
 public:
+    scope* sc;
     std::string name;
     std::vector<templateArg*> tArgs;
     std::vector<line> code;
