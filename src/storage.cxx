@@ -126,6 +126,8 @@ uint64_t functionStorage::registerStatus(__register__ reg)
 void functionStorage::setStorage(function* func, variable* var)
 {
     using enum __register__;
+    //std::cout << "data type: " << var->dataType->name << std::endl;
+    //std::cout << "reg mode: " << var->dataType->regMode << std::endl;
     if(var->dataType->regMode == 1)
     {
         for(__register__ I : func->abi->VolatileRegisters)

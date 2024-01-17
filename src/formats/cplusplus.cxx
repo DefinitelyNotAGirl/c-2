@@ -30,6 +30,7 @@
 
 #include <miscout.h>
 #include <util.h>
+#include <error.h>
 
 #define constructor __attribute__ ((constructor))
 
@@ -46,13 +47,16 @@ static std::vector<formatFile*> files;
 static std::string getExportTypeName(type* t)
 {
     if(t == nullptr)
-        std::cout << "wtf?" << std::endl;
-    if(t->name.back() == '&')
-    {
-        std::string nn = t->name;
-        nn.back() = '*';
-        return nn;
-    }
+        errorCompilerBug;
+    //if(t->name.back() == '&')
+    //{
+    //    std::string nn = t->name;
+    //    nn.back() = '*';
+    //    return nn;
+    //}
+    for(char& c : t->name)
+        if(c == '&')
+            c = '*';
     return t->name;
 }
 

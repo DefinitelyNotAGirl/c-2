@@ -206,7 +206,8 @@ static variable* call(function* func,std::vector<variable*>& args)
         for(__register__ I : func->abi->VolatileRegisters)
             if(fstore->registerStatus(I) == 1)
                 saveRegister(I);
-    func->abi->moveArguments(func,args);
+    //func->abi->moveArguments(func,args);
+    universalMoveArguments(func,args);
     func->abi->preCall(func);
     func->abi->instrCall(func);
     if(!func->noReturn)func->abi->postCall(func);
@@ -239,7 +240,8 @@ constructor static void init()
     abi->instrCall = &instrCall;
     abi->floatReturn = xmm0;
     abi->integerReturn = rax;
-    
+    abi->ctorThisRegister = rdi;
+
     //add volatile registers
     abi->VolatileRegisters.push_back(rax);
     abi->VolatileRegisters.push_back(rdi);

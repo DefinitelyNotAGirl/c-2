@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -52,6 +52,17 @@ void parse(std::vector<line> lines);
 void genOutput(std::string& i);
 void initWarnings();
 void setDefaults();
+
+void printStacktrace(uint64_t len)
+{
+    void* array = calloc(len,8);
+    // get void*'s for all entries on the stack
+    size_t size = backtrace(array, len);
+
+    // print out all the frames to stderr
+    std::cout << "stack trace: " << std::endl;
+    backtrace_symbols_fd(array, size, STDOUT_FILENO);
+}
 
 void HANDLER_SIGSEGV(int sig) {
     void *array[50];

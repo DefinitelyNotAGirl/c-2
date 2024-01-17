@@ -1,11 +1,11 @@
 /**
- * Created Date: Tuesday July 25th 2023
+ * Created Date: Sunday January 14th 2024
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Sunday January 14th 2024 10:37:42 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -29,38 +29,7 @@
  */
 #pragma once
 
-#include <common.h>
-
-class variable;
-class member;
-class function;
-
-//misc data
-//  0: is pointer type
-//  1: is reference type
-class type
-{
-public:
-    uint64_t size;
-    std::string name;
-    std::string mangledName;
-    std::string desc;
-    uint64_t miscData = 0;
-    std::vector<variable> members;
-    std::vector<function> functions;
-    std::vector<type*> supertypes;
-    type* valueType = nullptr; //this is for pointers, for char* this would point to char for example
-    uint64_t regMode = 1;//0: do not store in register, 1: integer registers, 2: floating point registers
-    uint64_t dwarfID = 0;//DWARF type id
-    type* alias = nullptr;
-    function* ctor = nullptr;
-    function* dtor = nullptr;
-    std::string __declared_file;
-    uint64_t __declared_line;
-
-    bool nodoc = false;
-    bool deprecated = false;
-    bool doExport = false;
-    bool iteratable = false;
-    bool incomplete = false;
-};
+#define COLOR_RESET "\033[0m"
+#define COLOR_TYPE "\033[35m"
+#define COLOR_FUNCTION "\033[34m"
+#define COLOR_VAR "\033[33m"

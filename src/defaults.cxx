@@ -2,7 +2,7 @@
  * Created Date: Sunday September 17th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday September 17th 2023 7:47:04 am
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -40,7 +40,8 @@ void setDefaults()
         std::cout << "ERROR: could not find default mangler, aborting!" << std::endl;
         exit(-1);
     }
-    defaultABI = getABI("cpe2x64");
+    //defaultABI = getABI("cpe2x64");
+    defaultABI = getABI("SystemVamd64");
     if(defaultABI == nullptr)
     {
         std::cout << "ERROR: could not find default ABI, aborting!" << std::endl;

@@ -32,6 +32,8 @@
 #include <compiler.h>
 #include <util.h>
 
+void universalMoveArguments(function* func,std::vector<variable*>& args);
+
 class ABI
 {
 public:
@@ -50,6 +52,7 @@ public:
 
     __register__ integerReturn = __register__::invalid;
     __register__ floatReturn = __register__::invalid;
+    __register__ ctorThisRegister = __register__::invalid;//this register will be used to pass the "this" reference to member functions
 };
 
 extern std::vector<ABI*> ABIs;

@@ -2,7 +2,7 @@
  * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday September 17th 2023 5:19:35 am
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -31,6 +31,7 @@
 #include <compiler.h>
 #include <codegen.h>
 #include <error.h>
+#include <colors.h>
 
 namespace x86_64
 {
@@ -238,6 +239,14 @@ namespace x86_64
 
     void mov(variable* src, variable* dst)
     {
+        if(options::dalog){
+            std::cout 
+            << "[mov]"
+            << "(" <<COLOR_TYPE<<src->dataType->name <<' '<<COLOR_VAR<< src->name <<COLOR_RESET<< ") " << location(src).expr()
+            << " ==> " 
+            << "(" <<COLOR_TYPE<<dst->dataType->name <<' '<<COLOR_VAR<< dst->name <<COLOR_RESET<< ") " << location(dst).expr()
+            << std::endl;
+        }
         if(dst->storage == storageType::REGISTER && src->storage == storageType::REGISTER)
             x86_64::mov(src->reg,dst->reg);
         else if(src->storage == storageType::MEMORY && dst->storage == storageType::REGISTER)

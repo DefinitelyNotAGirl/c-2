@@ -31,6 +31,7 @@
 #define constructor __attribute__ ((constructor))
 
 #include <mangling.h>
+#include <format>
 
 namespace __mangler__
 {
@@ -139,23 +140,90 @@ namespace __mangler__
         var->symbol = symbol;
     }
 
+    static std::string mangleTarg(std::string in)
+    {
+        std::string res = "";
+        if(in.front() == '"' && in.back() == '"')
+        {
+            //string
+            res+="string_0x";
+            for(char i : in.substr(1,in.length()-2))
+            {
+                res+=std::format("{:x}", (uint64_t)i);
+            }
+        }
+        else if(isDigit(in.front()))
+        {
+            res = in;
+        }
+        else
+        {
+            res = getType(in)->mangledName;
+        }
+        return res;
+    }
+
     static void mangleType(type* t)
     {
         std::string res;
-        for(char i : t->name)
+        for(uint64_t I = 0;I<t->name.length();I++)
         {
+            char i = t->name[I];
             switch(i)
             {
+                case(0x00):
+                    goto textEnd;
                 case('*'):
                     res+="P"+std::to_string(t->size);
                     break;
                 case('&'):
                     res+="R"+std::to_string(t->size);
                     break;
+                case('<'):
+                {
+                    res+="__templateInstance";
+                    i = t->name[++I];
+                    uint64_t cbracec = 0;
+                    std::string working;
+                    while(true)
+                    {
+                        switch(i)
+                        {
+                            case(0x00):
+                                //error, end of text buffer mid expression
+                                std::cout << "error: end of text buffer mid template expression" << std::endl;
+                                goto expressionEnded;
+                            case('>'):
+                                if(cbracec==0)
+                                    goto expressionEnded;
+                                working.push_back(i);
+                                cbracec--;
+                                break;
+                            case('<'):
+                                cbracec++;
+                            case(','):
+                                if(cbracec==0)
+                                {
+                                    res+="_"+mangleTarg(working);
+                                    working = "";
+                                }
+                                break;
+                            default:
+                                working.push_back(i);
+                        }
+                        i = t->name[++I];
+                    }
+                    expressionEnded:;
+                    if(working != "")
+                        res+="_"+mangleTarg(working);
+                    I++;
+                    break;
+                }
                 default:
                     res.push_back(i);
             }
         }
+        textEnd:;
         t->mangledName = res;
     }
 

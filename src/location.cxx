@@ -2,7 +2,7 @@
  * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday September 17th 2023 5:19:35 am
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -86,6 +86,8 @@ static std::string exprFV(variable* v)
             return intToString(v->offset);
         case(SYMBOL):
             return v->symbol;
+        case(storageType::IMMEDIATE):
+            return "$"+intToString(v->immediateValue);
     }
     return "INVALID EXPRESSION";
 }

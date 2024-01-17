@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday December 24th 2023 5:49:12 pm
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -45,6 +45,7 @@
 #include <unistd.h>
 #include <util.h>
 #include <DWARF.h>
+#include <colors.h>
 
 std::vector<std::string> DataCode;
 std::vector<std::string> RoDataCode;
@@ -118,6 +119,22 @@ _system* getSystem(std::string name)
         if(i->name == name)
             return i;
     return nullptr;
+}
+
+std::string getPrintFunctionExpression(function* f, bool showVariableNames = false) {
+	std::string res = COLOR_TYPE + f->returnType->name + " "+ COLOR_FUNCTION + f->name +COLOR_RESET+ "(";
+	if (!showVariableNames) {
+		for (type* i : f->parameters)
+			res += COLOR_TYPE + i->name +COLOR_RESET+ ",";
+	} else {
+		for (variable* i : f->vparams)
+        {
+			res += COLOR_TYPE + i->dataType->name + " " +COLOR_VAR+ i->name +COLOR_RESET+ ",";
+        }
+	}
+	if (res.back() == ',') res.pop_back();
+	res += ")";
+	return res;
 }
 
 std::string getFunctionExpression(function* f, bool showVariableNames = false) {
@@ -257,6 +274,7 @@ void printVariable(variable* v)
     std::cout << "####################" << std::endl;
 }
 
+std::vector<variable*> tempVariables;
 variable* getVariable(std::string name) {
 	scope* sc = currentScope;
 	while (sc != nullptr) {
@@ -266,6 +284,10 @@ variable* getVariable(std::string name) {
             //else std::cout << "\"" << i->name << "\" != \"" << name << "\"" << std::endl;
 		sc = sc->parent;
 	}
+    for(variable* i : tempVariables)
+    {
+        if(i->name == name) return i;
+    }
 	return nullptr;
 }
 
@@ -292,15 +314,217 @@ void declareDwarfType(type* t)
     DebugAbbrevCode.push_back(getIndent()+".uleb128 0");
 popANB();}
 
+struct targtype 
+{
+    std::string tname = "";
+    type* rtype = nullptr;
+};
+std::vector<targtype*> targTypes;
+
+void updateCurrentScope(scope* sc);
+variable* resolveIMM(token& t);
+std::string c2oLocExpr(variable* v);
+type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std::string argstring)
+{
+    if(options::ddebug)
+        std::cout << "creating template instance \"" << instanceString << "\"" << std::endl;
+    //fetch argument expressions and resolve them
+    argstring.push_back(',');
+    std::string working = "";
+    uint64_t i = 0;
+    for(char c : argstring)
+    {
+        switch(c)
+        {
+            case(0x00):
+                goto ctti_endText;
+            case(','):
+            {
+                line L;
+                L.lineNum = 0;
+                L.leadingSpaces = 0;
+                L.text = working;
+                token TAT = L.nextToken();
+                //if(TAT.text.back() = '>')
+                //    TAT.text.pop_back();
+                if(tt->tArgs[i]->Type == 1)
+                {
+                    if(options::ddebug)
+                        std::cout << "resolving integer template argument: \""+working+"\"" << std::endl;
+                    variable* RTA = resolveIMM(TAT);
+                    if(RTA == nullptr)
+                    {
+                        //error, cant resolve template argument
+                        std::cout << "ERROR: cant resolve template argument \"" << working << "\"" << std::endl;
+                        return (type*)RTA;
+                    }
+                    if(RTA->dataType != defaultUnsignedIntegerType)
+                    {
+                        std::cout << "ERROR: value for integer template argument must be of type u64 or i64" << std::endl;
+                        return nullptr;
+                    }
+                    RTA->name = tt->tArgs[i]->name;
+                    tempVariables.push_back(RTA);
+                    if(options::ddebug)std::cout << "template argument resolved!" << std::endl;
+                }
+                else if(tt->tArgs[i]->Type == 2)
+                {
+                    targtype* tat = new targtype;
+                    if(options::ddebug)
+                        std::cout << "resolving typename template argument: \""+working+"\"" << std::endl;
+                    type* rtype = getType(working);
+                    if(rtype == nullptr)
+                    {
+                        return rtype;
+                    }
+                    tat->rtype = rtype;
+                    tat->tname = tt->tArgs[i]->name;
+                    targTypes.push_back(tat);
+                    if(options::ddebug)std::cout << "template argument resolved!" << std::endl;
+                }
+                else if(tt->tArgs[i]->Type == 3)
+                {
+                    errorCompilerBug;
+                }
+                //prepare for next argument
+                working = "";
+                i++;
+                break;
+            }
+            default:
+                working.push_back(c);
+        }
+    }
+    ctti_endText:;
+    //create template instance type
+    type* tti = new type;
+    tti->name = instanceString;
+    tti->regMode = 0;
+    tti->size	 = 0;
+    defaultMangler->mangle(tti);
+    std::vector<line> code;
+    //default constructor function
+    function* ctor = new function;
+    tti->ctor = ctor;
+    ctor->abi = defaultABI;
+    types.push_back(tti);//push tti prematurely in order to be able to fetch pointer type
+    type* tti_pointer = getType(tti->name+"&");
+    ctor->parameters = {tti_pointer};
+    ctor->fstore = new functionStorage;
+    variable* arg_this = new variable;
+    arg_this->dataType = tti_pointer;
+    arg_this->name = "this";
+    ctor->vparams = {arg_this};
+    //ctor->abi->setArgStorages(ctor,ctor->vparams);
+    arg_this->storage = storageType::REGISTER;
+    arg_this->reg = defaultABI->ctorThisRegister;
+    ctor->fstore->registerStatus(arg_this->reg,1);
+    ctor->isLocal = true;
+    ctor->doExport = false;
+    ctor->returnType = getType("void");
+    ctor->name = "__c2_constructor_"+tti->mangledName;
+    if(tt->sc->name == "global")
+        ctor->symbol = ctor->name;
+    else
+        ctor->symbol = tt->sc->name+CPE2_SYMBOL_SCOPE_SEP+ctor->name;
+    //scope
+    scope* ttiScope = new scope;
+    ttiScope->t = scopeType::CLASS;
+    ttiScope->cl = tti;
+    ttiScope->fstore = ctor->fstore;
+    ttiScope->func = ctor;
+    ttiScope->isIndentBased = true;
+    ttiScope->parent = tt->sc;
+    ttiScope->name = tti->mangledName;
+    scope* trueCurrentScope = currentScope;
+    updateCurrentScope(ttiScope);
+    parse(tt->code);
+    tti->incomplete = false;
+	mOUT(moClassID, tti);
+    //finish up constructor
+    {
+        //std::cout << "ctor code:" << std::endl;
+        for(std::string& i : ctor->code)
+        {
+            i = "    "+i;
+        }
+        std::vector<std::string> lines;
+        if(!ctor->isLocal)
+			lines.push_back(getIndent()+".global " + ctor->symbol);
+        if(!options::nod)
+        {
+            //optimizer data
+            lines.push_back("// @function "+ctor->symbol);
+            for(variable* arg : ctor->vparams)
+                lines.push_back("// @parameter "+c2oLocExpr(arg));
+            lines.push_back("// @return rax");
+            for(__register__ i : ctor->abi->VolatileRegisters)
+                lines.push_back("// @modifies "+registerNAME(i));
+            for(__register__ i : ctor->abi->nonVolatile)
+                lines.push_back("// @preserves "+registerNAME(i));
+        }
+        //finish up function
+		ctor->abi->genProlouge(lines, ttiScope);
+		for(std::string& i : ctor->code)
+			lines.push_back(i);
+		ctor->abi->genEpilouge(lines, ttiScope);
+        for(std::vector<std::string>* block : ttiScope->extraCodeBlocks)
+            for(std::string& i : *block)
+                lines.push_back(i);
+		for (std::string& i : lines)
+			TextCode.push_back(i);
+        TextCode.push_back("");
+        //if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+        //{
+        //    //terminator
+        //    DebugCode.push_back(getIndent()+".uleb128 0");
+        //    DebugCode.push_back(getIndent()+".uleb128 0");
+        //}
+		mOUT(moFunctionID, ctor);
+    }
+    targTypes.clear();
+    updateCurrentScope(trueCurrentScope);
+    if(options::ddebug)std::cout << "template type created" << std::endl;
+    return tti;
+}
+
+bool ignoreClassArg0 = false;
 type* getType(std::string name) {
+    if(options::ddebug)
+        std::cout << "fetching type: \"" << name << "\"" << std::endl;
     if(name == "operator*")
         return nullptr;
+    for(targtype* i : targTypes)
+    {
+        if(name == i->tname)
+        {
+            //std::cout << "substitued template argument type: " << i->rtype->name << " for " << name << std::endl;
+            name = i->rtype->name;
+            break;
+        }
+        else if(name.substr(0,name.length()-1) == i->tname)
+        {
+            //std::cout << "substitued template argument type: " << i->rtype->name << " for " << name.substr(0,name.length()-1) << std::endl;
+            name = i->rtype->name+name.back();
+            break;
+        }
+        //else
+        //    std::cout << "\"" << name << "\" != \"" << i->tname << "\"" << std::endl;
+    }
+    {//TODO: remove this later, this is just for debugging purposes
+        if(name.find_first_of('*') != std::string::npos && name.length()-name.find_first_of('*') >= 10)
+        {
+            exit(-1);
+        }
+    }
 	for (type* t : types)
 		if (t->name == name) return t;
 	if (name.back() == '*') {
 		// unknown pointer type, create a new type
+        //std::cout << "creating pointer type: \"" << name << "\"" << std::endl;
 		type* t = new type;
 		t->name = name;
+        SETBIT_00(t->miscData);//mark as pointer type
         t->dwarfID = DWARF_TYPE_ID++;
         std::string vtn = name.substr(0,name.length()-1);
         if(vtn == "__defuint")
@@ -332,34 +556,74 @@ type* getType(std::string name) {
         declareDwarfType(t);
 		types.push_back(t);
         std::vector<line> lines;
-        lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=(__defptr,"+name+");"));
-        lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+",__defptr);"));
-        lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=(ptr_t,"+name+");"));
+        lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+",ptr_t);"));
+        lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+",u64);"));
         lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+","+name+");"));
-        lines.push_back(compLine("nodoc primitiveAdd primitiveInPlace void operator+=("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveAdd primitiveInPlace void operator+=("+name+",u64);"));
         lines.push_back(compLine("nodoc primitiveAdd primitiveInPlace void operator+=("+name+","+name+");"));
-        lines.push_back(compLine("nodoc primitiveSub primitiveInPlace void operator-=("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveSub primitiveInPlace void operator-=("+name+",u64);"));
         lines.push_back(compLine("nodoc primitiveSub primitiveInPlace void operator-=("+name+","+name+");"));
-        lines.push_back(compLine("nodoc primitiveMul primitiveInPlace void operator*=("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveMul primitiveInPlace void operator*=("+name+",u64);"));
         lines.push_back(compLine("nodoc primitiveMul primitiveInPlace void operator*=("+name+","+name+");"));
-        lines.push_back(compLine("nodoc primitiveDiv primitiveInPlace void operator/=("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveDiv primitiveInPlace void operator/=("+name+",u64);"));
         lines.push_back(compLine("nodoc primitiveDiv primitiveInPlace void operator/=("+name+","+name+");"));
-        lines.push_back(compLine("nodoc primitiveMod primitiveInPlace void operator%=("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveMod primitiveInPlace void operator%=("+name+",u64);"));
         lines.push_back(compLine("nodoc primitiveMod primitiveInPlace void operator%=("+name+","+name+");"));
-        lines.push_back(compLine("nodoc primitiveInPlace primitiveArrayIndex "+t->valueType->name+" operator[]("+name+",__defuint);"));
+        lines.push_back(compLine("nodoc primitiveInPlace primitiveArrayIndex "+t->valueType->name+" operator[]("+name+",u64);"));
+        ignoreClassArg0 = true;
         parse(lines);
+        ignoreClassArg0 = false;
 		return t;
 	}
-
-	if (name.back() == '&' && name[name.length() - 2] != '&') {
+    if (name.back() == '&') {
 		type* t = new type;
 		t->name = name;
+        SETBIT_01(t->miscData);//mark as reference type
+        std::string vtn = name.substr(0,name.length()-1);
+        if(vtn == "__defuint")
+            t->valueType = defaultUnsignedIntegerType;
+        else if(vtn == "__defint")
+            t->valueType = defaultSignedIntegerType;
+        else if(vtn == "__defbool")
+            t->valueType = defaultBooleanType;
+        else if(vtn == "__defchar")
+            t->valueType = defaultCharType;
+        else if(vtn == "__defwchar")
+            t->valueType = defaultWcharType;
+        else if(vtn == "__deffloat")
+            t->valueType = defaultFloatType;
+        else if(vtn == "__defptr")
+            t->valueType = defaultPointerType;
+        else
+            t->valueType = getType(vtn);
+        if(!t->valueType)
+        {
+            //value type does not exist
+            std::cout << "\033[31mERROR:\033[0m \"" << name.substr(0,name.length()-1) << "\" does not name a type!" << std::endl;
+            return nullptr;
+        }
 		t->size = POINTER_SIZE;
         defaultMangler->mangle(t);
         declareDwarfType(t);
 		types.push_back(t);
 		return t;
 	}
+    {//check for template
+        uint64_t tname_start = name.find_first_of('<');
+        if(tname_start != std::string::npos)
+        {
+            std::string tname = name.substr(0,tname_start);
+            for(typeTemplate* i : typeTemplates)
+            {
+                if(i->name == tname)
+                {
+                    type* tti = createTypeTemplateInstance(name,i,name.substr(tname_start+1,name.find_last_of('>')-1));
+                    return tti;
+                }
+            }
+        }
+    }
 
 	return nullptr;
 }
@@ -482,6 +746,33 @@ void resetCurrentD()
     currentd = new dObj;
 }
 
+std::string TemplateArgTypename(uint64_t n)
+{
+    switch(n)
+    {
+        case(1): return "int";
+        case(2): return "typename";
+        case(3): return "float";
+    }
+    return "invalid";
+}
+
+void printTypeTemplate(typeTemplate* tt)
+{
+    std::cout << "type template: " << tt->name << std::endl;
+    std::cout << "args: "  << std::endl;
+    for(templateArg* i : tt->tArgs)
+    {
+        std::cout << "    " << TemplateArgTypename(i->Type) << " " << i->name << std::endl;
+    }
+    std::cout << "code: "  << std::endl;
+    for(line& i : tt->code)
+    {
+        std::cout << "    " << i.text << std::endl;
+    }
+    std::cout << "########" << std::endl;
+}
+
 variable* __false__ = getImmediateVariable(0);
 
 revstack<std::string> scopenames;
@@ -525,12 +816,12 @@ void parse(std::vector<line> lines) {
 		std::vector<token> attribs;
         if(lastTemplateMode != templateMode)
         {
-            std::cout << "template mode changed: " << lastTemplateMode << " -> " << templateMode << std::endl;
+            //std::cout << "template mode changed: " << lastTemplateMode << " -> " << templateMode << std::endl;
             lastTemplateMode = templateMode;
         }
         if(lastCSTM != currentScope->templateMode)
         {
-            std::cout << "CSTM changed: " << lastCSTM << " -> " << currentScope->templateMode << std::endl;
+            //std::cout << "CSTM changed: " << lastCSTM << " -> " << currentScope->templateMode << std::endl;
             lastCSTM = currentScope->templateMode;
         }
         for(token& i : currentScope->attribs)
@@ -563,6 +854,11 @@ void parse(std::vector<line> lines) {
                         if(ts->templateMode)
                         {
                             std::cout << "template complete" << std::endl;
+                            if(templateMode == 1)
+                            {
+                                printTypeTemplate(__typeTemplate);
+                                typeTemplates.push_back(__typeTemplate);
+                            }
                             templateArgs.clear();
                             __typeTemplate = nullptr;
                             __functionTemplate = nullptr;
@@ -570,6 +866,7 @@ void parse(std::vector<line> lines) {
                         }
                         if(ts->t == scopeType::FUNCTION)
                         {
+                            //targTypes.clear();
                             std::vector<std::string> lines;
                             if(!ts->func->isLocal)
 								lines.push_back(getIndent()+".global " + ts->func->symbol);
@@ -679,45 +976,26 @@ void parse(std::vector<line> lines) {
                             }
                         }
 					} else if (ts->t == scopeType::CLASS) {
+                        //targTypes.clear();
                         //std::cout << "ended class body: " << ts->cl->mangledName << std::endl;
 						ts->cl->incomplete = false;
 						mOUT(moClassID, ts->cl);
+                        if(ts->templateMode)
+                        {
+                            //std::cout << "template complete" << std::endl;
+                            if(templateMode == 1)
+                            {
+                                //printTypeTemplate(__typeTemplate);
+                                typeTemplates.push_back(__typeTemplate);
+                            }
+                            templateArgs.clear();
+                            __typeTemplate = nullptr;
+                            __functionTemplate = nullptr;
+                            templateMode = 0;
+                        }
 					} else if (ts->t == scopeType::NAMESPACE) {
                         //std::cout << "ended namespace body: " << ts->name << std::endl;
 					}
-                    ////clean up memory
-                    //switch(ts->t)
-                    //{
-                    //    case(scopeType::CONDITIONAL_BLOCK):
-                    //        delete ts;
-                    //        break;
-                    //}
-                    //if(ts->parent != nullptr)
-                    //{
-                    //    if(ts->reentrySymbol != "")
-                    //    {
-                    //        updateCurrentScope(ts->parent);
-                    //        std::cout << "placing reentry symbol: " << ts->reentrySymbol << std::endl;
-                    //        std::cout << "parent: " << ts->parent->name << std::endl;
-                    //        placeSymbol(ts->reentrySymbol);
-                    //        if(ts->parent->lastReentrySym)
-                    //            std::cout << "lrs: " << *ts->parent->lastReentrySym << std::endl;
-                    //        std::cout << "code back: " << code->back() << std::endl; 
-                    //        if(ts->parent->lastReentrySym)
-                    //        {
-                    //            if(*ts->parent->lastReentrySym == code->back())
-                    //            {
-                    //                std::cout << "clearing reentry sym: " << *ts->parent->lastReentrySym << std::endl;
-                    //                ts->parent->lastReentrySym->clear();
-                    //            }
-                    //        }
-                    //        std::cout << "code: " << code << std::endl;
-                    //        ts->parent->lastReentrySym = &code->back();
-                    //        if(ts->parent->lastReentrySym)
-                    //            std::cout << "lrs: " << *ts->parent->lastReentrySym << std::endl;
-                    //        updateCurrentScope(ts);
-                    //    }
-                    //}
                     if(ts->parent != nullptr)
                     {
                         ts->parent->lastReentrySym = ts->reentrySymbol;
@@ -1223,6 +1501,7 @@ void parse(std::vector<line> lines) {
 							}
 							case (1): {
 								type* ntype		  = new type;
+                                ntype->regMode = 0;
                                 ntype->desc = currentd->desc;
                                 resetCurrentD();
 								mangler* mangling = defaultMangler;
@@ -1253,21 +1532,27 @@ void parse(std::vector<line> lines) {
 													if (t.text == "primitive64") {
 														ntype->size += 8;
 														startOffset += 8;
+                                                        ntype->regMode = 1;
 													} else if (t.text == "primitive32") {
 														ntype->size += 4;
 														startOffset += 4;
+                                                        ntype->regMode = 1;
 													} else if (t.text == "primitive16") {
 														ntype->size += 2;
 														startOffset += 2;
+                                                        ntype->regMode = 1;
 													} else if (t.text == "primitive8") {
 														ntype->size += 1;
 														startOffset += 1;
+                                                        ntype->regMode = 1;
 													} else if (t.text == "primitiveFloat64") {
 														ntype->size += 8;
 														startOffset += 8;
+                                                        ntype->regMode = 2;
 													} else if (t.text == "primitiveFloat32") {
 														ntype->size += 4;
 														startOffset += 4;
+                                                        ntype->regMode = 2;
 													}
 												} else if (t.type == 9) {
 													type* it = getType(t.text);
@@ -1362,6 +1647,7 @@ void parse(std::vector<line> lines) {
                                         __typeTemplate = new typeTemplate;
                                         __typeTemplate->tArgs = templateArgs;
                                         __typeTemplate->name = ntype->name;
+                                        __typeTemplate->sc = currentScope;
                                         templateMode = 1;
                                     }
 									updateCurrentScope(sc);
@@ -1379,8 +1665,8 @@ void parse(std::vector<line> lines) {
 								    types.push_back(ntype);
                                     if(is_vstc_send)std::cout << "0001\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<ntype->__declared_file<<'\x0c'<<std::to_string(ntype->__declared_line)<<'\x0c'<<ntype->desc<<'\n';
                                 }
-                                else
-                                    std::cout << "template mode: " << templateMode << std::endl;
+                                //else
+                                //    std::cout << "template mode: " << templateMode << std::endl;
                                 //std::cout << "most recent type: " << types.back()->name << std::endl;
 								break;
 							}
@@ -1827,6 +2113,7 @@ void parse(std::vector<line> lines) {
                             while (true) {
 								t = L.nextToken();
                                 templateArg* ta = new templateArg;
+                                //printToken(t);
 								switch (t.type) {
 									case (50):
 										if(t.text == "typename")
@@ -1849,10 +2136,17 @@ void parse(std::vector<line> lines) {
 										goto ERRORENDLINE;
 								}
                                 t = L.nextToken();
+                                //printToken(t);
                                 switch (t.type) {
                                     case(1):
                                         ta->name = t.text;
                                         t = L.nextToken();
+                                        //printToken(t);
+                                        if(t.type == 35)
+                                        {
+                                            templateArgs.push_back(ta);
+                                            goto TEMPLATENOARGS;
+                                        }
                                         break;
                                     case(35):
                                         goto TEMPLATENOARGS;
@@ -2043,7 +2337,7 @@ void parse(std::vector<line> lines) {
 							std::vector<type*> paramTypes;
 							std::vector<variable*> arguments;
 							bool hasMoreParams = true;
-							if (currentScope->t == scopeType::CLASS) {
+							if (currentScope->t == scopeType::CLASS && !ignoreClassArg0) {
 								type* refType = getType(currentScope->cl->name + "&");
 								paramTypes.push_back(refType);
 								variable* targ = new variable;
@@ -2268,6 +2562,7 @@ void parse(std::vector<line> lines) {
 									std::cout << "body started" << std::endl;
 							} else if (t.type == 41) {
 								// function declaration
+                                func->abi->setArgStorages(func,arguments);
 								if (!isPrimitive)
                                 {
                                     if(!options::nod)
@@ -2407,6 +2702,7 @@ void parse(std::vector<line> lines) {
 								else if (currentScope->t == scopeType::CLASS) {
 									var->offset	 = currentScope->cl->size;
 									var->storage = storageType::MEMORY;
+                                    var->reg = defaultABI->ctorThisRegister;
 								}
 							}
                             if(isArray)
@@ -2528,7 +2824,19 @@ void parse(std::vector<line> lines) {
                                         {
                                             //switch to memory storage
                                             std::cout << "switching storage of: " << var->name << std::endl;
-                                            errorCompilerBug;
+                                            //if(
+                                            //    currentScope->t == scopeType::FUNCTION
+                                            //    || currentScope->t == scopeType::LOGICAL
+                                            //    || currentScope->t == scopeType::CONDITIONAL_BLOCK)
+                                            //{
+                                            //    currentScope->func->fstore->stackSize += childTargetDataType->size;
+                                            //    var->storage = storageType::MEMORY;
+                                            //    var->offset = currentScope->func->fstore->stackOffset;
+                                            //    var->reg = StackPointer;
+                                            //    currentScope->func->fstore->stackOffset = currentScope->func->fstore->stackSize;
+                                            //}
+                                            //else
+                                                errorCompilerBug;
                                         }
                                         else
                                             std::cout << "ERROR: dont do that" << std::endl;
@@ -2619,6 +2927,7 @@ void parse(std::vector<line> lines) {
 									std::vector<line> tmpLines;
 									tmpLines.push_back(tmpLine);
                                     isConstExprAssignment = isConstExpr;
+                                    std::cout << "line: " << tmpLine.text << std::endl;
 									parse(tmpLines);
                                     isConstExprAssignment = false;
 									break;
@@ -2627,6 +2936,7 @@ void parse(std::vector<line> lines) {
                                 case(7):
                                 case(11):
 								case (1):
+                                {
 									variable* result = resolve(t);
                                     if(!result)
                                     {
@@ -2656,6 +2966,16 @@ void parse(std::vector<line> lines) {
                                     else
                                         error::functionNotFound(L);
 									break;
+                                }
+                                default:
+                                {
+                                    if(var->dataType->ctor != nullptr)
+                                    {
+                                        std::vector<variable*> args = {var};
+                                        call(var->dataType->ctor,args);
+                                    }
+                                    break;
+                                }
 							}
                             if(currentScope->t == scopeType::GLOBAL || currentScope->t == scopeType::NAMESPACE)
                             {

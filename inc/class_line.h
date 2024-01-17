@@ -47,7 +47,7 @@ public:
 
     uint64_t leadingSpaces;
 
-    token nextToken();
+    token nextToken(bool saveInfo = true);
     std::string restText();
     void stripTokens(uint64_t n);
 };
