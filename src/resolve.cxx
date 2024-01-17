@@ -2,7 +2,7 @@
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday July 30th 2023 10:07:58 am
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -969,7 +969,7 @@ variable* resolve(token& t)
                     if(__leftHand.text.back() == ')')
                     {
                         std::string fname = __leftHand.text.substr(0,__leftHand.text.find_first_of('(')-1);
-                        __leftHand.text = __leftHand.text.substr(__leftHand.text.find_first_of('('),__leftHand.text.size()-1);
+                        __leftHand.text = __leftHand.text.substr(__leftHand.text.find_first_of('(')+1,__leftHand.text.size()-1);
                         std::cout << "left over:"  << __leftHand.text << std::endl;
                     }
                 }

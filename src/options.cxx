@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -105,6 +105,7 @@ CARGHANDLER_BOOLEAN(mnortti)
 CARGHANDLER_BOOLEAN(mnorodata)
 CARGHANDLER_BOOLEAN(dprintTokens)
 CARGHANDLER_BOOLEAN(ddebug)
+CARGHANDLER_BOOLEAN(dalog)
 CARGHANDLER_INT(fcpl)
 
 #define name_MD "-MD"
@@ -127,6 +128,7 @@ CARGHANDLER_INT(fcpl)
 #define name_mnorodata "--mno-rodata"
 #define name_dprintTokens "--dprint-tokens"
 #define name_ddebug "--ddebug"
+#define name_dalog "--dalog"
 #define name_SysRoot "--isysroot"
 #define name_fcpl "--fcpl"
 #define name_buildDir "-B"
@@ -335,6 +337,7 @@ void cliOptions(int argc, char **argv)
     //d
     CARGHANDLER_BOOLEAN_CA0(dprintTokens);
     CARGHANDLER_BOOLEAN_CA0(ddebug);
+    CARGHANDLER_BOOLEAN_CA0(dalog);
 
     carg.addParameter(0,1,"-Wno-",&CARGHANDLER_WNO);
     carg.addParameter(0,1,"-W",&CARGHANDLER_W);

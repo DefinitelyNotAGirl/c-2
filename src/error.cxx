@@ -118,7 +118,7 @@ void compilerBug(std::string file, int line)
     std::cout << "\033[31mERROR:\033[0m this is a bug, please open an issue at https://github.com/DefinitelyNotAGirl/c-2/issues and pass on the following information." << std::endl;
     std::cout << "##### debug information start #####" << std::endl;;
     std::cout << "file: " << file << std::endl;
-    std::cout << "line: " << line << std::endl;
+    std::cout << "line: " <<std::dec<< line << std::endl;
     std::cout << "head: " << buildCOMMIT << std::endl;
     std::cout << "date: " << buildDATE << std::endl;
     std::cout << "branch: " << buildBRANCH << std::endl;

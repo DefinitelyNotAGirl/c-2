@@ -30,6 +30,8 @@
 
 #include <compiler.h>
 #include <codegen.h>
+#include <error.h>
+#include <colors.h>
 
 std::stack<std::vector<__register__>> savedRegisters;
 std::stack<std::vector<uint64_t>> savedRegisterOffsets;
@@ -116,6 +118,7 @@ void codeGenUpdateFuction()
         case(scopeType::CONDITIONAL_BLOCK):
         case(scopeType::LOGICAL):
         case(scopeType::DUMMY):
+        case(scopeType::CLASS):
             codeGenFunc = currentScope->func;
             code = &currentScope->func->code;
             fstore = currentScope->fstore;
@@ -123,11 +126,73 @@ void codeGenUpdateFuction()
     }
 }
 
+void universalMoveArguments(function* func,std::vector<variable*>& args)
+{
+    if(args.size() != func->vparams.size())
+    {
+        errorCompilerBug;
+        return;
+    }
+    uint64_t len = args.size();
+    for(uint64_t I = 0;I<len;I++)
+    {
+        variable* src = args[I];
+        variable* dst = func->vparams[I];
+        if(options::dalog){
+            std::cout 
+            << "[pass]"
+            << "(" <<COLOR_TYPE<<src->dataType->name <<' '<<COLOR_VAR<< src->name <<COLOR_RESET<< ") " << location(src).expr()
+            << " ==> " 
+            << "(" <<COLOR_TYPE<<dst->dataType->name <<' '<<COLOR_VAR<< dst->name <<COLOR_RESET<< ") " << location(dst).expr()
+            << std::endl;
+        }
+        if(EXPR_GETBIT_01(dst->dataType->miscData))
+        {
+            //std::cout << "reference pass detected" << std::endl;
+            if(src->dataType == dst->dataType->valueType)
+            {
+                //std::cout << "passing reference" << std::endl;
+                switch(src->storage)
+                {
+                    case(storageType::MEMORY):
+                    {
+                        switch(dst->storage)
+                        {
+                            case(storageType::REGISTER):
+                            {
+                                mov(src->reg,dst->reg);
+                                add(src->offset,dst->reg);
+                                break;
+                            }
+                            default:
+                                errorCompilerBug;
+                                break;
+                        }
+                        break;
+                    }
+                    default:
+                        errorCompilerBug;
+                        break;
+                }
+                //std::cout << "reference pass completed" << std::endl;
+                continue;
+            }
+            errorCompilerBug;
+        }
+        if(src->dataType != dst->dataType)
+        {
+            errorCompilerBug;
+            continue;
+        }
+        mov(src,dst);
+    }
+}
+
 variable* call(function* func,std::vector<variable*>& args)
 {
     //std::cout << "func: " <<std::hex<< (void*)func << std::endl;
-    if(options::ddebug)
-        std::cout << "calling: " << getFunctionExpression(func) << std::endl;
+    if(options::dalog)
+        std::cout << "[call] " << getPrintFunctionExpression(func,true) << std::endl;
     if(func->isPrimitive)
         return primitiveCall(func,args);
     //else

@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -158,6 +158,7 @@ namespace options
     //-d******
     bool dprintTokens = false;
     bool ddebug = false;
+    bool dalog = false;
     bool asmSepComments = true;
 
     //misc

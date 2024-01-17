@@ -73,6 +73,7 @@ namespace options
     //-d******
     extern bool dprintTokens;
     extern bool ddebug;
+    extern bool dalog;
     extern bool asmSepComments;
 
     //misc

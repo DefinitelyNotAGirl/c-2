@@ -325,12 +325,13 @@ void sendVstcToken(token& t)
         t.type = 10;//change to variable name before returning to compiler
 }
 
-token line::nextToken()
+token line::nextToken(bool saveInfo)
 {
     //get token text
     token t;
     t.col = this->ccol+this->whitespace;
-    this->whitespace = 0;
+    if(saveInfo)
+        this->whitespace = 0;
     uint64_t I = this->tpos;
     while(true)
     {
@@ -408,7 +409,21 @@ token line::nextToken()
                             case('>'):
                                 t.text.push_back(this->text[I]);
                                 if(cbracec==0)
+                                {
+                                    //catch template-reference/pointer types
+                                    I++;
+                                    while(
+                                        this->text[I] == '*'
+                                        || this->text[I] == '&'
+                                    )
+                                    {
+                                        t.text.push_back(this->text[I]);
+                                        I++;
+                                    }
+
+                                    I--;
                                     goto expressionEnded;
+                                }
                                 cbracec--;
                                 break;
                             case('<'):
@@ -524,9 +539,11 @@ token line::nextToken()
     t.type = tokenType(t.text);
     t.Line = this;
     t.lineNum = this->tline;
-    this->tpos = I;
+    if(saveInfo)
+        this->tpos = I;
     //if(currentFile == __reqFileVSTC)std::cout << "old ccol: " << this->ccol << std::endl;
-    this->ccol = t.col+t.text.length();
+    if(saveInfo)
+        this->ccol = t.col+t.text.length();
     //if(currentFile == __reqFileVSTC)std::cout << "token: \"" << t.text << "\"" << std::endl;
     //if(currentFile == __reqFileVSTC)std::cout << "new ccol: " << this->ccol << std::endl;
     if(options::vstc && currentFile == __reqFileVSTC && !vstcDisableSend)
@@ -571,6 +588,7 @@ token line::nextToken()
     if(options::ddebug)
     {
         std::cout << "Token: type: " << t.type << " \"" << t.text <<"\""<< std::endl;
+        //printStacktrace(50);
     }
 
     return t;

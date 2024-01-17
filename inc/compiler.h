@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -72,6 +72,8 @@ variable* resolveIMM(char* token);
 
 std::string getIndent();
 
+void printStacktrace(uint64_t len);
+
 type* getType(std::string name);
 variable* getVariable(std::string name);
 function* getFunction(std::string name);
@@ -81,6 +83,8 @@ function* getFunction(type* returnType, std::string& name, std::vector<variable*
 uint64_t tokenType(std::string& s);
 std::string manglePseudoName(std::string& s);
 std::string mangleTypeName(std::string& s);
+
+std::string getPrintFunctionExpression(function* f, bool showVariableNames = false);
 
 std::string getNewName();
 

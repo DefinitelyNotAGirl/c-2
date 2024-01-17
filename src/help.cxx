@@ -2,7 +2,7 @@
  * Created Date: Sunday September 17th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday September 17th 2023 10:35:30 am
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -306,7 +306,14 @@ void CARGHANDLER_HELP(CARGPARSE_HANDLER_ARGS)
         std::cout << "note: these options may be used more than once";
         printOptReset();
     }
-    {//keepComments
+    {//--dalog
+        printPreOptionSpaces();
+        std::cout << "--dalog";
+        CSLLB+=9;printEvenSpaces();
+        std::cout << "log information on generated code to stdout";
+        printOptReset();
+    }
+    {//--ddebug
         printPreOptionSpaces();
         std::cout << "--ddebug";
         CSLLB+=9;printEvenSpaces();
