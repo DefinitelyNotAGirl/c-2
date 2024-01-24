@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -397,7 +397,7 @@ std::vector<line> getLines(std::string fname)
         uint64_t leadingSpace = 0;
         for(uint64_t j = 0; j < lineText.length(); j=0)
         {
-            if(lineText[j] == ' ')
+            if(lineText[j] == ' ') 
             {
                 lineText = lineText.substr(1,lineText.length());
                 leadingSpace++;
@@ -421,6 +421,7 @@ std::vector<line> getLines(std::string fname)
         L.file = fname;
         L.leadingSpaces = leadingSpace;
         L.whitespace = leadingSpace;
+        L.tpos = 0;
         if(wasComment)
         {
             if(options::keepComments)

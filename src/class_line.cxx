@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday December 26th 2023 3:14:28 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -333,8 +333,10 @@ token line::nextToken(bool saveInfo)
     if(saveInfo)
         this->whitespace = 0;
     uint64_t I = this->tpos;
+    std::cout << "starting I: " << I << std::endl;
     while(true)
     {
+        std::cout << "char: '" << this->text[I] << "' (" << (uint64_t)this->text[I] << ")" << std::endl;
         switch(this->text[I])
         {
             case(0x00):
@@ -585,7 +587,7 @@ token line::nextToken(bool saveInfo)
     //if(t.type == 6)
     //    t.text = "\""+t.text+"\"";
 
-    if(options::ddebug)
+    if(options::ddebug || true)
     {
         std::cout << "Token: type: " << t.type << " \"" << t.text <<"\""<< std::endl;
         //printStacktrace(50);
@@ -611,7 +613,3 @@ void line::stripTokens(uint64_t n)
         //std::cout << "after: \"" << this->text << "\"" << std::endl;
     }
 }
-
-/*
- *  vtables
- */
