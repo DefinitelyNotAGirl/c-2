@@ -49,7 +49,7 @@ namespace x86_64
 
     void putComment(std::string& comment)
     {
-        if(currentScope->t == scopeType::FUNCTION || currentScope->t == scopeType::CONDITIONAL_BLOCK)
+        if(currentScope->func != nullptr)
             code->push_back(getIndent()+"# "+comment);
     }
 }
