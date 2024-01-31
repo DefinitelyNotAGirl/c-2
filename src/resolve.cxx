@@ -2,7 +2,7 @@
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -528,7 +528,8 @@ variable* resolveIMM(token& t)
                 litop* l = getLitop(litop_);
                 if(l == nullptr)
                 {
-                    error::noSuchLitop(t,i);
+                    t.text = litop_;
+                    error::noSuchLitop(t,0);
                     return nullptr;
                 }
                 switch(l->op)

@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday January 24th 2024 7:10:14 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -1028,6 +1028,7 @@ void parse(std::vector<line> lines) {
             switch(templateMode)
             {
                 case(1):
+                    L.tpos = 0;
                     __typeTemplate->code.push_back(L);
                     goto ENDLINE;
                     break;
@@ -1411,12 +1412,20 @@ void parse(std::vector<line> lines) {
                     {
                         t = L.nextToken();
                         std::string text = "("+t.text;
+                        recheckLspecAttribEnd:;
                         t = L.nextToken();
                         if(t.type == 31)
                             text+=")";
-                        else
+                        else if(t.type == 1)
                         {
-                            std::cout << ":skull:" << std::endl;
+                            text+=t.text;
+                            goto recheckLspecAttribEnd;
+                        }
+                        if(t.type != 31)
+                        {
+                            printToken(t);
+                            std::cout << "text: " << text << std::endl;
+                            errorCompilerBug;
                             goto ERRORENDLINE;
                         }
                         t.text = text;
@@ -2624,14 +2633,20 @@ void parse(std::vector<line> lines) {
 									} else if (attr.text[1] == '+' ||
 											   attr.text[1] == '-') {
 										// address relative to stack pointer
-										token blub = t;
-										blub.text  = attr.text.substr(
-											 1, attr.text.size() - 2);
-										uint64_t offset =
-											resolve(blub)->immediateValue;
+                                        line Lblub = *t.Line;
+                                        Lblub.text = attr.text.substr(2, attr.text.size() - 3);
+                                        Lblub.tpos = 0;
+                                        token blub = Lblub.nextToken();
+                                        variable* rblub = resolve(blub);
+                                        if(rblub == nullptr)
+                                            std::cout << "blub failed to resolve!" << std::endl;
+										uint64_t offset = rblub->immediateValue;
 										var->storage = storageType::MEMORY;
 										var->offset	 = offset;
                                         var->reg = StackPointer;
+                                        if (currentScope->t == scopeType::CLASS) {
+                                            var->reg = defaultABI->ctorThisRegister;
+                                        }
 									} else {
 										// register
 										std::string rname = attr.text.substr(
