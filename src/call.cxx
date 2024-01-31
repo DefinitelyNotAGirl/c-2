@@ -2,7 +2,7 @@
  * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday September 17th 2023 5:19:35 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -162,6 +162,21 @@ void universalMoveArguments(function* func,std::vector<variable*>& args)
                             {
                                 mov(src->reg,dst->reg);
                                 add(src->offset,dst->reg);
+                                break;
+                            }
+                            default:
+                                errorCompilerBug;
+                                break;
+                        }
+                        break;
+                    }
+                    case(storageType::MEMORY_ABSOLUTE):
+                    {
+                        switch(dst->storage)
+                        {
+                            case(storageType::REGISTER):
+                            {
+                                mov(src->offset,dst->reg);
                                 break;
                             }
                             default:

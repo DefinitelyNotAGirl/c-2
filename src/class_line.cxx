@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday January 24th 2024 7:10:14 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -333,10 +333,15 @@ token line::nextToken(bool saveInfo)
     if(saveInfo)
         this->whitespace = 0;
     uint64_t I = this->tpos;
-    std::cout << "starting I: " << I << std::endl;
+    //if(this->lineNum != 0) // debug code
+    //{
+    //    std::cout << "###########" << std::endl;
+    //    std::cout << "starting I: " << I << std::endl;
+    //    std::cout << "line: " << this->text << std::endl;
+    //}
     while(true)
     {
-        std::cout << "char: '" << this->text[I] << "' (" << (uint64_t)this->text[I] << ")" << std::endl;
+        //std::cout << "char: '" << this->text[I] << "' (" << (uint64_t)this->text[I] << ")" << std::endl;
         switch(this->text[I])
         {
             case(0x00):
@@ -587,7 +592,7 @@ token line::nextToken(bool saveInfo)
     //if(t.type == 6)
     //    t.text = "\""+t.text+"\"";
 
-    if(options::ddebug || true)
+    if(options::ddebug)
     {
         std::cout << "Token: type: " << t.type << " \"" << t.text <<"\""<< std::endl;
         //printStacktrace(50);
