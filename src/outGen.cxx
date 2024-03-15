@@ -2,7 +2,7 @@
  * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday September 17th 2023 5:19:35 am
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -82,6 +82,7 @@ void genOutput(std::string& i)
     f = fopen(asmOut.c_str(),"w");
     if(f == NULL)
     {
+        std::cout << "ERROR: " << strerror(errno) << std::endl;
         std::cout << "ERROR: could not open file \"" << asmOut << "\"" << std::endl;
         goto endAsmOutput;
     }
@@ -97,7 +98,7 @@ void genOutput(std::string& i)
         f = fopen(mdOut.c_str(),"w");
         if(f == NULL)
         {
-            std::cout << "ERROR: could not open file \"" << asmOut << "\"" << std::endl;
+            std::cout << "ERROR: could not open file \"" << mdOut << "\"" << std::endl;
             goto endAsmOutput;
         }
         std::string content;
@@ -116,7 +117,7 @@ void genOutput(std::string& i)
         results = fwrite(content.c_str(),content.length(),1,f);
         if (results == EOF)
         {
-            std::cout << "ERROR: could write to file \"" << asmOut << "\"" << std::endl;
+            std::cout << "ERROR: could write to file \"" << mdOut << "\"" << std::endl;
             goto endAsmOutput;
         }
         fclose(f);
@@ -151,7 +152,7 @@ void genOutput(std::string& i)
         system(LDcmd.c_str());
     }
     //remove unwanted output
-    if(!options::as)
+    if(!options::as && !options::aso)
         remove(asmOut.c_str());
     if(!options::C)
         remove(objOut.c_str());

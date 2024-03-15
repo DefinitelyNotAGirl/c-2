@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -129,7 +129,7 @@ int main(int argc, char** argv)
     }
     if(options::aso)
         options::as = true;
-    if(options::fcpl != 3)
+    if(options::fcpl != 3 && options::ddebug)
         std::cout << "cpu privilege level: " << options::fcpl << std::endl;
     globalScope->name = "global";
     if(options::ffreestanding)
@@ -243,7 +243,8 @@ int main(int argc, char** argv)
         rname = rname.substr(rname.find_first_of('/'),rname.length());
         //generate depedency make files
         //get output destiations
-        std::filesystem::create_directories(options::buildDir);
+        if(options::buildDir != "")
+            std::filesystem::create_directories(options::buildDir);
         if(options::buildDir != "")
         {
             objOut = options::buildDir+rname+".o";
@@ -297,6 +298,7 @@ int main(int argc, char** argv)
                     objOut = options::output;
                     stripExt(options::output);
                     asmOut = options::output+".s";
+                    mdOut = options::output+".d";
                 }
                 else
                 {
@@ -310,7 +312,8 @@ int main(int argc, char** argv)
             }
         }
         genOutput(i);
-        std::filesystem::create_directories(options::docDir);
+        if(options::docDir != "")
+            std::filesystem::create_directories(options::docDir);
         for(format* f : oFormats)
         {
             std::string oname = options::docDir+"/"+rname+"."+f->extension;

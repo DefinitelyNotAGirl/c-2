@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -174,8 +174,8 @@ namespace options
     bool mainAutoSym = true;
     std::string output = "";
 
-    std::string buildDir = "build";
-    std::string docDir = "documentation";
+    std::string buildDir = "";
+    std::string docDir = "";
 }
 
 std::string intToString(uint64_t n)

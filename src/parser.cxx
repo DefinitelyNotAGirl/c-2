@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 24th 2024 7:10:14 pm
+ * Last Modified: Wednesday January 31st 2024 10:18:33 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -324,6 +324,7 @@ std::vector<targtype*> targTypes;
 void updateCurrentScope(scope* sc);
 variable* resolveIMM(token& t);
 std::string c2oLocExpr(variable* v);
+extern bool vstcDisableSend;
 type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std::string argstring)
 {
     if(options::ddebug)
@@ -438,7 +439,9 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
     ttiScope->name = tti->mangledName;
     scope* trueCurrentScope = currentScope;
     updateCurrentScope(ttiScope);
+    vstcDisableSend = true;
     parse(tt->code);
+    vstcDisableSend = false;
     tti->incomplete = false;
 	mOUT(moClassID, tti);
     //finish up constructor
@@ -2501,6 +2504,49 @@ void parse(std::vector<line> lines) {
                                     {
                                         std::cout << "declared arg: " << arg->name << std::endl;
                                     }
+                                    bool isPointer = arg->dataType->name.back() == '*' ? true : false;
+                                    type* childTargetDataType = isPointer ? arg->dataType->valueType : arg->dataType;
+                                    std::string msep = isPointer ? "->" : ".";
+                                    if(isPointer)
+                                    {
+                                        for(variable i : childTargetDataType->members)
+                                        {
+                                            //init
+                                            variable* child = new variable(i);
+                                            child->doExport = false;
+                                            //name
+                                            child->name = arg->name+msep+child->name;
+                                            //storage
+                                            child->storage = storageType::MEMORY;
+                                            child->reg = arg->reg;
+                                            //finish up
+                                            child->parent = arg;
+                                            arg->children.push_back(child);
+                                            currentScope->variables.push_back(child);
+                                            if(options::ddebug)
+                                                std::cout << "declared child: " << child->name << std::endl;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        for(variable i : childTargetDataType->members)
+                                        {
+                                            //init
+                                            variable* child = new variable(i);
+                                            child->doExport = false;
+                                            //name
+                                            child->name = arg->name+msep+child->name;
+                                            //storage
+                                            child->reg = arg->reg;
+                                            child->offset += arg->offset;
+                                            //finish up
+                                            child->parent = arg;
+                                            arg->children.push_back(child);
+                                            currentScope->variables.push_back(child);
+                                            if(options::ddebug)
+                                                std::cout << "declared child: " << child->name << std::endl;
+                                        }
+                                    }
 									if (options::asmVerbose >= 2 || options::ddebug) {
 										std::string comment = "    # " +
 															  arg->name +
@@ -3187,5 +3233,5 @@ void parse(std::vector<line> lines) {
 	}
     ENDPARSER:;
     dbgFile.pop();
-    templateMode = 0;//cant ever be too sure in a file exceeding 2.000 lines LMFAO
+    templateMode = 0;//cant ever be too sure in a file exceeding 3.000 lines LMFAO
 }
