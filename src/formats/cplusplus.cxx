@@ -2,7 +2,7 @@
  * Created Date: Sunday August 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -47,7 +47,10 @@ static std::vector<formatFile*> files;
 static std::string getExportTypeName(type* t)
 {
     if(t == nullptr)
-        errorCompilerBug;
+    {
+		errorCompilerBug;
+		return "";
+	}
     //if(t->name.back() == '&')
     //{
     //    std::string nn = t->name;

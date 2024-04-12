@@ -2,7 +2,7 @@
  * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -37,7 +37,7 @@ namespace x86_64
 {
     variable* _0 = getImmediateVariable(0);
     void mov(uint64_t,__register__);
-    
+
     void writeMSR(__register__ src)
     {
         std::cout << "wrmsr" << std::endl;
@@ -397,7 +397,7 @@ namespace x86_64
                             code->push_back(getIndent()+"movb $"+intToString(src->immediateValue)+", "+location(dst).expr());
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov byte "+location(dst).expr()+", "+intToString(src->immediateValue));
+                            code->push_back(getIndent()+"movb "+location(dst).expr()+", "+intToString(src->immediateValue));
                             break;
                     }
                     break;
@@ -408,7 +408,7 @@ namespace x86_64
                             code->push_back(getIndent()+"movw $"+intToString(src->immediateValue)+", "+location(dst).expr());
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov word "+location(dst).expr()+", "+intToString(src->immediateValue));
+                            code->push_back(getIndent()+"movw "+location(dst).expr()+", "+intToString(src->immediateValue));
                             break;
                     }
                     break;
@@ -419,7 +419,7 @@ namespace x86_64
                             code->push_back(getIndent()+"movl $"+intToString(src->immediateValue)+", "+location(dst).expr());
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov dword "+location(dst).expr()+", "+intToString(src->immediateValue));
+                            code->push_back(getIndent()+"movd "+location(dst).expr()+", "+intToString(src->immediateValue));
                             break;
                     }
                     break;
@@ -430,7 +430,7 @@ namespace x86_64
                             code->push_back(getIndent()+"movq $"+intToString(src->immediateValue)+", "+location(dst).expr());
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov qword "+location(dst).expr()+", "+intToString(src->immediateValue));
+                            code->push_back(getIndent()+"movq "+location(dst).expr()+", "+intToString(src->immediateValue));
                             break;
                     }
                     break;
@@ -480,7 +480,7 @@ namespace x86_64
                     code->push_back(getIndent()+"mov "+src->symbol+", %"+registerNAME(dst->reg,dst->dataType->size));
                     break;
                 case(SYNTAX_INTEL):
-                    code->push_back(getIndent()+"mov "+registerNAME(dst->reg,dst->dataType->size)+", "+src->symbol);
+                    code->push_back(getIndent()+"mov "+registerNAME(dst->reg,dst->dataType->size)+", ["+src->symbol+"]");
                     break;
             }
         }
@@ -504,7 +504,7 @@ namespace x86_64
                     code->push_back(getIndent()+"mov $"+src->symbol+", %"+registerNAME(dst->reg,dst->dataType->size));
                     break;
                 case(SYNTAX_INTEL):
-                    code->push_back(getIndent()+"mov "+registerNAME(dst->reg,dst->dataType->size)+", offset "+src->symbol+"");
+                    code->push_back(getIndent()+"lea "+registerNAME(dst->reg,dst->dataType->size)+", "+src->symbol+"");
                     break;
             }
         }
@@ -527,8 +527,8 @@ namespace x86_64
                             code->push_back(getIndent()+"movb %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", byte "+src->symbol);
-                            code->push_back(getIndent()+"mov byte "+dst->symbol+", "+registerNAME(reg,dst->dataType->size));
+                            code->push_back(getIndent()+"movb "+registerNAME(reg,src->dataType->size)+", ["+src->symbol+"]");
+                            code->push_back(getIndent()+"movb ["+dst->symbol+"], "+registerNAME(reg,dst->dataType->size));
                             break;
                     }
                     break;
@@ -540,8 +540,8 @@ namespace x86_64
                             code->push_back(getIndent()+"movw %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", word "+src->symbol);
-                            code->push_back(getIndent()+"mov word "+dst->symbol+", "+registerNAME(reg,dst->dataType->size));
+                            code->push_back(getIndent()+"movw "+registerNAME(reg,src->dataType->size)+", "+src->symbol);
+                            code->push_back(getIndent()+"movw "+dst->symbol+", "+registerNAME(reg,dst->dataType->size));
                             break;
                     }
                     break;
@@ -553,8 +553,8 @@ namespace x86_64
                             code->push_back(getIndent()+"movl %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", dword "+src->symbol);
-                            code->push_back(getIndent()+"mov dword "+dst->symbol+", "+registerNAME(reg,dst->dataType->size));
+                            code->push_back(getIndent()+"movd "+registerNAME(reg,src->dataType->size)+", "+src->symbol);
+                            code->push_back(getIndent()+"movd "+dst->symbol+", "+registerNAME(reg,dst->dataType->size));
                             break;
                     }
                     break;
@@ -566,8 +566,8 @@ namespace x86_64
                             code->push_back(getIndent()+"movq %"+registerNAME(reg,dst->dataType->size)+", "+dst->symbol);
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", qword "+src->symbol);
-                            code->push_back(getIndent()+"mov qword "+dst->symbol+", "+registerNAME(reg,dst->dataType->size));
+                            code->push_back(getIndent()+"movq "+registerNAME(reg,src->dataType->size)+", "+src->symbol);
+                            code->push_back(getIndent()+"movq "+dst->symbol+", "+registerNAME(reg,dst->dataType->size));
                             break;
                     }
                     break;
@@ -595,7 +595,7 @@ namespace x86_64
                             code->push_back(getIndent()+"mov %"+registerNAME(reg,dst->dataType->size)+", "+location(dst).expr());
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", "+src->symbol);
+                            code->push_back(getIndent()+"mov "+registerNAME(reg,src->dataType->size)+", ["+src->symbol+"]");
                             x86_64::mov(_0,dst->reg);
                             code->push_back(getIndent()+"mov "+location(dst).expr()+", "+registerNAME(reg,dst->dataType->size));
                             break;
@@ -668,7 +668,7 @@ namespace x86_64
                             code->push_back(getIndent()+"movw $"+intToString(src->immediateValue)+", "+dst->symbol);
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov word "+dst->symbol+", "+intToString(src->immediateValue));
+                            code->push_back(getIndent()+"movw "+dst->symbol+", "+intToString(src->immediateValue));
                             break;
                     }
                     break;
@@ -679,7 +679,7 @@ namespace x86_64
                             code->push_back(getIndent()+"movd $"+intToString(src->immediateValue)+", "+dst->symbol);
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov dword "+dst->symbol+", "+intToString(src->immediateValue));
+                            code->push_back(getIndent()+"movd "+dst->symbol+", "+intToString(src->immediateValue));
                             break;
                     }
                     break;
@@ -690,7 +690,7 @@ namespace x86_64
                             code->push_back(getIndent()+"movq $"+intToString(src->immediateValue)+", "+dst->symbol);
                             break;
                         case(SYNTAX_INTEL):
-                            code->push_back(getIndent()+"mov qword ptr "+dst->symbol+", "+intToString(src->immediateValue));
+                            code->push_back(getIndent()+"movq ["+dst->symbol+"], "+intToString(src->immediateValue));
                             break;
                     }
                     break;

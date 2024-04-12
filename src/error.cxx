@@ -2,7 +2,7 @@
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -31,6 +31,7 @@
 #include <error.h>
 #include <compiler.h>
 
+uint64_t ErrorCount = 0;
 namespace error
 {
 
@@ -40,11 +41,12 @@ std::list<std::string> candidateExpressions;
 static void genericErrorDisplay(token& t,uint64_t offset = 0)
 {
     std::string lineNumStr = std::to_string(t.Line->lineNum);
-    std::cout << "at line: " << lineNumStr << " in file: "<<t.Line->file<<": "<<t.Line->text<<  std::endl;
+    std::cerr << "at line: " << lineNumStr << " in file: "<<t.Line->file<<": "<<t.Line->text<<  std::endl;
     uint64_t arrowPos = t.col+t.Line->leadingSpaces+lineNumStr.size()+10+11+2+t.Line->file.size()-2+offset;
     for(uint64_t i = 0; i < arrowPos; i++)
-        std::cout << ' ';
-    std::cout << "\033[31m^\033[0m" << std::endl;
+		std::cerr << ' ';
+	std::cerr << "\033[31m^\033[0m" << std::endl;
+	ErrorCount++;
 }
 
 void functionNotFound(line& l)
@@ -55,15 +57,16 @@ void functionNotFound(line& l)
         return;
     }
     if(options::vstc)return;
-    std::cout << "\033[31mERROR:\033[0m no function matching call " << functionExpr << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m no function matching call " << functionExpr << std::endl;
     std::string lineNumStr = std::to_string(l.lineNum);
-    std::cout << "at line: " << lineNumStr << " in file: "<<l.file<<": "<<l.text<< std::endl;
+    std::cerr << "at line: " << lineNumStr << " in file: "<<l.file<<": "<<l.text<< std::endl;
     if(candidateExpressions.size() > 0)
     {
-        std::cout << "candidates are: " << std::endl;
+        std::cerr << "candidates are: " << std::endl;
         for(std::string& i : candidateExpressions)
-            std::cout <<"    "<< i << std::endl;
+            std::cerr <<"    "<< i << std::endl;
     }
+	ErrorCount++;
 }
 
 //used ids:
@@ -72,7 +75,8 @@ void genericError(uint64_t ID)
 {
     if(options::vstc)return;
     if(options::vsls)return;
-    std::cout << "\033[31mERROR:\033[0m generic error. code: " <<"0x"<<std::hex<< ID << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m generic error. code: " <<"0x"<<std::hex<< ID << std::endl;
+	ErrorCount++;
 }
 
 void lbGlobalScope(token& t)
@@ -83,7 +87,7 @@ void lbGlobalScope(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout << "\033[31mERROR:\033[0m logical "+t.text+" in global scope!" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m logical "+t.text+" in global scope!" << std::endl;
     genericErrorDisplay(t);
 }
 
@@ -95,7 +99,7 @@ void incompleteType(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout << "\033[31mERROR:\033[0m cannot declare variable with incomplete type \"" << t.text << "\"" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m cannot declare variable with incomplete type \"" << t.text << "\"" << std::endl;
     genericErrorDisplay(t);
 }
 
@@ -107,7 +111,7 @@ void noSuchFile(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout << "\033[31mERROR:\033[0m cannot find file \"" << t.text << "\"" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m cannot find file \"" << t.text << "\"" << std::endl;
     genericErrorDisplay(t);
 }
 
@@ -115,16 +119,17 @@ void compilerBug(std::string file, int line)
 {
     if(options::vsls)return;
     if(options::vstc)return;
-    std::cout << "\033[31mERROR:\033[0m this is a bug, please open an issue at https://github.com/DefinitelyNotAGirl/c-2/issues and pass on the following information." << std::endl;
-    std::cout << "##### debug information start #####" << std::endl;;
-    std::cout << "file: " << file << std::endl;
-    std::cout << "line: " <<std::dec<< line << std::endl;
-    std::cout << "head: " << buildCOMMIT << std::endl;
-    std::cout << "date: " << buildDATE << std::endl;
-    std::cout << "branch: " << buildBRANCH << std::endl;
-    std::cout << "##### debug information end   #####" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m this is a bug, please open an issue at https://github.com/DefinitelyNotAGirl/c-2/issues and pass on the following information." << std::endl;
+    std::cerr << "##### debug information start #####" << std::endl;;
+    std::cerr << "file: " << file << std::endl;
+    std::cerr << "line: " <<std::dec<< line << std::endl;
+    std::cerr << "head: " << buildCOMMIT << std::endl;
+    std::cerr << "date: " << buildDATE << std::endl;
+    std::cerr << "branch: " << buildBRANCH << std::endl;
+    std::cerr << "##### debug information end   #####" << std::endl;
     note("please tag the issue as \"bug\", thanks!");
     note("feel free to attach the source code that triggered this bug!");
+	ErrorCount++;
 }
 
 void arraySizeImmediate(token& t)
@@ -135,7 +140,7 @@ void arraySizeImmediate(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout << "\033[31mERROR:\033[0m array size must be an immediate in this context!" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m array size must be an immediate in this context!" << std::endl;
     error::genericErrorDisplay(t);
 }
 
@@ -147,7 +152,7 @@ void noSuchABI(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout << "\033[31mERROR:\033[0m ABI \"" << t.text << "\" not found" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m ABI \"" << t.text << "\" not found" << std::endl;
     error::genericErrorDisplay(t);
 }
 
@@ -159,7 +164,7 @@ void noSuchType(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout << "\033[31mERROR:\033[0m \"" << t.text << "\" does not name a type" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m \"" << t.text << "\" does not name a type" << std::endl;
     error::genericErrorDisplay(t);
 }
 
@@ -171,7 +176,7 @@ void noSuchIdentifier(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout << "\033[31mERROR:\033[0m \"" << t.text << "\" does not name anything!" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m \"" << t.text << "\" does not name anything!" << std::endl;
     error::genericErrorDisplay(t);
 }
 
@@ -182,7 +187,7 @@ void invalidClassAttribute(token& t)
         std::cout << "0007-" << t.Line->lineNum << '-' << t.col+t.Line->leadingSpaces << '-' << t.text.length() << '-' << t.text << '\n';
         return;
     }
-    std::cout << "\033[31mERROR:\033[0m attribute \"" << t.text << "\" is not valid for classes" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m attribute \"" << t.text << "\" is not valid for classes" << std::endl;
     error::genericErrorDisplay(t);
 }
 void invalidFunctionAttribute(token& t)
@@ -192,7 +197,7 @@ void invalidFunctionAttribute(token& t)
         std::cout << "0008-" << t.Line->lineNum << '-' << t.col+t.Line->leadingSpaces << '-' << t.text.length() << '-' << t.text << '\n';
         return;
     }
-    std::cout << "\033[31mERROR:\033[0m attribute \"" << t.text << "\" is not valid for functions" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m attribute \"" << t.text << "\" is not valid for functions" << std::endl;
     error::genericErrorDisplay(t);
 }
 void invalidVariableAttribute(token& t)
@@ -202,7 +207,7 @@ void invalidVariableAttribute(token& t)
         std::cout << "0009-" << t.Line->lineNum << '-' << t.col+t.Line->leadingSpaces << '-' << t.text.length() << '-' << t.text << '\n';
         return;
     }
-    std::cout << "\033[31mERROR:\033[0m attribute \"" << t.text << "\" is not valid for variable" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m attribute \"" << t.text << "\" is not valid for variable" << std::endl;
     error::genericErrorDisplay(t);
 }
 
@@ -213,7 +218,7 @@ void noSuchLitop(token& t, uint64_t offset = 0)
         std::cout << "0010-" << t.Line->lineNum << '-' << t.col+t.Line->leadingSpaces+offset << '-' << t.text.length()-offset << '\n';
         return;
     }
-    std::cout << "\033[31mERROR:\033[0m \"" << t.text.substr(offset,t.text.length()) << "\" does not name a literal operator" << std::endl;
+    std::cerr << "\033[31mERROR:\033[0m \"" << t.text.substr(offset,t.text.length()) << "\" does not name a literal operator" << std::endl;
     error::genericErrorDisplay(t,offset);
 }
 
@@ -271,7 +276,7 @@ void expectedNewUnique(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout   << "\033[31mERROR:\033[0m expected new unique identifier instead of " 
+    std::cerr   << "\033[31mERROR:\033[0m expected new unique identifier instead of " 
                 << getTokenTypename(t) 
                 << " \"" << t.text << "\"" 
                 << std::endl;
@@ -286,7 +291,7 @@ void expectedTypename(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout   << "\033[31mERROR:\033[0m expected type name instead of " 
+    std::cerr   << "\033[31mERROR:\033[0m expected type name instead of " 
                 << getTokenTypename(t) 
                 << " \"" << t.text << "\"" 
                 << std::endl;
@@ -301,7 +306,7 @@ void expectedTemplateArg(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout   << "\033[31mERROR:\033[0m expected template arg type name instead of " 
+    std::cerr   << "\033[31mERROR:\033[0m expected template arg type name instead of " 
                 << getTokenTypename(t) 
                 << " \"" << t.text << "\"" 
                 << std::endl;
@@ -316,7 +321,7 @@ void expectedShortop(token& t)
         return;
     }
     if(options::vstc)return;
-    std::cout   << "\033[31mERROR:\033[0m expected op code instead of " 
+    std::cerr   << "\033[31mERROR:\033[0m expected op code instead of " 
                 << getTokenTypename(t) 
                 << " \"" << t.text << "\"" 
                 << std::endl

@@ -45,6 +45,7 @@
 #include <sys/resource.h>
 #include <codegen.h>
 #include <DWARF.h>
+#include <error.h>
 
 void cliOptions(int argc, char **argv);
 std::vector<line> getLines(std::string fname);
@@ -88,7 +89,7 @@ line defLine(std::string text)
 }
 
 std::string __reqFileVSTC = "";
-
+extern std::stack<bool> isTemplateInstance;
 int main(int argc, char** argv)
 {
     signal(SIGSEGV, HANDLER_SIGSEGV);   // install our handler
@@ -120,6 +121,7 @@ int main(int argc, char** argv)
     char* workingDir = getcwd(nullptr,0);//only works for GNU libc, must find alternative soloution for other systems
     std::string cwd = workingDir;
     //initiate compiler
+	isTemplateInstance.push(false);
     initWarnings();
     setDefaults();
     cliOptions(argc, argv);
@@ -324,5 +326,7 @@ int main(int argc, char** argv)
         //reset compiler
         resetScope();
     }
+	if(ErrorCount != 0)
+		return -1;
     return 0;
 }

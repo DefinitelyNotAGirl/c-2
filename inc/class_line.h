@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 12:57:50 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -40,6 +40,7 @@ public:
     uint64_t ccol = 0;
     uint64_t tline = 0;
     uint64_t whitespace = 0;
+	uint64_t twhitespace = 0;
 
     uint64_t lineNum;
     std::string file;

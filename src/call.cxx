@@ -2,7 +2,7 @@
  * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday January 31st 2024 10:18:33 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -203,9 +203,17 @@ void universalMoveArguments(function* func,std::vector<variable*>& args)
     }
 }
 
+#include <error.h>
+#include <stacktrace.hxx>
+
 variable* call(function* func,std::vector<variable*>& args)
 {
-    //std::cout << "func: " <<std::hex<< (void*)func << std::endl;
+	if(func == nullptr)
+	{
+		errorCompilerBug;
+		printStacktrace(50);
+		return nullptr;
+	}
     if(options::dalog)
         std::cout << "[call] " << getPrintFunctionExpression(func,true) << std::endl;
     if(func->isPrimitive)

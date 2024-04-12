@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday January 24th 2024 7:10:14 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -92,6 +92,7 @@ std::vector<line> getLines(std::string fname)
         //cut out comments
         uint64_t ii = 0;
         uint64_t whitespace = 0;
+		uint64_t tabcounter = 0;
         for(uint64_t i = 0; i < __content.length(); i++)
         {
             switch(__content[i])
@@ -232,21 +233,21 @@ std::vector<line> getLines(std::string fname)
                             goto defaultChar;
                     }
                     break;
-                case(' '):
-                    whitespace++;
-                    break;
-                case('\t'):
-                    whitespace+=tabLength;
-                    break;
+                //*case(' '):
+                //*    whitespace++;
+                //*    break;
+                //*case('\t'):
+                //*    whitespace+=tabLength;
+                //*    break;
                 //case('\n'):
                 //    Line++;
                 default:
                     defaultChar:;
-                    while(whitespace > 0)
-                    {
-                        content__[ii++] = ' ';
-                        whitespace--;
-                    }
+                    //*while(whitespace > 0)
+                    //*{
+                    //*    content__[ii++] = ' ';
+                    //*    whitespace--;
+                    //*}
                     content__[ii++] = __content[i];
             }
         }
@@ -377,6 +378,7 @@ std::vector<line> getLines(std::string fname)
         L.lineNum = oldLine;
         L.tline = oldLine;
         L.whitespace = 0;
+		L.ccol = 0;
         while(content[i] == '\n')
         {
             Line++;
@@ -395,12 +397,21 @@ std::vector<line> getLines(std::string fname)
         //        lineText[j] = ' ';
         //}
         uint64_t leadingSpace = 0;
+		uint64_t tleadingSpace = 0;
         for(uint64_t j = 0; j < lineText.length(); j=0)
         {
             if(lineText[j] == ' ') 
             {
                 lineText = lineText.substr(1,lineText.length());
                 leadingSpace++;
+				tleadingSpace++;
+                j++;
+            }
+			else if(lineText[j] == '\t')
+            {
+                lineText = lineText.substr(1,lineText.length());
+                leadingSpace+=tabLength;
+				tleadingSpace++;
                 j++;
             }
             else if(lineText[j] == '\n')
@@ -421,6 +432,7 @@ std::vector<line> getLines(std::string fname)
         L.file = fname;
         L.leadingSpaces = leadingSpace;
         L.whitespace = leadingSpace;
+		L.twhitespace = tleadingSpace;
         L.tpos = 0;
         if(wasComment)
         {

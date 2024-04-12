@@ -2,7 +2,7 @@
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday January 31st 2024 10:18:33 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -190,7 +190,7 @@ variable* resolveIMM(token& t)
                                 function* concatFunction = getFunction(charPointerType,funcName,args);
                                 if(!concatFunction)
                                 {
-                                    std::cout << "ERROR: could not find string concat function" << std::endl;
+                                    std::cerr << "ERROR: could not find string concat function" << std::endl;
                                     return (variable*)concatFunction;
                                 }
                                 tvar = call(concatFunction,args);
@@ -213,6 +213,7 @@ variable* resolveIMM(token& t)
                                     strSym = "";
                                     //get expression
                                     tpos+=2;
+									uint64_t scol = t.tcol+tpos;
                                     uint64_t cbracec = 0;
                                     std::string expression = "";
                                     while(true)
@@ -221,7 +222,7 @@ variable* resolveIMM(token& t)
                                         {
                                             case(0x00):
                                                 //error, end of text buffer mid expression
-                                                std::cout << "error: end of text buffer mid expression" << std::endl;
+                                                std::cerr << "error: end of text buffer mid expression" << std::endl;
                                                 goto endLoop2;
                                             case('}'):
                                                 if(cbracec==0)
@@ -237,15 +238,17 @@ variable* resolveIMM(token& t)
                                     expressionEnded:;
                                     tpos++;
                                     //std::cout << "expression: \"" << expression <<"\""<< std::endl;
+									//std::cerr << "expr line: " << t.Line->lineNum << "," << t.Line->text << std::endl;
                                     line L = *t.Line;
                                     L.text = expression;
                                     L.tpos = 0;
-                                    L.ccol = 0;
+									L.lineNum = t.Line->lineNum;
+									L.twhitespace = scol;
                                     token exprt = L.nextToken();
                                     variable* rexpr = resolve(exprt);
                                     if(rexpr == nullptr)
                                     {
-                                        std::cout << "ERROR: could not resolve expression" << std::endl;
+                                        std::cerr << "ERROR: could not resolve expression" << std::endl;
                                         return nullptr;
                                     }
                                     //cast expression to string (char*)
@@ -255,8 +258,8 @@ variable* resolveIMM(token& t)
                                         rexpr = typecastVariable(rexpr,charPointerType);
                                         if(rexpr == nullptr)
                                         {
-                                            std::cout << "type cast failed" << std::endl;
-                                            return rexpr;
+                                            std::cerr << "type cast failed" << std::endl;
+                                            return nullptr;
                                         }
                                     }
                                     //concat previous string with expression
@@ -265,7 +268,7 @@ variable* resolveIMM(token& t)
                                     function* concatFunction = getFunction(charPointerType,funcName,args);
                                     if(!concatFunction)
                                     {
-                                        std::cout << "ERROR: could not find string concat function" << std::endl;
+                                        std::cerr << "ERROR: could not find string concat function" << std::endl;
                                         return (variable*)concatFunction;
                                     }
                                     tvar = call(concatFunction,args);
@@ -291,6 +294,10 @@ variable* resolveIMM(token& t)
                                     break;
                                 case('n'):
                                     DataCode.push_back("\t.byte 10");//line feed
+                                    tpos++;
+                                    break;
+								case('$'):
+									DataCode.push_back("\t.byte "+std::to_string((uint8_t)'$'));
                                     tpos++;
                                     break;
                                 case('0'):
@@ -511,10 +518,14 @@ variable* resolveIMM(token& t)
         {
             type* vtype = defaultUnsignedIntegerType;
             //send vstc information
-            if(options::vstc && currentFile == __reqFileVSTC && !vstcDisableSend)
+            if(options::vstc && currentFile == __reqFileVSTC && !vstcDisableSend && t.lineNum != 0)
             {
-                std::cout << "0005\x0c" << t.lineNum <<'\x0c'<< t.col <<'\x0c'<< (numhs*2)+numlen <<'\x0c'<<value<<'\x0c'<<numsysname<<'\n';
+                std::cout << "0005\x0c" << t.lineNum <<'\x0c'<< t.tcol <<'\x0c'<< (numhs*2)+numlen <<'\x0c'<<value<<'\x0c'<<numsysname<<'\n';
             }
+			//else
+			//{
+			//	std::cerr << "l0num: " << t.text << "("<<t.lineNum<<","<<t.tcol<<","<<t.Line->text<<")" << std::endl;
+			//}
             //0xABC; ttlen = 5, numlen = 3
             //123; ttlen = 3, numlen = 3
             if(ttlen == numlen)
@@ -522,7 +533,7 @@ variable* resolveIMM(token& t)
             {
                 if(options::ddebug)
                     std::cout << "pre litop value: " <<std::dec<< value << std::endl;
-                char* litop_ = t.text.c_str()+(numhs*2)+numlen;
+                char* litop_ = (char*)(t.text.c_str()+(numhs*2)+numlen);
                 if(options::ddebug)
                     std::cout << "checking for litop: " << litop_ << std::endl;
                 litop* l = getLitop(litop_);
@@ -532,6 +543,18 @@ variable* resolveIMM(token& t)
                     error::noSuchLitop(t,0);
                     return nullptr;
                 }
+				//send vstc information
+				/*
+				std::cout << "options::vstc: " << options::vstc << std::endl;
+				std::cout << "currentFile: " << currentFile << std::endl;
+				std::cout << "__reqFileVSTC: " << __reqFileVSTC << std::endl;
+				std::cout << "!vstcDisableSend: " << !vstcDisableSend << std::endl;
+				std::cout << "t.lineNum: " << t.lineNum << std::endl;
+				*/
+				if(options::vstc && currentFile == __reqFileVSTC && !vstcDisableSend && t.lineNum != 0)
+				{
+					std::cout << "0006\x0c" << t.lineNum <<'\x0c'<< t.tcol+(numhs*2)+numlen <<'\x0c'<< l->name.length() <<'\n';
+				}
                 switch(l->op)
                 {
                     case(shortOP::ADD): 
@@ -574,7 +597,9 @@ void makeNewToken(std::string& working, uint64_t i, std::vector<token>& tokens,t
     nt.text = working;
     nt.Line = t.Line;
     nt.col = t.col+i-working.length();
+	nt.tcol = t.tcol+i-working.length();
     nt.lineNum = t.lineNum;
+	//std::cerr << "linenum: " << nt.lineNum << std::endl;
     if((working[0] >= 0x21 && working[0] <= 0x2F) || (working[0] >= 0x3c && working[0] <= 0x3e) || (working[0] == 0x5e))
     {
         //std::cout << "token not sent: \"" << nt.text << "\"" << std::endl;
@@ -616,7 +641,10 @@ variable* resolve(token& t)
     //vstcDisableSend = false;
 
     if(options::ddebug)
-        std::cout << "expression: " << t.text << std::endl;
+    {
+		std::cout << "expression: " << t.text << "("<<t.Line->lineNum<<","<<t.Line->text<<","<<t.lineNum<<")" << std::endl;
+		printStacktrace(50);
+	}
 
     for(uint64_t i=0;i<t.text.length();i++)
     {
@@ -884,16 +912,20 @@ variable* resolve(token& t)
                 {
                     i++;
                     std::string expr;
+					uint64_t st = i;
                     while(t.text[i] != ')' && t.text[i]!= 0x00 && i<t.text.length())
                     {
                         expr.push_back(t.text[i]);
                         i++;
                     }
                     token et;
+					//std::cerr << "t: " << t.text << std::endl;
                     et.text = expr;
                     et.col = t.col;
                     et.Line = t.Line;
                     et.type = t.type;
+					et.lineNum = t.lineNum;
+					et.tcol = st+t.tcol;
                     variable* rv = resolve(et);
                     if(rv != nullptr)
                     {
@@ -925,7 +957,7 @@ variable* resolve(token& t)
     //for(uint64_t i=0;i<tokens.size();i++)
     //    std::cout << "token: " << tokens[i].text << std::endl;
 
-    
+
     variable* left = nullptr;
     variable* right = nullptr;
     if(!tokens.size())
@@ -958,12 +990,14 @@ variable* resolve(token& t)
                     left = getVariable(__leftHand.text);
                 if(left == nullptr)
                 {
-                    if(__leftHand.text.size() >= 3){
-                    if(__leftHand.text.substr(__leftHand.text.size()-3,__leftHand.text.size()) == "++")
-                    {
-                        //TODO: shedule operator++ to be called
-                        left = getVariable(__leftHand.text.substr(0,__leftHand.text.size()-3));
-                    }}
+                    if(__leftHand.text.size() >= 3)
+					{
+                    	if(__leftHand.text.substr(__leftHand.text.size()-3,__leftHand.text.size()) == "++")
+                    	{
+                    	    //TODO: shedule operator++ to be called
+                    	    left = getVariable(__leftHand.text.substr(0,__leftHand.text.size()-3));
+                    	}
+					}
                 }
                 if(left == nullptr)
                 {
@@ -971,16 +1005,16 @@ variable* resolve(token& t)
                     {
                         std::string fname = __leftHand.text.substr(0,__leftHand.text.find_first_of('(')-1);
                         __leftHand.text = __leftHand.text.substr(__leftHand.text.find_first_of('(')+1,__leftHand.text.size()-1);
-                        std::cout << "left over:"  << __leftHand.text << std::endl;
+                        std::cerr << "left over:"  << __leftHand.text << std::endl;
                     }
                 }
                 if(left == nullptr)
                 {
-                    char* lt = __leftHand.text.c_str();
+                    char* lt = (char*)__leftHand.text.c_str();
                     while(lt[0] != '[' && lt[0] != 0x00)
                         lt++;
                     uint64_t len = (uint64_t)lt-(uint64_t)__leftHand.text.c_str();
-                    char* arraytext = calloc(0,len+1);
+                    char* arraytext = (char*)calloc(0,len+1);
                     memcpy(arraytext,__leftHand.text.c_str(),len);
                     if(options::ddebug)
                         std::cout << "array: " << arraytext << std::endl;
@@ -994,7 +1028,7 @@ variable* resolve(token& t)
                         while(it[0] != ']' && it[0] != 0x00)
                             it++;
                         len = (uint64_t)it-(uint64_t)lt;
-                        char* index = calloc(0,len+1);
+                        char* index = (char*)calloc(0,len+1);
                         memcpy(index,lt,len);
                         if(options::ddebug)
                             std::cout << "index: " << index << std::endl;
@@ -1017,7 +1051,10 @@ variable* resolve(token& t)
                 }
                 NOTARRAYRESL_2:;
                 if(left == nullptr)
-                    std::cout << "ERROR: cant resolve left expression \"" << __leftHand.text << "\"" << std::endl;
+                {
+					std::cerr << "ERROR: cant resolve left expression \"" << __leftHand.text << "\"" << std::endl;
+					return nullptr;
+				}
                 if(right == nullptr)
                     right = getVariable(__rightHand.text);
                 if(right == nullptr)
@@ -1036,8 +1073,8 @@ variable* resolve(token& t)
                         std::string fname = __rightHand.text.substr(0,__rightHand.text.find_first_of('('));
                         std::string args = __rightHand.text.substr(__rightHand.text.find_first_of('('),__rightHand.text.size());
                         args = args.substr(1,args.length()-2);
-                        std::cout << "fname: "  << fname << std::endl;
-                        std::cout << "right over:"  << args << std::endl;
+                        std::cerr << "fname: "  << fname << std::endl;
+                        std::cerr << "right over:"  << args << std::endl;
                         line L;
                         L.text = args;
                         std::vector<variable*> _args;
@@ -1064,11 +1101,11 @@ variable* resolve(token& t)
                 }
                 if(right == nullptr)
                 {
-                    char* lt = __rightHand.text.c_str();
+                    char* lt = (char*)__rightHand.text.c_str();
                     while(lt[0] != '[' && lt[0] != 0x00)
                         lt++;
                     uint64_t len = (uint64_t)lt-(uint64_t)__rightHand.text.c_str();
-                    char* arraytext = calloc(0,len+1);
+                    char* arraytext = (char*)calloc(0,len+1);
                     memcpy(arraytext,__rightHand.text.c_str(),len);
                     if(options::ddebug)
                         std::cout << "array: " << arraytext << std::endl;
@@ -1082,7 +1119,7 @@ variable* resolve(token& t)
                         while(it[0] != ']' && it[0] != 0x00)
                             it++;
                         len = (uint64_t)it-(uint64_t)lt;
-                        char* index = calloc(0,len+1);
+                        char* index = (char*)calloc(0,len+1);
                         memcpy(index,lt,len);
                         if(options::ddebug)
                             std::cout << "index: " << index << std::endl;
@@ -1121,7 +1158,7 @@ variable* resolve(token& t)
                 if(tokens[i].text != "++")
                     args.push_back(right);
                 if(options::ddebug)
-                        std::cout << "calling function " << getFunctionExpression("operator"+tokens[i].text,args) << std::endl;
+                    std::cout << "calling function " << getFunctionExpression("operator"+tokens[i].text,args) << std::endl;
                 std::string fname = "operator"+tokens[i].text;
                 function* func = getFunction(fname, args);
 				if (func != nullptr) {
@@ -1197,13 +1234,13 @@ variable* resolve(token& t)
         if(left == nullptr)
         {
             //std::cout << "array check: " << __leftHand.text << std::endl;
-            char* lt = __leftHand.text.c_str();
+            char* lt = (char*)__leftHand.text.c_str();
             while(lt[0] != '[' && lt[0] != 0x00)
                 lt++;
             uint64_t len = (uint64_t)lt-(uint64_t)__leftHand.text.c_str();
             if(len == 0)
                 goto NOTARRAYRESL_1;
-            char* arraytext = calloc(1,len+1);
+            char* arraytext = (char*)calloc(1,len+1);
             memcpy(arraytext,__leftHand.text.c_str(),len);
             if(options::ddebug)
                 std::cout << "array: " << arraytext << std::endl;
@@ -1219,7 +1256,7 @@ variable* resolve(token& t)
                 len = (uint64_t)it-(uint64_t)lt;
                 if(len == 0)
                     goto NOTARRAYRESL_1;
-                char* index = calloc(1,len+1);
+                char* index = (char*)calloc(1,len+1);
                 memcpy(index,lt,len);
                 if(options::ddebug)
                     std::cout << "index: " << index << std::endl;
@@ -1266,6 +1303,11 @@ variable* resolve(token& t)
                             et.Line = __leftHand.Line;
                             et.text = working;
                             variable* arg = resolve(et);
+							if(arg == nullptr)
+							{
+								error::noSuchIdentifier(et);
+								return nullptr;
+							}
                             args.push_back(arg);
                             working = "";
                             break;
@@ -1281,10 +1323,21 @@ variable* resolve(token& t)
                     et.col = 0;
                     et.Line = __leftHand.Line;
                     et.text = working;
-                    args.push_back(resolve(et));
+					variable* arg = resolve(et);
+					if(arg == nullptr)
+					{
+						error::noSuchIdentifier(et);
+						return nullptr;
+					}
+                    args.push_back(arg);
                 }
                 //std::cout << "fname: " << fname << std::endl;
                 function* func = getFunction(fname,args);
+				if(func == nullptr)
+				{
+					error::functionNotFound(*__leftHand.Line);
+					return nullptr;
+				}
                 if(options::ddebug)
                     std::cout << "calling function " << getFunctionExpression(fname,args) << std::endl;
                 left = call(func,args);

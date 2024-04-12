@@ -66,6 +66,8 @@ std::string currentFile = "";
 
 std::vector<line> getLines(std::string fname);
 
+std::stack<bool> isTemplateInstance;
+
 void monVarDeclared(variable* v)
 {
     std::cout << "monitored variable declared!" << std::endl;
@@ -121,7 +123,7 @@ _system* getSystem(std::string name)
     return nullptr;
 }
 
-std::string getPrintFunctionExpression(function* f, bool showVariableNames = false) {
+std::string getPrintFunctionExpression(function* f, bool showVariableNames) {
 	std::string res = COLOR_TYPE + f->returnType->name + " "+ COLOR_FUNCTION + f->name +COLOR_RESET+ "(";
 	if (!showVariableNames) {
 		for (type* i : f->parameters)
@@ -153,6 +155,7 @@ std::string getFunctionExpression(function* f, bool showVariableNames = false) {
 	return res;
 }
 
+#include <stacktrace.hxx>
 std::string getFunctionExpression(std::string name,
 								  std::vector<variable*>& args) {
 	std::string res = name + "(";
@@ -160,6 +163,17 @@ std::string getFunctionExpression(std::string name,
 	{
         //std::cout << "var: " << std::hex << (void*)i << std::endl;
         //std::cout << "var dt: " << std::hex << (void*)(i->dataType) << std::endl;
+		if(i == nullptr)
+		{
+			errorCompilerBug;
+			printStacktrace(50);
+			continue;
+		}
+		if(i->dataType == nullptr)
+		{
+			std::cout << "variable " << name << " has no data type" << std::endl;
+			continue;
+		}
         res += i->dataType->name + ",";
     }
 	if (res.back() == ',') 
@@ -261,17 +275,17 @@ function* getFunction(type* returnType, std::string& name, std::vector<variable*
 
 void printVariable(variable* v)
 {
-    std::cout << "##### variable #####" << std::endl;
-    std::cout << "addr: " << std::hex << (void*)v << std::endl;
-    std::cout << "name: " << v->name << std::endl;
-    std::cout << "storage: " << (uint64_t)v->storage << std::endl;
-    std::cout << "auto storage: " << v->usedAutoStorage << std::endl;
-    std::cout << "reg: " << registerNAME(v->reg) << std::endl;
-    std::cout << "offset: " << v->offset << std::endl;
-    std::cout << "offsetReg: " << registerNAME(v->offsetReg) << std::endl;
-    std::cout << "offsetType: " << (uint64_t)v->offsetType << std::endl;
-    std::cout << "imm val: " << v->immediateValue << std::endl;
-    std::cout << "####################" << std::endl;
+    std::cerr << "##### variable #####" << std::endl;
+    std::cerr << "addr: " << std::hex << (void*)v << std::endl;
+    std::cerr << "name: " << v->name << std::endl;
+    std::cerr << "storage: " << (uint64_t)v->storage << std::endl;
+    std::cerr << "auto storage: " << v->usedAutoStorage << std::endl;
+    std::cerr << "reg: " << registerNAME(v->reg) << std::endl;
+    std::cerr << "offset: " << v->offset << std::endl;
+    std::cerr << "offsetReg: " << registerNAME(v->offsetReg) << std::endl;
+    std::cerr << "offsetType: " << (uint64_t)v->offsetType << std::endl;
+    std::cerr << "imm val: " << v->immediateValue << std::endl;
+    std::cerr << "####################" << std::endl;
 }
 
 std::vector<variable*> tempVariables;
@@ -327,6 +341,7 @@ std::string c2oLocExpr(variable* v);
 extern bool vstcDisableSend;
 type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std::string argstring)
 {
+	isTemplateInstance.push(true);
     if(options::ddebug)
         std::cout << "creating template instance \"" << instanceString << "\"" << std::endl;
     //fetch argument expressions and resolve them
@@ -356,12 +371,12 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
                     if(RTA == nullptr)
                     {
                         //error, cant resolve template argument
-                        std::cout << "ERROR: cant resolve template argument \"" << working << "\"" << std::endl;
+                        std::cerr << "ERROR: cant resolve template argument \"" << working << "\"" << std::endl;
                         return (type*)RTA;
                     }
                     if(RTA->dataType != defaultUnsignedIntegerType)
                     {
-                        std::cout << "ERROR: value for integer template argument must be of type u64 or i64" << std::endl;
+                        std::cerr << "ERROR: value for integer template argument must be of type u64 or i64" << std::endl;
                         return nullptr;
                     }
                     RTA->name = tt->tArgs[i]->name;
@@ -488,6 +503,7 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
     targTypes.clear();
     updateCurrentScope(trueCurrentScope);
     if(options::ddebug)std::cout << "template type created" << std::endl;
+	isTemplateInstance.pop();
     return tti;
 }
 
@@ -549,7 +565,7 @@ type* getType(std::string name) {
         if(!t->valueType)
         {
             //value type does not exist
-            std::cout << "\033[31mERROR:\033[0m \"" << name.substr(0,name.length()-1) << "\" does not name a type!" << std::endl;
+            std::cerr << "\033[31mERROR:\033[0m \"" << name.substr(0,name.length()-1) << "\" does not name a type!" << std::endl;
             return nullptr;
         }
         t->__declared_file = t->valueType->__declared_file;
@@ -603,7 +619,7 @@ type* getType(std::string name) {
         if(!t->valueType)
         {
             //value type does not exist
-            std::cout << "\033[31mERROR:\033[0m \"" << name.substr(0,name.length()-1) << "\" does not name a type!" << std::endl;
+            std::cerr << "\033[31mERROR:\033[0m \"" << name.substr(0,name.length()-1) << "\" does not name a type!" << std::endl;
             return nullptr;
         }
 		t->size = POINTER_SIZE;
@@ -1344,55 +1360,55 @@ void parse(std::vector<line> lines) {
                             if(name != defaultUnsignedIntegerType->name)
                             {
                                     l.text = L.restText() + " primitiveMul " + name +
-							    		 " operator*(" + name + ",__defuint);";
+							    		 " operator*(" + name + ","+defaultUnsignedIntegerType->name+");";
 							    gLines.push_back(l);
 							    l.text = L.restText() + " primitiveDiv " + name +
-							    		 " operator/(" + name + ",__defuint);";
+							    		 " operator/(" + name + ","+defaultUnsignedIntegerType->name+");";
 							    gLines.push_back(l);
 							    l.text = L.restText() + " primitiveAdd " + name +
-							    		 " operator+(" + name + ",__defuint);";
+							    		 " operator+(" + name + ","+defaultUnsignedIntegerType->name+");";
 							    gLines.push_back(l);
 							    l.text = L.restText() + " primitiveSub " + name +
-							    		 " operator-(" + name + ",__defuint);";
+							    		 " operator-(" + name + ","+defaultUnsignedIntegerType->name+");";
 							    gLines.push_back(l);
 							    l.text = L.restText() + " primitiveMod " + name +
-							    		 " operator%(" + name + ",__defuint);";
+							    		 " operator%(" + name + ","+defaultUnsignedIntegerType->name+");";
 							    gLines.push_back(l);
 							    l.text = L.restText() +
 							    		 " primitiveMul primitiveInPlace void "
 							    		 "operator*=(" +
-							    		 name + ",__defuint);";
+							    		 name + ","+defaultUnsignedIntegerType->name+");";
 							    gLines.push_back(l);
 							    l.text = L.restText() +
 							    		 " primitiveDiv primitiveInPlace void "
 							    		 "operator/=(" +
-							    		 name + ",__defuint);";
+							    		 name + ","+defaultUnsignedIntegerType->name+");";
 							    gLines.push_back(l);
 							    l.text = L.restText() +
 							    		 " primitiveAdd primitiveInPlace void "
 							    		 "operator+=(" +
-							    		 name + ",__defuint);";
+							    		 name + ","+defaultUnsignedIntegerType->name+");";
 							    gLines.push_back(l);
 							    l.text = L.restText() +
 							    		 " primitiveSub primitiveInPlace void "
 							    		 "operator-=(" +
-							    		 name + ",__defuint);";
+							    		 name + ","+defaultUnsignedIntegerType->name+");";
 							    gLines.push_back(l);
 							    l.text = L.restText() +
 							    		 " primitiveMod primitiveInPlace void "
 							    		 "operator%=(" +
-							    		 name + ",__defuint);";
-                                l.text = L.restText() +" primitiveEqual "+defaultBooleanType->name+" operator==(" + name +",__defuint);";
+							    		 name + ","+defaultUnsignedIntegerType->name+");";
+                                l.text = L.restText() +" primitiveEqual "+defaultBooleanType->name+" operator==(" + name +","+defaultUnsignedIntegerType->name+");";
                                 gLines.push_back(l);
-                                l.text = L.restText() +" primitiveGreater "+defaultBooleanType->name+" operator>(" + name + ",__defuint);";
+                                l.text = L.restText() +" primitiveGreater "+defaultBooleanType->name+" operator>(" + name + ","+defaultUnsignedIntegerType->name+");";
                                 gLines.push_back(l);
-                                l.text = L.restText() +" primitiveGreaterEqual "+defaultBooleanType->name+" operator>=(" + name + ",__defuint);";
+                                l.text = L.restText() +" primitiveGreaterEqual "+defaultBooleanType->name+" operator>=(" + name + ","+defaultUnsignedIntegerType->name+");";
                                 gLines.push_back(l);
-                                l.text = L.restText() +" primitiveLessEqual "+defaultBooleanType->name+" operator<=(" + name + ",__defuint);";
+                                l.text = L.restText() +" primitiveLessEqual "+defaultBooleanType->name+" operator<=(" + name + ","+defaultUnsignedIntegerType->name+");";
                                 gLines.push_back(l);
-                                l.text = L.restText() +" primitiveLess "+defaultBooleanType->name+" operator<(" + name + ",__defuint);";
+                                l.text = L.restText() +" primitiveLess "+defaultBooleanType->name+" operator<(" + name + ","+defaultUnsignedIntegerType->name+");";
                                 gLines.push_back(l);
-                                l.text = L.restText() +" primitiveNotEqual "+defaultBooleanType->name+" operator!=(" + name + ",__defuint);";
+                                l.text = L.restText() +" primitiveNotEqual "+defaultBooleanType->name+" operator!=(" + name + ","+defaultUnsignedIntegerType->name+");";
                                 gLines.push_back(l);
                             }
 						}
@@ -1474,7 +1490,7 @@ void parse(std::vector<line> lines) {
 												attr.text.length());
 										mangling = getMangler(manglerName);
 										if (mangling == nullptr) {
-											std::cout << "ERROR: mangler \""
+											std::cerr << "ERROR: mangler \""
 													  << manglerName
 													  << "\" does not exist!"
 													  << std::endl;
@@ -1637,7 +1653,7 @@ void parse(std::vector<line> lines) {
 												attr.text.length());
 										mangling = getMangler(manglerName);
 										if (mangling == nullptr) {
-											std::cout << "ERROR: mangler \""
+											std::cerr << "ERROR: mangler \""
 													  << manglerName
 													  << "\" does not exist!"
 													  << std::endl;
@@ -1680,7 +1696,7 @@ void parse(std::vector<line> lines) {
                                 {
                                     declareDwarfType(ntype);
 								    types.push_back(ntype);
-                                    if(is_vstc_send)std::cout << "0001\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<ntype->__declared_file<<'\x0c'<<std::to_string(ntype->__declared_line)<<'\x0c'<<ntype->desc<<'\n';
+                                    if(is_vstc_send && !isTemplateInstance.top() && nametoken.lineNum != 0)std::cout << "0001\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.tcol <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<ntype->__declared_file<<'\x0c'<<std::to_string(ntype->__declared_line)<<'\x0c'<<ntype->desc<<'\n';
                                 }
                                 //else
                                 //    std::cout << "template mode: " << templateMode << std::endl;
@@ -1803,16 +1819,19 @@ void parse(std::vector<line> lines) {
                         if(retVal == nullptr)
                         {
                             error::genericError(0x2001);
+							delete ret;
                             goto ERRORENDLINE;
                         }
                         else if(ret == nullptr)
                         {
                             error::genericError(0x2002);
+							delete ret;
                             goto ERRORENDLINE;
                         }
                         else
                             mov(retVal,ret);
                         jump(currentScope->func,currentScope->func->symbol+CPE2_SYMBOL_SCOPE_SEP+"epilogue");
+						delete ret;
                     } else if (t.text == "while") {
                         //parse condition line
                         if(options::asmSepComments)putComment("");
@@ -2141,14 +2160,17 @@ void parse(std::vector<line> lines) {
                                             ta->Type = 3;
                                         else
                                         {
+											delete ta;
                                             error::expectedTemplateArg(t);
                                             goto ERRORENDLINE;
                                         }
 										break;
                                     case(35):
+										delete ta;
                                         goto TEMPLATENOARGS;
                                         break;
 									default:
+										delete ta;
 										error::expectedTemplateArg(t);
 										goto ERRORENDLINE;
 								}
@@ -2166,10 +2188,12 @@ void parse(std::vector<line> lines) {
                                         }
                                         break;
                                     case(35):
+										delete ta;
                                         goto TEMPLATENOARGS;
                                         break;
 									default:
 										error::expectedNewUnique(t);
+										delete ta;
 										goto ERRORENDLINE;
 								}
                                 templateArgs.push_back(ta);
@@ -2229,7 +2253,12 @@ void parse(std::vector<line> lines) {
                             isFunction = true;
                         }
 						if (isFunction) {
-                            if(is_vstc_send)std::cout << "0003\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<currentFile<<'\x0c'<<std::to_string(L.lineNum)<<'\x0c'<<it->name<<'\x0c'<<currentd->desc<<'\x0c'<<currentd->ret<<'\n';
+							//, ███████ ██    ██ ███    ██  ██████ ████████ ██  ██████  ███    ██
+							//, ██      ██    ██ ████   ██ ██         ██    ██ ██    ██ ████   ██
+							//, █████   ██    ██ ██ ██  ██ ██         ██    ██ ██    ██ ██ ██  ██
+							//, ██      ██    ██ ██  ██ ██ ██         ██    ██ ██    ██ ██  ██ ██
+							//, ██       ██████  ██   ████  ██████    ██    ██  ██████  ██   ████
+                            if(is_vstc_send && !isTemplateInstance.top()  && nametoken.lineNum != 0)std::cout << "0003\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.tcol <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<currentFile<<'\x0c'<<std::to_string(L.lineNum)<<'\x0c'<<it->name<<'\x0c'<<currentd->desc<<'\x0c'<<currentd->ret<<'\n';
 							mangler* mangling	  = defaultMangler;
 							bool isStatic		  = false;
 							bool isInline		  = false;
@@ -2271,7 +2300,7 @@ void parse(std::vector<line> lines) {
 										attr.text.substr(strlen("ABI-"),attr.text.length());
 									abi = getABI(ABIName);
 									if (abi == nullptr) {
-                                        std::cout << "ERROR: ABI \""<< ABIName<< "\" does not exist!"<< std::endl;
+                                        std::cerr << "ERROR: ABI \""<< ABIName<< "\" does not exist!"<< std::endl;
 									}
 								} else if (attr.text.substr(0, strlen("mangling-")) == "mangling-") {
 									std::string manglerName =
@@ -2279,7 +2308,7 @@ void parse(std::vector<line> lines) {
 														 attr.text.length());
 									mangling = getMangler(manglerName);
 									if (mangling == nullptr) {
-										std::cout << "ERROR: mangler \""
+										std::cerr << "ERROR: mangler \""
 												  << manglerName
 												  << "\" does not exist!"
 												  << std::endl;
@@ -2398,7 +2427,7 @@ void parse(std::vector<line> lines) {
                                 switch (t.type) {
                                     case(1):
                                         arg->name = t.text;
-                                        if(is_vstc_send)std::cout << "0004\x0c" << t.lineNum <<'\x0c'<< t.col <<'\x0c'<< t.text.length() <<'\x0c'<<t.text<<'\x0c'<<arg->__declared_file<<'\x0c'<<std::to_string(arg->__declared_line)<<'\x0c'<<arg->dataType->name<< '\n';
+                                        if(is_vstc_send && !isTemplateInstance.top() && t.lineNum != 0)std::cout << "0004\x0c" << t.lineNum <<'\x0c'<< t.tcol <<'\x0c'<< t.text.length() <<'\x0c'<<t.text<<'\x0c'<<arg->__declared_file<<'\x0c'<<std::to_string(arg->__declared_line)<<'\x0c'<<arg->dataType->name<< '\n';
                                         t = L.nextToken();
                                         break;
                                     case(31):
@@ -2447,7 +2476,7 @@ void parse(std::vector<line> lines) {
                                 }
                                 else
                                 {
-                                    std::cout << "ERROR: typecast must take exactly 1 argument" << std::endl;
+                                    std::cerr << "ERROR: typecast must take exactly 1 argument" << std::endl;
                                     goto ERRORENDLINE;
                                 }
                             }
@@ -2645,7 +2674,12 @@ void parse(std::vector<line> lines) {
                                 errorCompilerBug;
                             }
 						} else {
-                            if(is_vstc_send)std::cout << "0002\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.col <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<currentFile<<'\x0c'<<std::to_string(L.lineNum)<<'\x0c'<<it->name<<'\x0c'<<currentd->desc<<'\n';
+							//, ██    ██  █████  ██████  ██  █████  ██████  ██      ███████
+							//, ██    ██ ██   ██ ██   ██ ██ ██   ██ ██   ██ ██      ██
+							//, ██    ██ ███████ ██████  ██ ███████ ██████  ██      █████
+							//,  ██  ██  ██   ██ ██   ██ ██ ██   ██ ██   ██ ██      ██
+							//,   ████   ██   ██ ██   ██ ██ ██   ██ ██████  ███████ ███████
+                            if(is_vstc_send && !isTemplateInstance.top() && nametoken.lineNum != 0)std::cout << "0002\x0c" << nametoken.lineNum <<'\x0c'<< nametoken.tcol <<'\x0c'<< nametoken.text.length() <<'\x0c'<<nametoken.text<<'\x0c'<<currentFile<<'\x0c'<<std::to_string(L.lineNum)<<'\x0c'<<it->name<<'\x0c'<<currentd->desc<<'\n';
 							variable* var	  = new variable;
                             var->desc = currentd->desc;
                             resetCurrentD();
@@ -2682,6 +2716,8 @@ void parse(std::vector<line> lines) {
                                         line Lblub = *t.Line;
                                         Lblub.text = attr.text.substr(2, attr.text.size() - 3);
                                         Lblub.tpos = 0;
+										//Lblub.twhitespace+=attr.tcol;
+										Lblub.twhitespace+=2;
                                         token blub = Lblub.nextToken();
                                         variable* rblub = resolve(blub);
                                         if(rblub == nullptr)
@@ -2699,19 +2735,23 @@ void parse(std::vector<line> lines) {
 											1, attr.text.size() - 2);
 										__register__ reg = registerID(rname);
 										if (reg == __register__::invalid)
+										{
 											std::cout
 												<< "invalid register name: "
 												<< rname << std::endl;
+											ErrorCount++;
+										}
 										uint64_t rsize =
 											BITMASK_REGISTER_SIZE & (uint64_t)reg;
                                         rsize>>=24;
 										if (rsize < it->size) {
-											std::cout
+											std::cerr
 												<< "ERROR: register \"" << rname
 												<< "\" is too small to fit "
 												   "variable of type \""
 												<< it->name << "\"!"
 												<< std::endl;
+											ErrorCount++;
 										}
 										var->storage = storageType::REGISTER;
 										var->reg	 = reg;
@@ -2726,10 +2766,11 @@ void parse(std::vector<line> lines) {
 														 attr.text.length());
 									mangling = getMangler(manglerName);
 									if (mangling == nullptr) {
-										std::cout << "ERROR: mangler \""
+										std::cerr << "ERROR: mangler \""
 												  << manglerName
 												  << "\" does not exist!"
 												  << std::endl;
+										ErrorCount++;
 									}
 								} else if (attr.text == "local")
 									isStatic = true;
@@ -2905,7 +2946,7 @@ void parse(std::vector<line> lines) {
                                                 errorCompilerBug;
                                         }
                                         else
-                                            std::cout << "ERROR: dont do that" << std::endl;
+                                            std::cerr << "ERROR: dont do that" << std::endl;
                                     }
                                     else
                                     {

@@ -2,7 +2,7 @@
  * Created Date: Wednesday August 2nd 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -83,6 +83,8 @@ public:
     functionStorage* fstore;
     std::string __declared_file;
     uint64_t __declared_line;
+	void* miscData1;
+		//- this stores a FUNCTION_INLINE* for inline functions
 
     bool isPrimitive = false;
     primitiveOP op = primitiveOP::invalid;
@@ -91,6 +93,7 @@ public:
     bool isDeprecated = false;
     bool noReturn = false;
     bool noDoc = false;
+	bool isInline = false;
     bool isLocal = false;//static
     bool doExport = false;
 

@@ -58,4 +58,5 @@ namespace error
     extern std::list<std::string> candidateExpressions;
 }
 
+extern uint64_t ErrorCount;
 #define errorCompilerBug error::compilerBug(__FILE__,__LINE__)

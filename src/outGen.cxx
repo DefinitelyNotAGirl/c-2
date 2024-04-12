@@ -1,11 +1,11 @@
 /*
- * Created Date: Thursday August 3rd 2023
+ * Created Date: Monday December 25th 2023
  * Author: Lilith
  * -----
  * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation

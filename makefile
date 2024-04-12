@@ -56,6 +56,8 @@ CXXARGS=
 CCARGS=
 ASARGS=
 
+LD=g++
+
 all: compiler
 
 build/%.o: src/%.asm

@@ -1,8 +1,8 @@
 /*
- * Created Date: Wednesday January 17th 2024
+ * Created Date: Friday April 12th 2024
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Friday April 12th 2024 10:08:05 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -27,38 +27,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+#pragma once
 
-#include <compiler.h>
-#include <mangling.h>
-#include <codegen.h>
-
-void setDefaults()
+#include <execinfo.h>
+#include <unistd.h>
+inline void printStacktrace(uint64_t len)
 {
-    defaultMangler = getMangler("c+=2");
-    if(defaultMangler == nullptr)
-    {
-        std::cout << "ERROR: could not find default mangler, aborting!" << std::endl;
-        exit(-1);
-    }
-    //defaultABI = getABI("cpe2x64");
-    defaultABI = getABI("SystemVamd64");
-    if(defaultABI == nullptr)
-    {
-        std::cout << "ERROR: could not find default ABI, aborting!" << std::endl;
-        exit(-1);
-    }
-    currentArch = getArch("x86-64");
-    if(currentArch == nullptr)
-    {
-        std::cout << "ERROR: could not find default architecture (x86-64), aborting!" << std::endl;
-        exit(-1);
-    }
-    currentArch->activate();
-    csys = getSystem("gnu-linux");
-    if(csys == nullptr)
-    {
-        std::cout << "ERROR: could not find default system (gnu-linux), aborting!" << std::endl;
-        exit(-1);
-    }
-    syntax = SYNTAX_INTEL;
+	void* array = calloc(len,8);
+	// get void*'s for all entries on the stack
+	size_t size = backtrace(array, len);
+
+	// print out all the frames to stderr
+	std::cout << "stack trace: " << std::endl;
+	backtrace_symbols_fd(array, size, STDOUT_FILENO);
 }

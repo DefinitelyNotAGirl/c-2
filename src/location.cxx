@@ -2,7 +2,7 @@
  * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -77,7 +77,10 @@ static std::string exprFV(variable* v)
                         return intToString(v->offset)+"(%"+registerNAME(v->reg)+")";
                         break;
                     case(SYNTAX_INTEL):
-                        return intToString(v->offset)+"["+registerNAME(v->reg)+"]";
+						if(v->offset >= 0)
+                        	return "["+registerNAME(v->reg)+"+"+intToString(v->offset)+"]";
+						else
+							return "["+registerNAME(v->reg)+intToString(v->offset)+"]";
                         break;
                 }
             }
@@ -101,23 +104,30 @@ std::string location::expr()
         //if(!EXPR_GETBIT_63(this->offset))
         //    this->offset--;
         //this->offset^=-1;
-        if(EXPR_GETBIT_63(this->offset))
-            res+="-";
         //else
         //    res+="+";
         //res+="$";
-        std::string num = intToString((int64_t)this->offset);
-        if(num[0] == '-')
-            num = num.substr(1,num.length());
-        res+=num;
         switch(syntax)
         {
             case(SYNTAX_GAS):
+			{
+				if(EXPR_GETBIT_63(this->offset))
+            		res+="-";
+				std::string num = intToString((int64_t)this->offset);
+        		if(num[0] == '-')
+        		    num = num.substr(1,num.length());
+        		res+=num;
                 res+="(%"+registerNAME(this->base)+")";
                 break;
+			}
             case(SYNTAX_INTEL):
-                res+="["+registerNAME(this->base)+"]";
+            {
+				std::string num = intToString((int64_t)this->offset);
+        		if(num[0] != '-')
+					num = "+"+num;
+				res+="["+registerNAME(this->base)+num+"]";
                 break;
+			}
         }
     }
     else
