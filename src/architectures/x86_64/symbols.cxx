@@ -38,13 +38,23 @@ namespace x86_64
         code->push_back(getIndent()+"jmp "+symbol);
     }
 
+	void jmpPtr(__register__ dst)
+    {
+        code->push_back(getIndent()+"jmp "+registerNAME(dst));
+    }
+
     void CodePlaceSymbol(std::string& symbol)
     {
         std::string in = getIndent();
-        if(code->size() == 0)
-            code->push_back(in.substr(1,in.length())+symbol+":");
-        else
-            code->push_back(in+symbol+":");
+        //if(code->size() == 0)
+        //    code->push_back(in.substr(1,in.length())+symbol+":");
+        //else
+        //    code->push_back(in+symbol+":");
+		//code->push_back(in+symbol+":");
+		if(in.length() > 0)
+			code->push_back(in.substr(1,in.length())+symbol+":");
+		else
+			code->push_back(in+symbol+":");
     }
 
     void putComment(std::string& comment)

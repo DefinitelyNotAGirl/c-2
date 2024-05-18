@@ -38,6 +38,14 @@ namespace error
 std::string functionExpr = "";
 std::list<std::string> candidateExpressions;
 
+/**
+ * @brief displays a generic error
+ * @warning blub
+ * @callergraph
+ * @callgraph
+ * @param t 
+ * @param offset 
+ */
 static void genericErrorDisplay(token& t,uint64_t offset = 0)
 {
     std::string lineNumStr = std::to_string(t.Line->lineNum);
@@ -292,6 +300,21 @@ void expectedTypename(token& t)
     }
     if(options::vstc)return;
     std::cerr   << "\033[31mERROR:\033[0m expected type name instead of " 
+                << getTokenTypename(t) 
+                << " \"" << t.text << "\"" 
+                << std::endl;
+    error::genericErrorDisplay(t);
+}
+
+void expectedIntegerImmediate(token& t)
+{
+    if(options::vsls)
+    {
+        std::cout << "0016-" << t.Line->lineNum << '-' << t.col+t.Line->leadingSpaces << '-' << t.text.length() << '-' << t.text << '\n';
+        return;
+    }
+    if(options::vstc)return;
+    std::cerr   << "\033[31mERROR:\033[0m expected integer immediate instead of " 
                 << getTokenTypename(t) 
                 << " \"" << t.text << "\"" 
                 << std::endl;

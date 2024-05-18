@@ -88,6 +88,8 @@ line defLine(std::string text)
     return l;
 }
 
+#include <resources.hxx>
+
 std::string __reqFileVSTC = "";
 extern std::stack<bool> isTemplateInstance;
 int main(int argc, char** argv)
@@ -161,7 +163,7 @@ int main(int argc, char** argv)
     //    std::cout << "format: " << f->name << std::endl;
     //    std::cout << "address: " << std::hex << (void*)f << std::endl;
     //}
-    
+
     for(format* f : oFormats)
         if(f->newFile() != 1)
             std::cout << "Fault format: " << f->name << std::endl;
@@ -171,6 +173,97 @@ int main(int argc, char** argv)
     //set stdlib include dir
     if(!(options::ffreestanding || options::fnostdlib))
         includeDirs.push_back("/usr/local/include/cpe2/");
+	
+	//,
+	//, set output destinations
+	//,
+	std::string rname;
+	{
+		//output
+		if(options::output != "")
+        	rname = options::output;
+		else
+			rname = sourceFiles.front();
+        FILE* f;
+		std::string ext = getExt(rname);
+		if(ext != "c2resource")
+        	stripExt(rname);
+        rname = rname.substr(rname.find_first_of('/'),rname.length());
+        //generate depedency make files
+        //get output destiations
+        if(options::buildDir != "")
+            std::filesystem::create_directories(options::buildDir);
+        if(options::buildDir != "")
+        {
+            objOut = options::buildDir+rname+".o";
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    asmOut = options::buildDir+rname+".a86";
+                    break;
+                case(SYNTAX_INTEL):
+                    asmOut = options::buildDir+rname+".i86";
+                    break;
+            }
+            mdOut = options::buildDir+rname+".d";
+            execOut = options::buildDir+rname+".exe";
+			resOut = options::buildDir+rname+".c2resource";
+            //use .exe on all platforms for now, should not cause issues (queue linux trying to load as PE executable)
+        }
+        else if(options::output == "")
+        {
+            //no output destination specified
+            objOut = rname+".o";
+            switch(syntax)
+            {
+                case(SYNTAX_GAS):
+                    asmOut = rname+".a86";
+                    break;
+                case(SYNTAX_INTEL):
+                    asmOut = rname+".i86";
+                    break;
+            }
+            mdOut = rname+".d";
+			resOut = rname+".c2resource";
+            execOut = rname+".exe";
+            //use .exe on all platforms for now, should not cause issues (queue linux trying to load as PE executable)
+        }
+        else
+        {
+            struct stat s;
+            if(access(options::output.c_str(), F_OK) != 0)
+                goto outputIsFile;
+            if(stat(options::output.c_str(),&s) == 0)
+            {
+                if(s.st_mode & S_IFDIR)
+                {
+                    // it's a directory
+                    objOut = options::output+"/"+rname+".o";
+                    asmOut = options::output+"/"+rname+".s";
+					resOut = options::output+"/"+rname+".c2resource";
+                }
+                else if(s.st_mode & S_IFREG)
+                {
+                    // it's a file
+                    outputIsFile:;
+                    objOut = options::output;
+                    stripExt(options::output);
+                    asmOut = options::output+".s";
+                    mdOut = options::output+".d";
+					resOut = options::output+".c2resource";
+                }
+                else
+                {
+                    // something else
+                }
+            }
+            else
+            {
+                std::cout << "ERROR: could not access output destination \"" << options::output << "\"" << std::endl;
+                // error
+            }
+        }
+	}
 
     for(std::string i : sourceFiles)
     {
@@ -237,81 +330,6 @@ int main(int argc, char** argv)
             for(std::string& i : dbgAbCode)
                 DebugAbbrevCode.push_back(i);
             DebugCode.push_back("__debug_info_end:");
-        }
-        //output
-        std::string rname = i;
-        FILE* f;
-        stripExt(rname);
-        rname = rname.substr(rname.find_first_of('/'),rname.length());
-        //generate depedency make files
-        //get output destiations
-        if(options::buildDir != "")
-            std::filesystem::create_directories(options::buildDir);
-        if(options::buildDir != "")
-        {
-            objOut = options::buildDir+rname+".o";
-            switch(syntax)
-            {
-                case(SYNTAX_GAS):
-                    asmOut = options::buildDir+rname+".a86";
-                    break;
-                case(SYNTAX_INTEL):
-                    asmOut = options::buildDir+rname+".i86";
-                    break;
-            }
-            mdOut = options::buildDir+rname+".d";
-            execOut = options::buildDir+rname+".exe";
-            //use .exe on all platforms for now, should not cause issues (queue linux trying to load as PE executable)
-        }
-        else if(options::output == "")
-        {
-            //no output destination specified
-            objOut = rname+".o";
-            switch(syntax)
-            {
-                case(SYNTAX_GAS):
-                    asmOut = rname+".a86";
-                    break;
-                case(SYNTAX_INTEL):
-                    asmOut = rname+".i86";
-                    break;
-            }
-            mdOut = rname+".d";
-            execOut = rname+".exe";
-            //use .exe on all platforms for now, should not cause issues (queue linux trying to load as PE executable)
-        }
-        else
-        {
-            struct stat s;
-            if(access(options::output.c_str(), F_OK) != 0)
-                goto outputIsFile;
-            if(stat(options::output.c_str(),&s) == 0)
-            {
-                if(s.st_mode & S_IFDIR)
-                {
-                    // it's a directory
-                    objOut = options::output+"/"+rname+".o";
-                    asmOut = options::output+"/"+rname+".s";
-                }
-                else if(s.st_mode & S_IFREG)
-                {
-                    // it's a file
-                    outputIsFile:;
-                    objOut = options::output;
-                    stripExt(options::output);
-                    asmOut = options::output+".s";
-                    mdOut = options::output+".d";
-                }
-                else
-                {
-                    // something else
-                }
-            }
-            else
-            {
-                std::cout << "ERROR: could not access output destination \"" << options::output << "\"" << std::endl;
-                // error
-            }
         }
         genOutput(i);
         if(options::docDir != "")

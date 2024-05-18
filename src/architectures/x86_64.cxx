@@ -36,6 +36,7 @@
 #include "x86_64/pcall.cxx"
 #include "x86_64/symbols.cxx"
 #include "x86_64/cjmp.cxx"
+#include "x86_64/stack.cxx"
 
 #define constructor __attribute__ ((constructor))
 
@@ -63,6 +64,7 @@ namespace x86_64
         a->putComment = &x86_64::putComment;
         a->CodePlaceSymbol = &x86_64::CodePlaceSymbol;
         a->jmp = &x86_64::jmp;
+		a->jmpPtr = &x86_64::jmpPtr;
         a->activate = &x86_64::activate;
         a->primitiveCall = &x86_64::primitiveCall;
         //mul,div&mod
@@ -81,6 +83,8 @@ namespace x86_64
         a->movVV = &x86_64::mov;
         a->movLV = &x86_64::mov;
         a->movVL = &x86_64::mov;
+
+		a->leaROR = &x86_64::lea;
 
         a->cmp = &x86_64::cmp;
         a->jnz = &x86_64::jnz;
@@ -117,6 +121,9 @@ namespace x86_64
         a->jpo = &x86_64::jpo;
         a->jcxz = &x86_64::jcxz;
         a->jecxz = &x86_64::jecxz;
+
+		a->enter = &x86_64::enter;
+		a->leave = &x86_64::leave;
 
         architectures.push_back(a);
     }

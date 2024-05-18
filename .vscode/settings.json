@@ -103,7 +103,9 @@
 		"forward_list": "cpp",
 		"stdfloat": "cpp",
 		"stack": "cpp",
-		"hash_map": "cpp"
+		"hash_map": "cpp",
+		"csignal": "cpp",
+		"regex": "cpp"
 	},
     "C_Cpp.errorSquiggles": "disabled",
     "psi-header.variables": [

@@ -219,7 +219,7 @@ std::string registerNAME(__register__ reg, uint8_t size)
 std::string registerNAME(__register__ reg)
 {
     using enum __register__;
-    
+
     switch(reg){
     case(rax):return "rax";
     case(rbx):return "rbx";

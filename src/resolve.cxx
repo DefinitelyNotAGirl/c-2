@@ -1,3 +1,4 @@
+
 /*
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
@@ -28,12 +29,17 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+/** 
+ * @file
+*/
+
 #include <common.h>
 #include <compiler.h>
 #include <codegen.h>
 #include <error.h>
 #include <bits.h>
 #include <cmath>
+#include <dump.hxx>
 
 void printToken(token& t);
 
@@ -49,6 +55,15 @@ litop* getLitop(std::string name)
     return nullptr;
 }
 
+/**
+ * @brief 
+ * 
+ * @callgraph
+ * @callergraph
+ * 
+ * @param dig 
+ * @return uint8_t 
+ */
 uint8_t HEXDIGTONUM(char dig)
 {
     switch(dig)
@@ -91,22 +106,122 @@ char defaultNumberSystem = 'd';
 extern std::string __reqFileVSTC;
 extern bool vstcDisableSend;
 extern bool isConstExprAssignment;
-function* getTypeCastFunction(type* in, type* out)
+line compLine(std::string text);
+void updateCurrentScope(scope* sc);
+function* getTypeCastFunction(type* in, type* out)//? only checks for explicit cast
 {
     for(castFunction* i : castFunctions)
         if(i->input == in && i->output == out)
-            return i->func;
+        {
+			//std::cout << "\"" << i->input->name << "\" == \"" << in->name << "\" && \"" << i->output->name << "\" == \"" << out->name << "\"" << std::endl;
+			//printStacktrace(4);
+			return i->func;
+		}
+		else
+		{
+			//std::cout << "\"" << i->input->name << "\" != \"" << in->name << "\" || \"" << i->output->name << "\" != \"" << out->name << "\"" << std::endl;
+		}
     //std::cout << "no type cast function found!" << std::endl;
+	//{
+	//	dump("cast in",in,"");
+	//	dump("cast out",out,"");
+	//}
+	if(out->valueType == defaultCharType && in->members.size() > 0)
+	{
+		//std::cout << "generate stringify function: " << in->name << std::endl;
+		//printStacktrace(50);
+		//,
+		//, generate stringify function
+		//,
+		{
+			std::vector<line> stringify;
+			stringify.push_back(compLine(
+				"typecast "+out->name+" stringify("+in->name+" obj) {")
+			);
+			stringify.push_back(compLine(
+				"(r14) char* data = \"{\\n\";"
+			));
+			stringify.push_back(compLine(
+				"(r13) char* md;"
+			));
+			stringify.push_back(compLine(
+				"(r12) char* nl = \"\\n\";"
+			));
+			stringify.push_back(compLine(
+				"(rbx) char* fn;"
+			));
+			for(variable& m : in->members)
+			{
+				stringify.push_back(compLine(
+					"md = char*(obj."+m.name+");"
+				));
+				stringify.push_back(compLine(
+					"fn = \"    "+m.name+": \";"
+				));
+				stringify.push_back(compLine(
+					"data = data+fn+md+nl;"
+				));
+			}
+			stringify.push_back(compLine(
+				"data = data + \"}\";"
+			));
+			stringify.push_back(compLine("return data;"));
+			stringify.push_back(compLine("}"));
+			#if false
+				std::cout << "stringify code: " << std::endl;
+				for(line& l : stringify)
+				{
+					std::cout << "    " << l.text << std::endl;
+				}
+				std::cout << "<code end>" << std::endl;
+			#endif
+			scope* cs = currentScope;
+			updateCurrentScope(globalScope);
+			parse(stringify);
+			updateCurrentScope(cs);
+		}
+		return getTypeCastFunction(in,out);
+	}
+	else if(out->valueType == defaultCharType)
+	{
+		std::cerr << "cant automatically stringify type \"" << in->name << "\"" << std::endl;
+	}
     return nullptr;
 }
+/**
+ * @brief cast a variable to a different type
+ * 
+ * @callgraph
+ * @callergraph
+ * 
+ * @param in 
+ * @param targetType 
+ * @return variable* 
+ */
 variable* typecastVariable(variable* in, type* targetType)
 {
     function* castfunc = getTypeCastFunction(in->dataType,targetType);
-    if(!castfunc)
-        return (variable*)castfunc;
+    if(castfunc == nullptr)
+	{
+		return nullptr;
+	}
+	//sdump(castfunc);
     std::vector<variable*> args = {in};
     return call(castfunc,args);
 }
+/**
+ * @brief resolves immediate values such as numbers and string literals
+ * 
+ * @callgraph
+ * @callergraph
+ * 
+ * @param t
+ * @return a variable using the appropriate data type for the immediate value or nullptr in case the value cannot be resolved
+ * 
+ * @warning may return nullptr
+ * 
+ * @defgroup core
+ */
 variable* resolveIMM(token& t)
 {
     if(options::ddebug)
@@ -588,6 +703,8 @@ variable* resolveIMM(token& t)
     return nullptr;
 }
 
+#include <colors.h>
+
 void sendVstcToken(token& t);
 void makeNewToken(std::string& working, uint64_t i, std::vector<token>& tokens,token& t)
 {
@@ -614,6 +731,19 @@ void makeNewToken(std::string& working, uint64_t i, std::vector<token>& tokens,t
 
     working = "";
 }
+/**
+ * @brief resolves any expression
+ * 
+ * @callgraph
+ * @callergraph
+ * 
+ * @param t
+ * @return a variable using the data type to which the expression resolves or nullptr in case the value cannot be resolved
+ *
+ * @warning may return nullptr
+ * 
+ * @defgroup core
+ */
 variable* resolve(token& t)
 {
     if(options::ddebug)
@@ -642,8 +772,9 @@ variable* resolve(token& t)
 
     if(options::ddebug)
     {
-		std::cout << "expression: " << t.text << "("<<t.Line->lineNum<<","<<t.Line->text<<","<<t.lineNum<<")" << std::endl;
-		printStacktrace(50);
+		//std::cout << "expression: " << t.text << COLOR_FUNCTION << " ("<<t.Line->lineNum<<","<<t.Line->text<<","<<t.lineNum<<")" << COLOR_RESET << std::endl;
+		dump("expression",&t,"");
+		//printStacktrace(50);
 	}
 
     for(uint64_t i=0;i<t.text.length();i++)
@@ -729,6 +860,11 @@ variable* resolve(token& t)
                 }
                 break;
             case('*'):
+				if(getType(working) != nullptr)
+				{
+					working.push_back(t.text[i]);
+					break;
+				}
                 switch(t.text[i+1])
                 {
                     case('='):
@@ -895,6 +1031,7 @@ variable* resolve(token& t)
                 //collect expression in parentheses
                 //std::cout << "collecting parentheses" << std::endl;
                 function* func = getFunction(working);
+				type* ctype = getType(working);
                 if(func != nullptr)
                 {
                     std::string expr;
@@ -908,6 +1045,19 @@ variable* resolve(token& t)
                         expr.push_back(')');
                     working+=expr;
                 }
+				else if(ctype != nullptr)
+				{
+					std::string expr;
+                    //std::cout << "collecting constructor call" << std::endl;
+                    while(t.text[i] != ')' && t.text[i]!= 0x00 && i<t.text.length())
+                    {
+                        expr.push_back(t.text[i]);
+                        i++;
+                    }
+                    if(t.text[i] == ')')
+                        expr.push_back(')');
+                    working+=expr;
+				}
                 else
                 {
                     i++;
@@ -1073,8 +1223,8 @@ variable* resolve(token& t)
                         std::string fname = __rightHand.text.substr(0,__rightHand.text.find_first_of('('));
                         std::string args = __rightHand.text.substr(__rightHand.text.find_first_of('('),__rightHand.text.size());
                         args = args.substr(1,args.length()-2);
-                        std::cerr << "fname: "  << fname << std::endl;
-                        std::cerr << "right over:"  << args << std::endl;
+                        //std::cerr << "fname: "  << fname << std::endl;
+                        //std::cerr << "right over:"  << args << std::endl;
                         line L;
                         L.text = args;
                         std::vector<variable*> _args;
@@ -1092,11 +1242,26 @@ variable* resolve(token& t)
                             line al;
                             al.text = working;
                             at = al.nextToken();
-                            _args.push_back(resolve(at));
+							variable* rat = resolve(at);
+							if(rat == nullptr)
+								return nullptr;
+                            _args.push_back(rat);
                             at = L.nextToken();
                         }
-                        function* func = getFunction(fname,_args);
-                        right = call(func,_args);
+						type* ctype = getType(fname);
+						function* func = nullptr;
+						if(ctype != nullptr && _args.size() == 1)
+						{
+							//dump("cast in",_args[0],"");
+							//dump("cast out",ctype,"");
+							func = getTypeCastFunction(_args[0]->dataType,ctype);
+						}
+                        else
+						{
+							func = getFunction(fname,_args);
+						}
+						if(func != nullptr)
+                        	right = call(func,_args);
                     }
                 }
                 if(right == nullptr)
@@ -1333,6 +1498,22 @@ variable* resolve(token& t)
                 }
                 //std::cout << "fname: " << fname << std::endl;
                 function* func = getFunction(fname,args);
+				type* ctype = getType(fname);
+				if(func == nullptr && ctype == nullptr)
+				{
+					error::functionNotFound(*__leftHand.Line);
+					return nullptr;
+				}
+				if(args.size() == 1 && ctype != nullptr)
+				{
+					func = getTypeCastFunction(args[0]->dataType,ctype);
+					//left = typecastVariable(args[0],ctype);
+					if(func == nullptr)
+					{
+						error::functionNotFound(*__leftHand.Line);
+						return nullptr;
+					}
+				}
 				if(func == nullptr)
 				{
 					error::functionNotFound(*__leftHand.Line);

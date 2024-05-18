@@ -40,6 +40,11 @@
 #include <util.h>
 #include <codegen.h>
 
+#include <resources.hxx>
+
+extern std::vector<std::string> resourceCode;
+extern bool emitExceptionSymbols;
+extern uint64_t exceptionoffset;
 void genOutput(std::string& i)
 {
     if(options::vsls || options::vstc)
@@ -47,6 +52,104 @@ void genOutput(std::string& i)
     int results;
     FILE* f;
     //output
+	//,
+	//, write resource file
+	//,
+	{
+		std::string text = "";
+		for(std::string& line : resourceCode)
+		{
+			text+=line+"\n";
+		}
+		//,
+		//, write to file
+		//,
+		{
+			f = fopen(resOut.c_str(),"w");
+    		if(f == NULL)
+    		{
+    		    std::cout << "ERROR: " << strerror(errno) << std::endl;
+    		    std::cout << "ERROR: could not open file \"" << resOut << "\"" << std::endl;
+    		}
+    		results = fwrite(text.c_str(),text.length(),1,f);
+    		if (results == EOF)
+    		{
+    		    std::cout << "ERROR: could write to file \"" << resOut << "\"" << std::endl;
+    		}
+    		fclose(f);
+		}
+	}
+	//,
+	//, add remaining exception data
+	//,
+	if(emitExceptionSymbols){
+		RoDataCode.push_back(".global __cpe2_exceptionFrameSize");
+		RoDataCode.push_back("__cpe2_exceptionFrameSize:");
+		RoDataCode.push_back("\t.quad "+std::to_string(exceptionoffset));
+	}
+	#if false
+	{
+		std::string text = "";
+		uint64_t ExceptionStructSize = 0;
+		for(std::pair<std::string,uint64_t> pair : resources::ExceptionOffsets)
+		{
+			//std::cout << "type: " << pair.first << std::endl;
+			if(getType(pair.first) == nullptr)
+			{
+				text+="//E-"+pair.first+"-"+std::to_string(pair.second)+"\n";
+				ExceptionStructSize+=8;
+			}
+		}
+		for(type* t : types)
+		{
+			if(t->ExceptionOffset != 0)^
+				text+="//E-"+t->name+"-"+std::to_string(t->ExceptionOffset)+"\n";
+		}
+		text+="//e-"+std::to_string(nextExceptionTypeOffset)+"\n";
+		//,
+		//, data
+		//,
+		{
+			text+=".global __cpe2_exceptionStackSize\n";
+			text+="__cpe2_exceptionStackSize:\n";
+			text+="\t.quad "+std::to_string(nextExceptionTypeOffset)+"\n";
+		}
+		//,
+		//, write to file
+		//,
+		{
+			f = fopen(resOut.c_str(),"w");
+    		if(f == NULL)
+    		{
+    		    std::cout << "ERROR: " << strerror(errno) << std::endl;
+    		    std::cout << "ERROR: could not open file \"" << resOut << "\"" << std::endl;
+    		}
+    		results = fwrite(text.c_str(),text.length(),1,f);
+    		if (results == EOF)
+    		{
+    		    std::cout << "ERROR: could write to file \"" << resOut << "\"" << std::endl;
+    		}
+    		fclose(f);
+		}
+		//,
+		//, invoke assembler
+		//,
+		{
+			std::string ASMcmd;
+			switch(syntax)
+			{
+				case(SYNTAX_GAS):
+					ASMcmd = "as --debug-prefix-map=..=$(readlink -f ..) --gstabs -o "+resOut+".o "+resOut;
+					break;
+				case(SYNTAX_INTEL):
+					ASMcmd = "as --debug-prefix-map=..=$(readlink -f ..) -msyntax=intel -mnaked-reg --gstabs -o "+resOut+".o "+resOut;
+					break;
+			}
+			if(!options::aso)
+        		system(ASMcmd.c_str());
+		}
+	}
+	#endif
     std::string asmCode;
     asmCode+="// c2o\n";
     asmCode+="// @syntax gas\n";

@@ -2,7 +2,7 @@
  * Created Date: Wednesday August 2nd 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday August 2nd 2023 4:48:09 am
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -83,6 +83,7 @@ void jump(function* func, std::string symbol);
 void jump(std::string symbol);
 inline void CodePlaceSymbol(std::string symbol){currentArch->CodePlaceSymbol(symbol);}
 inline void jmp(std::string symbol){currentArch->jmp(symbol);}
+inline void jmpPtr(__register__ dst){currentArch->jmpPtr(dst);}
 inline void putComment(std::string comment){currentArch->putComment(comment);}
 
 inline void mov(__register__ src,__register__ dst)  {currentArch->movRR(src,dst);}
@@ -96,6 +97,8 @@ inline void mov(__register__ src, variable* dst)    {currentArch->movRV(src,dst)
 inline void mov(variable* src, variable* dst)       {currentArch->movVV(src,dst);}
 inline void mov(location src,variable* dst)         {currentArch->movLV(src,dst);}
 inline void mov(variable* src,location dst)         {currentArch->movVL(src,dst);}
+
+inline void lea(__register__ base, uint64_t offset, __register__ dst){currentArch->leaROR(base,offset,dst);}
 
 inline void inc(variable* target){currentArch->inc(target);}
 inline void dec(variable* target){currentArch->dec(target);}
@@ -146,3 +149,4 @@ inline void jnp(std::string symbol){currentArch->jnp(symbol);}
 inline void jpo(std::string symbol){currentArch->jpo(symbol);}
 inline void jcxz(std::string symbol){currentArch->jcxz(symbol);}
 inline void jecxz(std::string symbol){currentArch->jecxz(symbol);}
+extern void (*jumplastcondition)(std::string symbol);
