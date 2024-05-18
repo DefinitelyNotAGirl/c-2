@@ -2,7 +2,7 @@
  * Created Date: Tuesday August 1st 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday August 1st 2023 9:27:40 pm
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -29,10 +29,11 @@
  */
 #pragma once
 #include <compiler.h>
+#include <map>
 
 enum class scopeType : uint64_t
 {
-    INVALID,GLOBAL,FUNCTION,CLASS,NAMESPACE,ENUM,CONDITIONAL_BLOCK,LOGICAL,DUMMY
+    INVALID,GLOBAL,FUNCTION,CLASS,NAMESPACE,ENUM,CONDITIONAL_BLOCK,LOGICAL,DUMMY,TRY_CATCH,TRY,CATCH
 };
 
 /*
@@ -55,7 +56,7 @@ public:
     std::vector<function*> functions;
     scope* parent = nullptr;//source parent
     scope* lparent = nullptr;//logical parent
-    type* cl = nullptr;//only filled if t==scopeType::CLASS
+    type* cl = nullptr;//only filled if t==scopeType::CLASS, to be treated as std::vector<std::pair<uint64_t,__register__>>* if t==scopeType::TRY_CATCH
     function* func = nullptr;
     functionStorage* fstore = nullptr;//this should only be filled if t==scopeType::FUNCTION
     std::vector<token> attribs;//should only be present for namespaces
@@ -68,6 +69,8 @@ public:
     uint64_t caseCounter = 0;
     uint64_t whileCounter = 0;
     uint64_t forCounter = 0;
+	uint64_t tryCounter = 0;
+	uint64_t catchCounter = 0;
     uint64_t switchCounter = 0;
     uint64_t conditionalCounter = 0;
     uint64_t booleanReturnCounter = 0;

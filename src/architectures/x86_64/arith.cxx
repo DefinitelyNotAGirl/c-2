@@ -2,7 +2,7 @@
  * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday September 17th 2023 5:19:35 am
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -29,6 +29,8 @@
  */
 
 #include <compiler.h>
+
+variable createRegisterHandle(__register__ reg, type* dataType);
 
 namespace x86_64
 {
@@ -128,6 +130,17 @@ namespace x86_64
                         break;
                 }
                 break;
+			case(storageType::SYMBOL):
+                switch(syntax)
+                {
+                    case(SYNTAX_GAS):
+                        errorCompilerBug;
+                        break;
+                    case(SYNTAX_INTEL):
+                        code->push_back(getIndent()+"add "+registerNAME(dstReg)+", "+b->symbol+"+"+intToString(b->offset));
+                        break;
+                }
+                break;
             case(storageType::IMMEDIATE):
                 if(b->immediateValue == 1)
                 {
@@ -154,6 +167,13 @@ namespace x86_64
                     }
                 }
                 break;
+			default:
+				errorCompilerBug;
+        }
+		if(dst->storage != storageType::REGISTER)
+        {
+			variable dr = createRegisterHandle(dstReg,dst->dataType);
+            x86_64::mov(&dr,dst);
         }
         restoreRegisters();
         popRegSave();

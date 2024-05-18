@@ -66,6 +66,13 @@ void stripExt(std::string& str)
         str = str.substr(0, lastindex); 
 }
 
+std::string getExt(std::string& str)
+{
+    size_t lastindex = str.find_last_of(".");
+    if(lastindex != std::string::npos)
+        return str.substr(lastindex+1);
+}
+
 uint64_t roundUp(uint64_t numToRound, uint64_t multiple)
 {
     if (multiple == 0)

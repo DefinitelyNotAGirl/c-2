@@ -2,11 +2,11 @@
  * Created Date: Wednesday September 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday September 13th 2023 2:35:11 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
- * 
+ *
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
  * files (the "Software"), to deal in the Software without
@@ -14,10 +14,10 @@
  * modify, merge, publish, distribute, sublicense, and/or sell copies
  * of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -26,7 +26,7 @@
  * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- */
+*/
 
 #include <compiler.h>
 #include <mangling.h>
@@ -51,17 +51,45 @@ static void genProlouge(std::vector<std::string>& lines, scope* sc)
     std::vector<std::string> tlines;
     code = &tlines;
     pushRegSave();
-    scope* cs = currentScope;
-    currentScope = cs->parent;
-    lines.push_back(getIndent()+sc->func->symbol+":");
-    currentScope = cs;
+    //scope* cs = currentScope;
+    //currentScope = cs->parent;
+    //lines.push_back(getIndent()+sc->func->symbol+":");
+    //currentScope = cs;
     fstore->stackOffset = fstore->stackSize;
     for(__register__ r : abi->nonVolatile)
         if(sc->fstore->registerStatus(r) == 1)
             saveRegister(r);
-    code = &lines;
-    sc->fstore->stackSize = roundUp(sc->fstore->stackSize, 16);
-    sub(sc->fstore->stackSize,StackPointer);
+	code = &lines;
+	//,
+	//, place entry symbol
+	//,
+	{
+		placeSymbol(sc->func->symbol);
+	}
+	if(sc->fstore->stackSize > 0)
+    	sc->fstore->stackSize = roundUp(sc->fstore->stackSize, 16);
+	//,
+	//, manual stack management
+	//,
+	if(false)
+	{
+		variable* sp = getRegisterHandle(StackPointer);
+		variable* fp = getRegisterHandle(StackFramePointer);
+		mov(sp,fp);
+		variable* imm = getImmediateVariable(sc->fstore->stackSize);
+		add(fp,fp,imm);
+		sub(sc->fstore->stackSize,StackPointer);
+		delete imm;
+		delete sp;
+		delete fp;
+	}
+	//,
+	//, enter & leave stack code
+	//,
+	if(sc->fstore->stackSize > 0)
+	{
+		currentArch->enter(sc->fstore->stackSize);
+	}
     for(std::string& i : tlines)
         lines.push_back(i);
 }
@@ -69,10 +97,28 @@ static void genProlouge(std::vector<std::string>& lines, scope* sc)
 static void genEpilouge(std::vector<std::string>& lines, scope* sc)
 {
     code = &lines;
-    lines.push_back(getIndent()+sc->name+CPE2_SYMBOL_SCOPE_SEP+"epilogue:");
+    //,
+	//, place epilogue symbol
+	//,
+	{
+		placeSymbol(sc->name+CPE2_SYMBOL_SCOPE_SEP+"epilogue");
+	}
     restoreRegisters();
     popRegSave();
-    add(sc->fstore->stackSize,StackPointer);
+	//,
+	//, manual stack management code
+	//,
+	if(false)
+	{
+		add(sc->fstore->stackSize,StackPointer);
+	}
+	//,
+	//, enter & leave stack code
+	//,
+	if(sc->fstore->stackSize > 0)
+	{
+		currentArch->leave();
+	}
     lines.push_back(getIndent()+"ret");
 }
 

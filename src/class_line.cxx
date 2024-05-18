@@ -58,7 +58,7 @@
 /**/
 // 30 - round brackets
 // 31 - square brackets
-// 32 - angle brackets
+// 32 - angle bracket
 // 33 - curly brackets
 /**/
 // 40 - colon
@@ -170,6 +170,9 @@ uint64_t tokenType(std::string& s)
 	//keywords
 	else if(s == "if")return 8;
 	else if(s == "else")return 8;
+	else if(s == "try")return 8;
+	else if(s == "catch")return 8;
+	else if(s == "throw")return 8;
 	else if(s == "while")return 8;
 	else if(s == "do")return 8;
 	else if(s == "for")return 8;
@@ -180,6 +183,7 @@ uint64_t tokenType(std::string& s)
 	else if(s == "case")return 8;
 	else if(s == "default")return 8;
 	else if(s == "class")return 8;
+	else if(s == "c2resource")return 8;
 	else if(s == "namespace")return 8;
 	else if(s == "litop")return 8;
 	else if(s == "enum")return 8;
@@ -207,6 +211,8 @@ uint64_t tokenType(std::string& s)
 	else if(s == "stringifyable")return 20;
 	else if(s == "noreturn")return 21;
 	else if(s == "typecast")return 21;
+	else if(s == "implicitcast")return 21;
+	else if(s == "explicitcast")return 21;
 	else if(s == "noop")return 21;
 	else if(s == "nodoc")return 21;
 	else if(s == "deprecated")return 21;
@@ -465,12 +471,16 @@ token line::nextToken(bool saveInfo)
 			case('+'):
 				skipManglerAndAbiCheck:;
 			case('|'):
+				goto skipReferenceTypeCheck;
 			case('&'):
-				if(t.text.substr(0,strlen("operator")) == "operator" && t.text.back() == this->text[I])
+				if(getType(t.text) != nullptr)
 					goto __default;
 				//else
 				//    std::cout << "\"" << t.text <<"\" != \"" << "operator" << this->text[I] <<"\"" << std::endl;
 			case('/'):
+				skipReferenceTypeCheck:;
+				if(t.text.substr(0,strlen("operator")) == "operator" && t.text.back() == this->text[I])
+					goto __default;
 				goto skipPointerTypeCheck;
 			case('*'):
 				if(getType(t.text) != nullptr)

@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -53,6 +53,7 @@ public:
     uint64_t regMode = 1;//0: do not store in register, 1: integer registers, 2: floating point registers
     uint64_t dwarfID = 0;//DWARF type id
     type* alias = nullptr;
+	uint64_t ExceptionOffset = 0;
     function* ctor = nullptr;
     function* dtor = nullptr;
     std::string __declared_file;

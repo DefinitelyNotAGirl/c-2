@@ -1,11 +1,11 @@
-/**
- * Created Date: Sunday July 30th 2023
+/*
+ * Created Date: Thursday May 9th 2024
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
+ * Last Modified: Thursday May 9th 2024 8:31:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -27,37 +27,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
 
-#include <common.h>
 #include <compiler.h>
-
-namespace error
+#include <codegen.h>
+ 
+namespace x86_64
 {
-    void compilerBug(std::string file, int line);
-    void incompleteType(token& t);
-    void noSuchFile(token& t);
-    void noSuchType(token& t);
-    void noSuchIdentifier(token& t);
-    void lbGlobalScope(token& t);
-    void noSuchABI(token& t);
-    void arraySizeImmediate(token& t);
-    void genericError(uint64_t ID);
-    void noSuchLitop(token& t, uint64_t offset = 0);
-    void expectedNewUnique(token& t);
-    void expectedShortop(token& t);
-    void invalidFunctionAttribute(token& t);
-    void invalidVariableAttribute(token& t);
-    void invalidClassAttribute(token& t);
-    void expectedTypename(token& t);
-	void expectedIntegerImmediate(token& t);
-    void expectedTemplateArg(token& t);
+	void enter(uint16_t frameSize)
+	{
+		code->push_back(getIndent()+"enter "+intToString(frameSize)+", 0");
+	}
 
-    void functionNotFound(line& l);
-
-    extern std::string functionExpr;
-    extern std::list<std::string> candidateExpressions;
+	void leave()
+	{
+		code->push_back(getIndent()+"leave");
+	}
 }
-
-extern uint64_t ErrorCount;
-#define errorCompilerBug error::compilerBug(__FILE__,__LINE__)
+ 

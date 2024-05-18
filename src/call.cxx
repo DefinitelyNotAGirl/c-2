@@ -119,8 +119,14 @@ void codeGenUpdateFuction()
         case(scopeType::LOGICAL):
         case(scopeType::DUMMY):
         case(scopeType::CLASS):
+		case(scopeType::TRY):
+		case(scopeType::CATCH):
+		case(scopeType::TRY_CATCH):
             codeGenFunc = currentScope->func;
-            code = &currentScope->func->code;
+			if(codeGenFunc != nullptr)
+            	code = &currentScope->func->code;
+			else
+				code = nullptr;
             fstore = currentScope->fstore;
             break;
     }
@@ -214,7 +220,8 @@ variable* call(function* func,std::vector<variable*>& args)
 		printStacktrace(50);
 		return nullptr;
 	}
-    if(options::dalog)
+	//std::cout << "call: " << getFunctionExpression(func) << std::endl;
+	if(options::dalog)
         std::cout << "[call] " << getPrintFunctionExpression(func,true) << std::endl;
     if(func->isPrimitive)
         return primitiveCall(func,args);

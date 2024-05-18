@@ -2,7 +2,7 @@
  * Created Date: Sunday September 17th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday September 17th 2023 10:37:09 pm
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -153,7 +153,7 @@ namespace x86_64
                     code->push_back(getIndent()+"cmp $"+intToString(a->immediateValue)+","+location(b->offset).expr());
                     break;
                 case(SYNTAX_INTEL):
-                    code->push_back(getIndent()+"cmp "+location(b->offset).expr()+",$"+intToString(a->immediateValue));
+                    code->push_back(getIndent()+"cmp "+location(b->offset).expr()+",["+intToString(a->immediateValue)+"]");
                     break;
             }
         }
@@ -181,6 +181,7 @@ namespace x86_64
                     code->push_back(getIndent()+instr+" $"+intToString(a->immediateValue)+","+location(b).expr());
                     break;
                 case(SYNTAX_INTEL):
+				/*
                     switch(b->dataType->size)
                     {
                         case(1):
@@ -196,7 +197,24 @@ namespace x86_64
                             instr = " qword ";
                             break;
                     }
-                    code->push_back(getIndent()+"cmp "+location(b).expr()+","+instr+"ptr "+intToString(a->immediateValue));
+                    code->push_back(getIndent()+"cmp "+location(b).expr()+","+instr+" "+intToString(a->immediateValue));
+				*/
+					switch(b->dataType->size)
+                    {
+                        case(1):
+                            instr = "cmpb ";
+                            break;
+                        case(2):
+                            instr = "cmpw ";
+                            break;
+                        case(4):
+                            instr = "cmpd ";
+                            break;
+                        case(8):
+                            instr = "cmpq ";
+                            break;
+                    }
+                    code->push_back(getIndent()+instr+location(b).expr()+", "+intToString(a->immediateValue));
                     break;
             }
         }
@@ -208,7 +226,7 @@ namespace x86_64
                     code->push_back(getIndent()+"cmp $"+intToString(a->immediateValue)+",%"+registerNAME(b->reg));
                     break;
                 case(SYNTAX_INTEL):
-                    code->push_back(getIndent()+"cmp "+registerNAME(b->reg)+",$"+intToString(a->immediateValue));
+                    code->push_back(getIndent()+"cmp "+registerNAME(b->reg)+","+intToString(a->immediateValue));
                     break;
             }
         }

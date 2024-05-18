@@ -140,6 +140,8 @@ enum class __register__ : uint64_t {
 };
 extern std::vector<__register__> registers;
 extern __register__ StackPointer;
+extern __register__ StackFramePointer;
+extern __register__ ExceptionHandlerStack;
 
 uint64_t getx86MSR(__register__ reg);
 
@@ -167,7 +169,7 @@ public:
     bool usedAutoStorage = false;
     uint64_t immediateValue;
     std::vector<variable*> children;//stores members of this variable (ex. gdt.size or var->name)
-    variable* parent;//only present for child variables
+    variable* parent = nullptr;//only present for child variables
     //storage
     storageType storage = storageType::INVALID;
     storageType offsetType = storageType::IMMEDIATE;

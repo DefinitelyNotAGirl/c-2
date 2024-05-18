@@ -85,7 +85,6 @@ public:
     uint64_t __declared_line;
 	void* miscData1;
 		//- this stores a FUNCTION_INLINE* for inline functions
-
     bool isPrimitive = false;
     primitiveOP op = primitiveOP::invalid;
     bool primitiveInPlace = false;
@@ -105,4 +104,5 @@ struct castFunction
     type* input;
     type* output;
     function* func;
+	bool canImplicitCast;
 };

@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 18th 2023 4:48:23 pm
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -47,6 +47,7 @@ extern char c_cariagereturn;
 extern char c_horizontaltab;
 extern char c_verticaltab;
 extern std::string objOut;
+extern std::string resOut;
 extern std::string execOut;
 extern std::string asmOut;
 extern std::string mdOut;

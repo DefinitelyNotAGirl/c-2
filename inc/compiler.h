@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -83,6 +83,9 @@ function* getFunction(type* returnType, std::string& name, std::vector<variable*
 uint64_t tokenType(std::string& s);
 std::string manglePseudoName(std::string& s);
 std::string mangleTypeName(std::string& s);
+void createMemoryHandle(__register__ reg, uint64_t offset, variable* handle);
+void createSymbolHandle(std::string symbol, variable* handle);
+variable* getRegisterHandle(__register__ reg);
 
 std::string getPrintFunctionExpression(function* f, bool showVariableNames = false);
 

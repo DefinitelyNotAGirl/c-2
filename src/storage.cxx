@@ -2,7 +2,7 @@
  * Created Date: Wednesday August 2nd 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday September 17th 2023 5:19:35 am
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -235,16 +235,16 @@ __register__ functionStorage::getFreeRegister()
         return rsi;
     else if(this->registerStatus(rsp) == 0)
         return rsp;
-    else if(this->registerStatus(rbp) == 0)
-        return rbp;
+    //else if(this->registerStatus(rbp) == 0) // use frame pointer
+    //    return rbp;
     else if(this->registerStatus(r12) == 0)
         return r12;
     else if(this->registerStatus(r13) == 0)
         return r13;
     else if(this->registerStatus(r14) == 0)
         return r14;
-    else if(this->registerStatus(r15) == 0)
-        return r15;
+    //else if(this->registerStatus(r15) == 0) // exception struct pointer
+    //    return r15;
     else if(this->registerStatus(rax) == 0)
         return rax;
     else

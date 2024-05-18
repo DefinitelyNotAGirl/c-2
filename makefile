@@ -101,6 +101,9 @@ compiler:  $(OBJECTS_asm_asm) $(OBJECTS_asm_s) $(OBJECTS_cpp_cxx) $(OBJECTS_cpp_
 	@$(LD) -g -rdynamic $(OBJECTS_asm_asm) $(OBJECTS_asm_s) $(OBJECTS_cpp_cxx) $(OBJECTS_cpp_cpp) $(OBJECTS_c_c) -Llib/ -lc -lstdc++ -lcargparse -o cp2
 	$(info  	$(LD)	$@)
 
+docs:
+	./../doxygen/build/bin/doxygen
+
 countLines:
 	@find src inc -type f \( -iname \*.cxx -o -iname \*.cpp -o -iname \*.c -o -iname \*.h -o -iname \*.hpp -o -iname \*.hxx \) -exec cat {} \; | wc -l
 

@@ -2,7 +2,7 @@
  * Created Date: Sunday September 17th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sunday September 17th 2023 4:54:45 am
+ * Last Modified: Monday December 25th 2023 12:32:29 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -46,6 +46,7 @@ public:
 
     uint64_t(*cmp)(variable* a, variable* b);
     void(*jmp)(std::string symbol);
+	void(*jmpPtr)(__register__ dst);
     void(*jnz)(std::string symbol);
     void(*jne)(std::string symbol);
     void(*jno)(std::string symbol);
@@ -91,6 +92,8 @@ public:
     void(*movLV)(location src,variable* dst);
     void(*movVL)(variable* src,location dst);
 
+	void(*leaROR)(__register__ base, uint64_t offset, __register__ dst);
+
     void(*inc)(variable* target);
     void(*dec)(variable* target);
 
@@ -105,6 +108,9 @@ public:
     void(*subRR)(__register__ src, __register__ dst);
     void(*subUR)(uint64_t src, __register__ dst);
     void(*subVVV)(variable* dst, variable* a, variable* b);
+
+	void(*enter)(uint16_t frameSize);
+	void(*leave)();
 };
 extern std::vector<arch*> architectures;
 arch* getArch(std::string name);

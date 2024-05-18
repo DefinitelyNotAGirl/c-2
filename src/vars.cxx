@@ -94,6 +94,10 @@ std::vector<__register__> registers = {
                 xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8,xmm9,xmm10,xmm11,xmm12,xmm13,xmm14,xmm15
                 };
 __register__ StackPointer = rsp;
+__register__ StackFramePointer = rbp;
+__register__ ExceptionHandlerStack = r15;
+
+void (*jumplastcondition)(std::string symbol);
 
 char c_alert                = 0x07;
 char c_backspace            = 0x08;
@@ -107,6 +111,7 @@ char c_verticaltab          = 0x0B;
 uint64_t syntax = SYNTAX_INVALID;
 
 std::string objOut = "";
+std::string resOut = "";
 std::string execOut = "";
 std::string asmOut = "";
 std::string mdOut = "";
