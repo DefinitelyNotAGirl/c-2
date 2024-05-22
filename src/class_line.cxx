@@ -181,6 +181,8 @@ uint64_t tokenType(std::string& s)
 	else if(s == "return")return 8;
 	else if(s == "switch")return 8;
 	else if(s == "case")return 8;
+	else if(s == "async")return 8;
+	else if(s == "await")return 8;
 	else if(s == "default")return 8;
 	else if(s == "class")return 8;
 	else if(s == "c2resource")return 8;

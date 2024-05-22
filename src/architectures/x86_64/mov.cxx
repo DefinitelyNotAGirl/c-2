@@ -206,17 +206,25 @@ namespace x86_64
 
     void mov(variable* src, __register__ dst)
     {
+		if(options::dalog){
+            std::cout 
+            << "[mov]<"<<COLOR_RED<<currentScope->name<<COLOR_RESET<<">"
+            << "(" <<COLOR_TYPE<<src->dataType->name <<' '<<COLOR_VAR<< src->name <<COLOR_RESET<< ") " << location(src).expr()
+            << " ==> " 
+            << "() " << registerNAME(dst)
+            << std::endl;
+        }
         if(src->storage == storageType::REGISTER)
         {
             x86_64::mov(src->reg,dst);
         }
         else if(src->storage == storageType::MEMORY)
         {
-            x86_64::mov(location(__register__::rsp,src->offset),dst);
+            x86_64::mov(location(src),dst);
         }
         else if(src->storage == storageType::MEMORY_ABSOLUTE)
         {
-            x86_64::mov(location(src->offset),dst);
+            x86_64::mov(location(src),dst);
         }
         else if(src->storage == storageType::IMMEDIATE)
         {
@@ -231,11 +239,11 @@ namespace x86_64
         }
         else if(dst->storage == storageType::MEMORY)
         {
-            x86_64::mov(src,location(__register__::rsp,dst->offset));
+            x86_64::mov(src,location(dst));
         }
         else if(dst->storage == storageType::MEMORY_ABSOLUTE)
         {
-            x86_64::mov(src,location(dst->offset));
+            x86_64::mov(src,location(dst));
         }
         else if(dst->storage == storageType::IMMEDIATE)
         {
@@ -247,7 +255,7 @@ namespace x86_64
     {
         if(options::dalog){
             std::cout 
-            << "[mov]"
+            << "[mov]<"<<COLOR_RED<<currentScope->name<<COLOR_RESET<<">"
             << "(" <<COLOR_TYPE<<src->dataType->name <<' '<<COLOR_VAR<< src->name <<COLOR_RESET<< ") " << location(src).expr()
             << " ==> " 
             << "(" <<COLOR_TYPE<<dst->dataType->name <<' '<<COLOR_VAR<< dst->name <<COLOR_RESET<< ") " << location(dst).expr()

@@ -63,7 +63,8 @@ enum class primitiveOP : uint64_t
 /*
     miscData:
         0: is cast function
-        1-63: reserved MBZ
+		1: is async routine
+        2-63: reserved MBZ
 */
 class function
 {

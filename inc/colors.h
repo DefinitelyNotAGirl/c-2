@@ -2,7 +2,7 @@
  * Created Date: Sunday January 14th 2024
  * Author: Lilith
  * -----
- * Last Modified: Sunday January 14th 2024 10:37:42 pm
+ * Last Modified: Wednesday January 17th 2024 6:20:12 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -33,3 +33,4 @@
 #define COLOR_TYPE "\033[35m"
 #define COLOR_FUNCTION "\033[34m"
 #define COLOR_VAR "\033[33m"
+#define COLOR_RED "\033[31m"

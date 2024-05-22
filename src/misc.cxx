@@ -53,7 +53,7 @@ std::string getNewName()
                 mfile.push_back(i);
         }
     }
-    return "local"CPE2_SYMBOL_SCOPE_SEP+mfile+CPE2_SYMBOL_SCOPE_SEP+"unnamed"+std::to_string(NewNameCount++);
+    return "local"CPE2_SYMBOL_SCOPE_SEP+mfile+CPE2_SYMBOL_SCOPE_SEP+"anonymous"+std::to_string(NewNameCount++);
 }
 
 uint64_t getx86MSR(__register__ reg)

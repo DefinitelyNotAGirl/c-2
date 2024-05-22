@@ -38,6 +38,11 @@
 extern std::stack<std::vector<__register__>> savedRegisters;
 extern std::stack<std::vector<uint64_t>> savedRegisterOffsets;
 
+void createSymbolHandle(std::string symbol, variable* handle);
+void createGlobalVariableHandle(std::string symbol,variable* handle,type* dataType);
+void createMemoryHandle(__register__ reg, uint64_t offset, variable* handle);
+variable createRegisterHandle(__register__ reg, type* dataType);
+
 namespace __ABI__{
 using enum __register__;
 
@@ -50,6 +55,14 @@ static void genProlouge(std::vector<std::string>& lines, scope* sc)
 {
     std::vector<std::string> tlines;
     code = &tlines;
+	if((sc->func->miscData & (1<<1)) != 0)
+	{
+		//,
+		//, thread code
+		//,
+		{
+		}
+	}
     pushRegSave();
     //scope* cs = currentScope;
     //currentScope = cs->parent;
@@ -102,6 +115,18 @@ static void genEpilouge(std::vector<std::string>& lines, scope* sc)
 	//,
 	{
 		placeSymbol(sc->name+CPE2_SYMBOL_SCOPE_SEP+"epilogue");
+	}
+	if((sc->func->miscData & (1<<1)) != 0)
+	{
+		//,
+		//, thread code
+		//,
+		{
+			mov(uint64_t(60),__register__::rax);// sys_exit
+			mov(uint64_t(0 ),__register__::rdi);// exit code = 0
+			code->push_back(getIndent()+"syscall");
+		}
+		return;
 	}
     restoreRegisters();
     popRegSave();
