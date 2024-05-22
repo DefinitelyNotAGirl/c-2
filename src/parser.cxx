@@ -48,6 +48,7 @@
 #include <DWARF.h>
 #include <colors.h>
 #include <dump.hxx>
+#include <SYS_LINUX.h>
 
 std::vector<std::string> DataCode;
 std::vector<std::string> RoDataCode;
@@ -92,11 +93,11 @@ std::string getIndent() {
 	scope* sc = currentScope;
 	std::string ret = "";
 	while (sc != nullptr) {
-		if(sc->t == scopeType::FUNCTION || sc->t == scopeType::CONDITIONAL_BLOCK || sc->t == scopeType::DUMMY || sc->t == scopeType::LOGICAL || sc->t == scopeType::TRY || sc->t == scopeType::TRY_CATCH)
+		if(sc->t == scopeType::CONDITIONAL_BLOCK || sc->t == scopeType::DUMMY || sc->t == scopeType::LOGICAL || sc->t == scopeType::TRY || sc->t == scopeType::TRY_CATCH)
 		{
 			ret += "\t";
 		}
-		else if(sc->t == scopeType::CATCH)
+		else if(sc->t == scopeType::CATCH || sc->t == scopeType::FUNCTION)
 		{
 			ret += "\t";
 			break;
@@ -946,7 +947,8 @@ variable createRegisterHandle(__register__ reg, type* dataType)
 	return var;
 }
 
-uint64_t alignToMultiple(uint64_t value, uint64_t alignment) {
+uint64_t alignToMultiple(uint64_t value, uint64_t alignment) 
+{
     // Ensure alignment is not zero to avoid division by zero
     if (alignment == 0)
         return value;
@@ -2725,6 +2727,7 @@ void parse(std::vector<line> lines)
 							sc->t = scopeType::TRY_CATCH;
 							sc->fstore = new functionStorage;
 							sc->func = new function;
+							//sdump(currentScope);
 							*(sc->func) = *(currentScope->func);
 							*(sc->fstore) = *(currentScope->fstore);
 							sc->func->code = std::vector<std::string>();
@@ -3188,6 +3191,222 @@ void parse(std::vector<line> lines)
 							else{errorCompilerBug;}
 						}
 						else{errorCompilerBug;}
+					} else if (t.text == "async") {
+//,####################################################################################################################
+//,####################################################################################################################
+//,  █████  ███████ ██    ██ ███    ██  ██████
+//, ██   ██ ██       ██  ██  ████   ██ ██
+//, ███████ ███████   ████   ██ ██  ██ ██
+//, ██   ██      ██    ██    ██  ██ ██ ██
+//, ██   ██ ███████    ██    ██   ████  ██████
+//,####################################################################################################################
+//,####################################################################################################################
+						if(options::ddebug)std::cout << "asnyc" << std::endl;
+						t = L.nextToken();
+						if(t.type != 30)
+						{
+							errorCompilerBug;
+							goto ERRORENDLINE;
+						}
+						std::vector<variable*> inputs;
+						std::vector<type*> tinputs;
+						std::vector<std::pair<variable*,variable*>> cpy;//copy from a to b
+						uint64_t stackOffset = 0;
+						while(true)
+						{
+							t = L.nextToken();
+							if(t.type == 31)
+							{
+								// end input collection
+								break;
+							}
+							if(t.type == 0)
+							{ 
+								errorCompilerBug;
+								goto ERRORENDLINE;
+							}
+							//resolve input variable
+							line ivLine = L;
+							{
+								ivLine.tpos = 0;
+								ivLine.text = t.text;
+							}
+							//dump("resolving",&ivLine,"");
+							token ivt = ivLine.nextToken();
+							variable* var = resolve(ivt);
+							if(var == nullptr)
+							{
+								error::noSuchIdentifier(t);
+								goto ERRORENDLINE;
+							}
+							if(var->storage == storageType::IMMEDIATE)
+							{
+								errorCompilerBug;
+								goto ERRORENDLINE;
+							}
+							if(var->storage == storageType::INVALID)
+							{
+								errorCompilerBug;
+								goto ERRORENDLINE;
+							}
+							//,
+							//, move inputs to stack
+							//,
+							{
+								variable* nv = new variable(*var);
+								nv->storage = storageType::MEMORY;
+								nv->reg = __register__::rax;
+								nv->offset = stackOffset;
+								stackOffset+=nv->dataType->size;
+								inputs.push_back(nv);
+								tinputs.push_back(nv->dataType);
+								cpy.push_back(std::pair<variable*,variable*>(var,nv));
+							}
+							t = L.nextToken();
+							if(t.type == 31)
+							{
+								// end input collection
+								break;
+							}
+							if(t.type == 42)
+							{
+								continue;
+							}
+						}
+						//listdump("async inputs",&inputs,"");
+						std::string threadCodeSymbol = getNewName();
+						//,
+						//, create new stack (result stored in rax)
+						//,
+						{
+							uint64_t stackSize = 0x1000;//4KiB starting stack space
+							mov(uint64_t(0),__register__::rdi); // let the kernel choose the address
+							mov(stackSize  ,__register__::rsi); // initial stack size
+							mov(uint64_t((1<<0) | (1<<1)), __register__::rdx); // read write
+							mov(uint64_t((1<<1) | (1<<5) | (1<<8)), __register__::r10); // flags: private,anonymous,growsdown
+							mov(uint64_t(0), __register__::r8);// not used with anonymous
+							mov(uint64_t(0), __register__::r9);// offset = 0
+							mov(uint64_t(9), __register__::rax);// sys_mmap
+							code->push_back(getIndent()+"syscall");
+							//-
+							//- check for mmap errors
+							//-
+							{
+								//TODO: implement error checking
+							}
+							//-
+							//- adjust base pointer
+							//-
+							{
+								//sub(stackSize,__register__::rax);
+								code->push_back(getIndent()+"sub rax, [__cpe2_exceptionFrameSize]");
+							}
+						}
+						//,
+						//, create copy of input data
+						//,
+						{
+							for(std::pair<variable*,variable*>& cpyp : cpy)
+							{
+								mov(cpyp.first,cpyp.second);
+								cpyp.second->reg = __register__::rbp;
+								cpyp.second->offset += 16;
+							}
+						}
+						//,
+						//, call system
+						//,
+						{
+							//+
+							//+ sys_clone
+							//+
+							{
+								using namespace linux_6;
+								uint64_t clone_flags = CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_THREAD | CLONE_PTRACE;
+								mov(clone_flags,__register__::rdi);
+								mov(__register__::rax,__register__::rsi);
+								//mov(__register__::rax,__register__::r14);
+								mov(56,__register__::rax);
+								code->push_back(getIndent()+"syscall");
+							}
+							variable rax = createRegisterHandle(__register__::rax,defaultUnsignedIntegerType);
+							variable* zero = getImmediateVariable(0);
+							cmp(zero,&rax);
+							//code->push_back(getIndent()+"cmove rsp, r14");
+							std::string skipSymbol = getNewName();
+							jne(skipSymbol);
+							//,
+							//, new thread code
+							//,
+							{
+								mov(__register__::rsp,__register__::r15);
+								mov(__register__::rsp,__register__::rbp);
+								code->push_back(getIndent()+"add r15, [__cpe2_exceptionFrameSize]");
+								variable exceptionFrameSize;
+								variable rsp = createRegisterHandle(__register__::rsp,defaultUnsignedIntegerType);
+								code->push_back(getIndent()+"call "+threadCodeSymbol);
+							}
+							//,
+							//, old thread code
+							//,
+							{
+								placeSymbol(skipSymbol);
+								//TODO: error handling
+							}
+						}
+						//,
+						//, create scope
+						//,
+						{
+							scope* sc = new scope;
+							function* func = new function;
+							func->__declared_file = currentFile;
+							func->__declared_line = L.lineNum;
+							func->name = threadCodeSymbol;
+							func->parameters = tinputs;
+							func->vparams = inputs;
+							func->returnType = defaultUnsignedIntegerType;
+							func->fstore = new functionStorage;
+							func->fstore->stackOffset = stackOffset;
+							func->fstore->stackSize = stackOffset;
+							func->isDeprecated = false;
+							func->isPrimitive = false;
+							func->primitiveFloat = false;
+							func->primitiveInPlace = false;
+							func->op = primitiveOP::invalid;
+							func->noReturn = true;
+							func->noDoc = true;
+							func->doExport = false;
+							func->abi = currentScope->func->abi;
+							func->symbol = threadCodeSymbol;
+							func->isLocal = false;
+							func->miscData = (1<<1);
+							sc->name = func->name;
+							sc->fstore = func->fstore;
+							sc->func = func;
+							sc->leadingSpace = currentScope->leadingSpace+tabLength;
+							sc->parent = currentScope;
+							sc->t = scopeType::FUNCTION;
+							t = L.nextToken();
+							for(variable* i : inputs)
+								sc->variables.push_back(i);
+							if(t.type == 36)
+							{
+								sc->isIndentBased = false;
+							}
+							else if(t.type == 40)
+							{
+								sc->isIndentBased = true;
+							}
+							else
+							{
+								delete sc;
+								delete func;
+								errorCompilerBug;
+								goto ERRORENDLINE;
+							}
+							updateCurrentScope(sc);
+						}
 					} else if (t.text == "template") {
 //,####################################################################################################################
 //,####################################################################################################################
