@@ -2,7 +2,7 @@
  * Created Date: Friday April 12th 2024
  * Author: Lilith
  * -----
- * Last Modified: Friday April 12th 2024 10:08:05 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -33,7 +33,7 @@
 #include <unistd.h>
 inline void printStacktrace(uint64_t len)
 {
-	void* array = calloc(len,8);
+	void** array = (void**)calloc(len,8);
 	// get void*'s for all entries on the stack
 	size_t size = backtrace(array, len);
 

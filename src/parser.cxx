@@ -51,6 +51,8 @@
 #include <SYS_LINUX.h>
 #include <issues.hxx>
 
+#define IM_NOT_STUCK nullptr
+
 using namespace issues;
 
 std::vector<std::string> DataCode;
@@ -127,7 +129,8 @@ arch* getArch(std::string name)
 	for(arch* i : architectures)
 		if(i->name == name)
 			return i;
-	return nullptr;
+	noSuchArchitecture("",originCoreHere,source(),name);
+	return IM_NOT_STUCK;
 }
 
 _system* getSystem(std::string name)
@@ -135,7 +138,8 @@ _system* getSystem(std::string name)
 	for(_system* i : systems)
 		if(i->name == name)
 			return i;
-	return nullptr;
+	noSuchSystem("",originCoreHere,source(),name);
+	return IM_NOT_STUCK;
 }
 
 /**
@@ -284,6 +288,7 @@ function* getFunction(std::string& name, std::vector<variable*>& args) {
 	func->name = name;
 	func->vparams = args;
 	noSuchFunction("",originCoreHere,source(),func,candidates);
+	return IM_NOT_STUCK;
 }
 
 /**
@@ -339,6 +344,7 @@ function* getFunction(type* returnType, std::string& name, std::vector<variable*
 	func->vparams = args;
 	func->returnType = returnType;
 	noSuchFunction("",originCoreHere,source(),func,candidates);
+	return IM_NOT_STUCK;
 }
 
 void printVariable(variable* v)
@@ -380,6 +386,7 @@ variable* getVariable(std::string name) {
 		if(i->name == name) return i;
 	}
 	noSuchVariable("",originCoreHere,source(),name);
+	return IM_NOT_STUCK;
 }
 
 /**
@@ -393,15 +400,15 @@ variable* getVariable(std::string name) {
 void declareDwarfType(type* t)
 {setANB(16);
 	t->dwarfID = ++dbgAbbrev;
-	//
-	//.debug_info
-	//
+	//.
+	//. debug_info
+	//.
 	DebugCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
 	DebugCode.push_back(getIndent()+".string \""+t->name+"\"");
 	DebugCode.push_back(getIndent()+".quad "+intToString(t->size));
-	//
-	//.debug_abbrev
-	//
+	//.
+	//. debug_abbrev
+	//.
 	DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
 	DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::TAG_class_type));
 	DebugAbbrevCode.push_back(getIndent()+".byte 0");//no children
@@ -464,17 +471,8 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
 					if(options::ddebug)
 						std::cout << "resolving integer template argument: \""+working+"\"" << std::endl;
 					variable* RTA = resolveIMM(TAT);
-					if(RTA == nullptr)
-					{
-						//error, cant resolve template argument
-						std::cerr << "ERROR: cant resolve template argument \"" << working << "\"" << std::endl;
-						return (type*)RTA;
-					}
 					if(RTA->dataType != defaultUnsignedIntegerType)
-					{
-						std::cerr << "ERROR: value for integer template argument must be of type u64 or i64" << std::endl;
-						return nullptr;
-					}
+						invalidType("",originCoreHere,source(),{defaultUnsignedIntegerType,defaultSignedIntegerType},RTA->dataType);
 					RTA->name = tt->tArgs[i]->name;
 					tempVariables.push_back(RTA);
 					if(options::ddebug)std::cout << "template argument resolved!" << std::endl;
@@ -485,10 +483,6 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
 					if(options::ddebug)
 						std::cout << "resolving typename template argument: \""+working+"\"" << std::endl;
 					type* rtype = getType(working);
-					if(rtype == nullptr)
-					{
-						return rtype;
-					}
 					tat->rtype = rtype;
 					tat->tname = tt->tArgs[i]->name;
 					targTypes.push_back(tat);
@@ -615,7 +609,7 @@ type* getType(std::string name) {
 	if(options::ddebug)
 		std::cout << "fetching type: \"" << name << "\"" << std::endl;
 	if(name == "operator*")
-		return nullptr;
+		noSuchType("",originCoreHere,source(),name);
 	for(targtype* i : targTypes)
 	{
 		if(name == i->tname)
@@ -665,12 +659,6 @@ type* getType(std::string name) {
 			t->valueType = defaultPointerType;
 		else
 			t->valueType = getType(vtn);
-		if(!t->valueType)
-		{
-			//value type does not exist
-			std::cerr << "\033[31mERROR:\033[0m \"" << name.substr(0,name.length()-1) << "\" does not name a type!" << std::endl;
-			return nullptr;
-		}
 		t->__declared_file = t->valueType->__declared_file;
 		t->__declared_line = t->valueType->__declared_line;
 		t->size = POINTER_SIZE;
@@ -731,8 +719,8 @@ type* getType(std::string name) {
 			}
 		}
 	}
-
-	return nullptr;
+	noSuchType("",originCoreHere,source(),name);
+	return IM_NOT_STUCK;
 }
 
 void printToken(token& t)
@@ -760,7 +748,8 @@ ABI* getABI(std::string name)
 	for(ABI* abi : ABIs)
 		if(abi->name == name)
 			return abi;
-	return nullptr;
+	noSuchABI("",originCoreHere,source(),name);
+	return IM_NOT_STUCK;
 }
 
 scope* lastScope = nullptr;
@@ -1272,23 +1261,58 @@ bool emitExceptionSymbols = false;
 //,####################################################################################################################
 //,####################################################################################################################
 //,####################################################################################################################
-class dummy_endline;
-typedef dummy_endline* endline;
+class dummy_endline{uint64_t __dummycontent;};
+#define endline ((dummy_endline*)0)
+class dummy_endparse{uint64_t __dummycontent;};
+#define endparse ((dummy_endparse*)0)
+void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>& lines, uint64_t& i);
+void parse(std::vector<line> lines) 
+{
+	if(lines.size() == 0)
+		return;
+	uint64_t i = 0;
+	//,
+	//, DWARF debug info
+	//,
+	{
+		if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+		{
+			//emit file debug information
+			dbgFileMax++;
+			dbgFile.push(dbgFileMax);
+			if(code)
+			{
+				std::cout << "code: "  << (void*)code << std::endl;
+				code->push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
+			}
+			else
+				TextCode.push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
+		}
+	}
+	//,
+	//, VSTC
+	//,
+	bool is_vstc_send = options::vstc && currentFile == __reqFileVSTC;
+	bool is_vsls_send = options::vsls && currentFile == __reqFileVSTC;
+	//,
+	//, parse
+	//,
+	for(line& L : lines)
+		parseline(L,is_vstc_send,is_vsls_send,lines,i);
+}
 /**
  * @brief this can pretty much be treated as the compilers core
  * @callgraph
  * @callergraph
  * @param L line to parse
+ * @param is_vstc_send wether or not to send vstc data
+ * @param is_vsls_send wether or not to send vsls data
  * @defgroup core
  */
-void parseline(line& L) 
+void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>& lines, uint64_t& i)
 {
 	try {
 		if (L.text.empty()) return;
-		//if(currentFile == __reqFileVSTC)
-		//{
-		//    std::cout << "\033[34mline "<<L.lineNum<<": " << L.text <<"\033[0m"<< std::endl;
-		//}
 		//,
 		//,	line ddebug info
 		//,
@@ -1459,9 +1483,9 @@ void parseline(line& L)
 			}
 			case (5): // directive
 				if (t.text == "#EOL") {
-					goto ENDLINE;
+					throw endline;
 				} else if (t.text == "#EOF") {
-					goto ENDPARSER;
+					throw endparse;
 				} else if (t.text == "#include") {
 //,####################################################################################################################
 //,####################################################################################################################
@@ -1595,7 +1619,7 @@ void parseline(line& L)
 						if(found)
 						{
 							//std::cout << "parser stopped by \"#pragma once\"" << std::endl;
-							goto ENDPARSER;
+							throw endparse;
 						}
 					} else if(t.text == "stack-pointer") {
 						t = L.nextToken();
@@ -1890,9 +1914,9 @@ void parseline(line& L)
 										}
 									} else {
 										invalidAttribute(
-											"",originCoreHere,source(nametoken),
+											"",originCoreHere,source(currentFile,L,attr),
 											"class",
-											attr,
+											attr.text,
 											{"nodoc","deprecated","export","mangling-..."}
 										);
 									}
@@ -2057,9 +2081,9 @@ void parseline(line& L)
 										}
 									} else {
 										invalidAttribute(
-											"",originCoreHere,source(nametoken),
+											"",originCoreHere,source(currentFile,L,attr),
 											"class",
-											attr,
+											attr.text,
 											{"nodoc","deprecated","export","mangling-...","iteratable"}
 										);
 									}
@@ -3444,8 +3468,8 @@ void parseline(line& L)
 										op = primitiveOP::PRINTSTR;
 									else {
 										invalidAttribute(
-											"",originCoreHere,source(),
-											"function",attr,
+											"",originCoreHere,source(currentFile,L,attr),
+											"function",attr.text,
 											{
 												"primitiveInPlace",
 												"primitiveFloat",
@@ -3496,8 +3520,8 @@ void parseline(line& L)
 									}
 								} else {
 									invalidAttribute(
-										"",originCoreHere,source(),
-										"function",attr,
+										"",originCoreHere,source(currentFile,L,attr),
+										"function",attr.text,
 										{
 											"primitiveInPlace",
 											"primitiveFloat",
@@ -3635,10 +3659,7 @@ void parseline(line& L)
 									//dump("added cast function",func,"");
 								}
 								else
-								{
-									std::cerr << "ERROR: typecast must take exactly 1 argument" << std::endl;
-									goto ERRORENDLINE;
-								}
+									compilerBug("typecast function must take exactly 1 argument.",originCoreHere,source(),"");
 							}
 							for(variable* vp : func->vparams)
 							{
@@ -4280,7 +4301,7 @@ void parseline(line& L)
 				{
 					L = backupLine;
 					t = backupToken;
-					resolve(t)
+					resolve(t);
 				}
 				break;
 			}

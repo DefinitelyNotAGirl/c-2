@@ -28,6 +28,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#pragma once
+
 #include <compiler.h>
 
 namespace issues {
@@ -150,6 +152,7 @@ namespace issues {
 	};
 
 	class nonImmediateArraySize : public fatal {
+	public:
 		type* valueType;
 		nonImmediateArraySize(ISSUES_CTOR_ARGS, type* valueType)
 			:valueType(valueType){ISSUES_CTOR_INIT;invoke(*this);}
@@ -172,15 +175,46 @@ namespace issues {
 	};
 
 	class noSuchFunction : public fatal {
+	public:
 		function* neededFunction;
-		std::list<function*> candidates;
-		noSuchFunction(ISSUES_CTOR_ARGS,function* neededFunction, std::list<function*> candidates)
+		std::vector<function*> candidates;
+		noSuchFunction(ISSUES_CTOR_ARGS,function* neededFunction, std::vector<function*> candidates)
 			:neededFunction(neededFunction),candidates(candidates){ISSUES_CTOR_INIT;invoke(*this);}
 	};
 
 	class noSuchVariable : public fatal {
+	public:
 		std::string name;
 		noSuchVariable(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
+	};
+
+	class noSuchMangler : public fatal {
+	public:
+		std::string name;
+		noSuchMangler(ISSUES_CTOR_ARGS,std::string name)
+			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
+	};
+
+	class noSuchSystem : public fatal {
+	public:
+		std::string name;
+		noSuchSystem(ISSUES_CTOR_ARGS,std::string name)
+			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
+	};
+
+	class noSuchArchitecture : public fatal {
+	public:
+		std::string name;
+		noSuchArchitecture(ISSUES_CTOR_ARGS,std::string name)
+			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
+	};
+
+	class invalidType : public fatal {
+	public:
+		std::list<type*> validTypes;
+		type* receivedType;
+		invalidType(ISSUES_CTOR_ARGS,std::list<type*> validTypes,type* receivedType)
+			:validTypes(validTypes),receivedType(receivedType){ISSUES_CTOR_INIT;invoke(*this);}
 	};
 }

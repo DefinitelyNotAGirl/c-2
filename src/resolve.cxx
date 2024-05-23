@@ -3,7 +3,7 @@
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 31st 2024 10:18:33 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -40,6 +40,9 @@
 #include <bits.h>
 #include <cmath>
 #include <dump.hxx>
+#include <issues.hxx>
+
+using namespace issues;
 
 void printToken(token& t);
 
@@ -52,7 +55,7 @@ litop* getLitop(std::string name)
     for(litop* l : litops)
         if(l->name == name)
             return l;
-    return nullptr;
+    noSuchLitop("",originCoreHere,source(),name);
 }
 
 /**
@@ -94,9 +97,9 @@ uint8_t HEXDIGTONUM(char dig)
         case('F'):
             return (dig - 'A'+0xA);
         default:
-            error::genericError(0x3001);
+			compilerBug("expected digit.",originCoreHere,source(),"");
     }
-    return 0;
+    compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
 }
 
 #include <numberSystem.h>
@@ -186,7 +189,10 @@ function* getTypeCastFunction(type* in, type* out)//? only checks for explicit c
 	{
 		std::cerr << "cant automatically stringify type \"" << in->name << "\"" << std::endl;
 	}
-    return nullptr;
+	function* func = new function;
+	func->name = out->name;
+	func->parameters = {in};
+    noSuchFunction("",originCoreHere,source(),func,{});
 }
 /**
  * @brief cast a variable to a different type
@@ -201,11 +207,6 @@ function* getTypeCastFunction(type* in, type* out)//? only checks for explicit c
 variable* typecastVariable(variable* in, type* targetType)
 {
     function* castfunc = getTypeCastFunction(in->dataType,targetType);
-    if(castfunc == nullptr)
-	{
-		return nullptr;
-	}
-	//sdump(castfunc);
     std::vector<variable*> args = {in};
     return call(castfunc,args);
 }
@@ -361,31 +362,16 @@ variable* resolveIMM(token& t)
 									L.twhitespace = scol;
                                     token exprt = L.nextToken();
                                     variable* rexpr = resolve(exprt);
-                                    if(rexpr == nullptr)
-                                    {
-                                        std::cerr << "ERROR: could not resolve expression" << std::endl;
-                                        return nullptr;
-                                    }
                                     //cast expression to string (char*)
                                     if(rexpr->dataType != charPointerType)
                                     {
                                         //std::cout << "casting expression to char*" << std::endl;
                                         rexpr = typecastVariable(rexpr,charPointerType);
-                                        if(rexpr == nullptr)
-                                        {
-                                            std::cerr << "type cast failed" << std::endl;
-                                            return nullptr;
-                                        }
                                     }
                                     //concat previous string with expression
                                     std::vector<variable*> args = {tvar,rexpr};
                                     std::string funcName = "operator+";
                                     function* concatFunction = getFunction(charPointerType,funcName,args);
-                                    if(!concatFunction)
-                                    {
-                                        std::cerr << "ERROR: could not find string concat function" << std::endl;
-                                        return (variable*)concatFunction;
-                                    }
                                     tvar = call(concatFunction,args);
                                     break;
                                 }
@@ -623,7 +609,7 @@ variable* resolveIMM(token& t)
                 goto resNumDefault;
             }
             else
-                return nullptr;
+				compilerBug("not sure what would cause this.",originCoreHere,source(),"");
             break;
 
         //
@@ -637,12 +623,6 @@ variable* resolveIMM(token& t)
             {
                 std::cout << "0005\x0c" << t.lineNum <<'\x0c'<< t.tcol <<'\x0c'<< (numhs*2)+numlen <<'\x0c'<<value<<'\x0c'<<numsysname<<'\n';
             }
-			//else
-			//{
-			//	std::cerr << "l0num: " << t.text << "("<<t.lineNum<<","<<t.tcol<<","<<t.Line->text<<")" << std::endl;
-			//}
-            //0xABC; ttlen = 5, numlen = 3
-            //123; ttlen = 3, numlen = 3
             if(ttlen == numlen)
                 goto skipLitopCheck;
             {
@@ -652,20 +632,6 @@ variable* resolveIMM(token& t)
                 if(options::ddebug)
                     std::cout << "checking for litop: " << litop_ << std::endl;
                 litop* l = getLitop(litop_);
-                if(l == nullptr)
-                {
-                    t.text = litop_;
-                    error::noSuchLitop(t,0);
-                    return nullptr;
-                }
-				//send vstc information
-				/*
-				std::cout << "options::vstc: " << options::vstc << std::endl;
-				std::cout << "currentFile: " << currentFile << std::endl;
-				std::cout << "__reqFileVSTC: " << __reqFileVSTC << std::endl;
-				std::cout << "!vstcDisableSend: " << !vstcDisableSend << std::endl;
-				std::cout << "t.lineNum: " << t.lineNum << std::endl;
-				*/
 				if(options::vstc && currentFile == __reqFileVSTC && !vstcDisableSend && t.lineNum != 0)
 				{
 					std::cout << "0006\x0c" << t.lineNum <<'\x0c'<< t.tcol+(numhs*2)+numlen <<'\x0c'<< l->name.length() <<'\n';
@@ -700,7 +666,7 @@ variable* resolveIMM(token& t)
             return tvar;
         }
     }
-    return nullptr;
+    noSuchIdentifier("",originCoreHere,source(),t.text);
 }
 
 #include <colors.h>
@@ -730,6 +696,85 @@ void makeNewToken(std::string& working, uint64_t i, std::vector<token>& tokens,t
     tokens.push_back(nt);
 
     working = "";
+}
+
+static void resolve_I(variable*& left, token& __leftHand, token& t)
+{
+	if(left == nullptr)
+    {
+		try {
+			left = getVariable(__leftHand.text);
+		}
+		catch(noSuchVariable e){}
+	}
+    if(left == nullptr)
+    {
+		try {
+        	if(__leftHand.text.size() >= 3)
+			{
+        		if(__leftHand.text.substr(__leftHand.text.size()-3,__leftHand.text.size()) == "++")
+        		{
+        		    //TODO: shedule operator++ to be called
+        		    left = getVariable(__leftHand.text.substr(0,__leftHand.text.size()-3));
+        		}
+			}
+		}
+		catch(noSuchVariable e){}
+    }
+    if(left == nullptr)
+    {
+		try {
+        	if(__leftHand.text.back() == ')')
+        	{
+        	    std::string fname = __leftHand.text.substr(0,__leftHand.text.find_first_of('(')-1);
+        	    __leftHand.text = __leftHand.text.substr(__leftHand.text.find_first_of('(')+1,__leftHand.text.size()-1);
+        	    std::cerr << "left over:"  << __leftHand.text << std::endl;
+        	}
+		}
+		catch(noSuchVariable e){}
+    }
+    if(left == nullptr)
+    {
+		try {
+        	char* lt = (char*)__leftHand.text.c_str();
+        	while(lt[0] != '[' && lt[0] != 0x00)
+        	    lt++;
+        	uint64_t len = (uint64_t)lt-(uint64_t)__leftHand.text.c_str();
+        	char* arraytext = (char*)calloc(0,len+1);
+        	memcpy(arraytext,__leftHand.text.c_str(),len);
+        	if(options::ddebug)
+        	    std::cout << "array: " << arraytext << std::endl;
+        	variable* array = getVariable(arraytext);
+        	if(lt[0] != 0x00 && lt[1] != 0x00)
+        	{
+        	    lt++;
+        	    char* it = lt;
+        	    while(it[0] != ']' && it[0] != 0x00)
+        	        it++;
+        	    len = (uint64_t)it-(uint64_t)lt;
+        	    char* index = (char*)calloc(0,len+1);
+        	    memcpy(index,lt,len);
+        	    if(options::ddebug)
+        	        std::cout << "index: " << index << std::endl;
+        	    line indexLine = *t.Line;
+        	    indexLine.tpos = 0;
+        	    indexLine.text = index;
+        	    token indexToken = indexLine.nextToken();
+        	    variable* index_v = resolve(indexToken);
+        	    //
+        	    std::string fname = "operator[]";
+        	    std::vector<variable*> args__;
+        	    args__.push_back(array);
+        	    args__.push_back(index_v);
+        	    function* indexOP = getFunction(fname,args__);
+        	    left = call(indexOP,args__);
+        	}
+		}
+		catch(noSuchVariable e){}
+		catch(noSuchFunction e){}
+    }
+    if(left == nullptr)
+		noSuchIdentifier("",originCoreHere,source(),__leftHand.text);
 }
 /**
  * @brief resolves any expression
@@ -1136,183 +1181,8 @@ variable* resolve(token& t)
             {
                 //cant calculate at compile time
                 std::vector<variable*> args;
-                if(left == nullptr)
-                    left = getVariable(__leftHand.text);
-                if(left == nullptr)
-                {
-                    if(__leftHand.text.size() >= 3)
-					{
-                    	if(__leftHand.text.substr(__leftHand.text.size()-3,__leftHand.text.size()) == "++")
-                    	{
-                    	    //TODO: shedule operator++ to be called
-                    	    left = getVariable(__leftHand.text.substr(0,__leftHand.text.size()-3));
-                    	}
-					}
-                }
-                if(left == nullptr)
-                {
-                    if(__leftHand.text.back() == ')')
-                    {
-                        std::string fname = __leftHand.text.substr(0,__leftHand.text.find_first_of('(')-1);
-                        __leftHand.text = __leftHand.text.substr(__leftHand.text.find_first_of('(')+1,__leftHand.text.size()-1);
-                        std::cerr << "left over:"  << __leftHand.text << std::endl;
-                    }
-                }
-                if(left == nullptr)
-                {
-                    char* lt = (char*)__leftHand.text.c_str();
-                    while(lt[0] != '[' && lt[0] != 0x00)
-                        lt++;
-                    uint64_t len = (uint64_t)lt-(uint64_t)__leftHand.text.c_str();
-                    char* arraytext = (char*)calloc(0,len+1);
-                    memcpy(arraytext,__leftHand.text.c_str(),len);
-                    if(options::ddebug)
-                        std::cout << "array: " << arraytext << std::endl;
-                    variable* array = getVariable(arraytext);
-                    if(array == nullptr)
-                        goto NOTARRAYRESL_2;
-                    if(lt[0] != 0x00 && lt[1] != 0x00)
-                    {
-                        lt++;
-                        char* it = lt;
-                        while(it[0] != ']' && it[0] != 0x00)
-                            it++;
-                        len = (uint64_t)it-(uint64_t)lt;
-                        char* index = (char*)calloc(0,len+1);
-                        memcpy(index,lt,len);
-                        if(options::ddebug)
-                            std::cout << "index: " << index << std::endl;
-                        line indexLine = *t.Line;
-                        indexLine.tpos = 0;
-                        indexLine.text = index;
-                        token indexToken = indexLine.nextToken();
-                        variable* index_v = resolve(indexToken);
-                        //
-                        std::string fname = "operator[]";
-                        std::vector<variable*> args__;
-                        args__.push_back(array);
-                        args__.push_back(index_v);
-                        function* indexOP = getFunction(fname,args__);
-                        if(indexOP)
-                            left = call(indexOP,args__);
-                        else
-                            error::functionNotFound(*t.Line);
-                    }
-                }
-                NOTARRAYRESL_2:;
-                if(left == nullptr)
-                {
-					std::cerr << "ERROR: cant resolve left expression \"" << __leftHand.text << "\"" << std::endl;
-					return nullptr;
-				}
-                if(right == nullptr)
-                    right = getVariable(__rightHand.text);
-                if(right == nullptr)
-                {
-                    if(__rightHand.text.size() >= 3){
-                    if(__rightHand.text.substr(__rightHand.text.size()-3,__rightHand.text.size()) == "++")
-                    {
-                        //TODO: shedule operator++ to be called
-                        right = getVariable(__rightHand.text.substr(0,__rightHand.text.size()-3));
-                    }}
-                }
-                if(right == nullptr)
-                {
-                    if(__rightHand.text.back() == ')')
-                    {
-                        std::string fname = __rightHand.text.substr(0,__rightHand.text.find_first_of('('));
-                        std::string args = __rightHand.text.substr(__rightHand.text.find_first_of('('),__rightHand.text.size());
-                        args = args.substr(1,args.length()-2);
-                        //std::cerr << "fname: "  << fname << std::endl;
-                        //std::cerr << "right over:"  << args << std::endl;
-                        line L;
-                        L.text = args;
-                        std::vector<variable*> _args;
-                        token at = L.nextToken();
-                        while(at.type != 0)
-                        {
-                            std::string working;
-                            //std::cout << "blub" << std::endl;
-                            while(at.type != 42 && at.type != 0)
-                            {
-                                working+=at.text;
-                                //printToken(at);
-                                at = L.nextToken();
-                            }
-                            line al;
-                            al.text = working;
-                            at = al.nextToken();
-							variable* rat = resolve(at);
-							if(rat == nullptr)
-								return nullptr;
-                            _args.push_back(rat);
-                            at = L.nextToken();
-                        }
-						type* ctype = getType(fname);
-						function* func = nullptr;
-						if(ctype != nullptr && _args.size() == 1)
-						{
-							//dump("cast in",_args[0],"");
-							//dump("cast out",ctype,"");
-							func = getTypeCastFunction(_args[0]->dataType,ctype);
-						}
-                        else
-						{
-							func = getFunction(fname,_args);
-						}
-						if(func != nullptr)
-                        	right = call(func,_args);
-                    }
-                }
-                if(right == nullptr)
-                {
-                    char* lt = (char*)__rightHand.text.c_str();
-                    while(lt[0] != '[' && lt[0] != 0x00)
-                        lt++;
-                    uint64_t len = (uint64_t)lt-(uint64_t)__rightHand.text.c_str();
-                    char* arraytext = (char*)calloc(0,len+1);
-                    memcpy(arraytext,__rightHand.text.c_str(),len);
-                    if(options::ddebug)
-                        std::cout << "array: " << arraytext << std::endl;
-                    variable* array = getVariable(arraytext);
-                    if(array == nullptr)
-                        goto NOTARRAYRESL_3;
-                    if(lt[0] != 0x00 && lt[1] != 0x00)
-                    {
-                        lt++;
-                        char* it = lt;
-                        while(it[0] != ']' && it[0] != 0x00)
-                            it++;
-                        len = (uint64_t)it-(uint64_t)lt;
-                        char* index = (char*)calloc(0,len+1);
-                        memcpy(index,lt,len);
-                        if(options::ddebug)
-                            std::cout << "index: " << index << std::endl;
-                        line indexLine = *t.Line;
-                        indexLine.tpos = 0;
-                        indexLine.text = index;
-                        token indexToken = indexLine.nextToken();
-                        variable* index_v = resolve(indexToken);
-                        //
-                        std::string fname = "operator[]";
-                        std::vector<variable*> args__;
-                        args__.push_back(array);
-                        args__.push_back(index_v);
-                        function* indexOP = getFunction(fname,args__);
-                        if(indexOP)
-                            right = call(indexOP,args__);
-                        else
-                            error::functionNotFound(*t.Line);
-                    }
-                }
-                NOTARRAYRESL_3:;
-                if(right == nullptr)
-                {
-                   //std::cout << "ERROR: cant resolve right expression \"" << __rightHand.text << "\"" << std::endl;
-                   error::noSuchIdentifier(__rightHand);
-                   return nullptr;
-                }
-
+				resolve_I(left,__leftHand, t);
+				resolve_I(right,__rightHand, t);
                 if(options::ddebug) {
                     std::cout << "left: " << std::hex << (void*)left << std::endl;
                     std::cout << "right: " << std::hex << (void*)right << std::endl;
@@ -1326,26 +1196,14 @@ variable* resolve(token& t)
                     std::cout << "calling function " << getFunctionExpression("operator"+tokens[i].text,args) << std::endl;
                 std::string fname = "operator"+tokens[i].text;
                 function* func = getFunction(fname, args);
-				if (func != nullptr) {
-					if (func->isDeprecated)
-						warn(getWarning("deprecated"), t.Line,
-							 "call to deprecated function \"" +
-								 func->name + "\"");
-					if (options::asmVerbose >= 3)
-						currentScope->func->code.push_back(
-							getIndent() + "# " + t.Line->text);
-                    //if(right->dataType == getType(defaultCharType->name+"*") && func->op == primitiveOP::assign)
-                    //{
-                    //    *LSS = getIndent()+left->name+":";
-                    //}
-                    //else
-                    //{
-                    //                    //    std::cout << right->dataType->name << " != " << defaultCharType->name+"*" << std::endl;
-                    //}
-					left = call(func, args);
-				}
-                else
-                    error::functionNotFound(*t.Line);
+				if (func->isDeprecated)
+					warn(getWarning("deprecated"), t.Line,
+						 "call to deprecated function \"" +
+							 func->name + "\"");
+				if (options::asmVerbose >= 3)
+					currentScope->func->code.push_back(
+						getIndent() + "# " + t.Line->text);
+				left = call(func, args);
             }
             else
             {
@@ -1369,10 +1227,7 @@ variable* resolve(token& t)
                 else if(tokens[i].text == "&")
                     left->immediateValue &= right->immediateValue;
                 else
-                {
-                    //std::cout << "invalid operator: " << tokens[i].text << std::endl;
-                    //invalid operator
-                }
+                    compilerBug("invalid operator",originCoreHere,source(),"");
                 //  -1   0  +1 +2
                 // 1024 * 1024 * 1024 * 1024 * 1024
                 // i+=2;
@@ -1385,152 +1240,13 @@ variable* resolve(token& t)
         token& __leftHand = tokens[0];
         //PRINT_DEBUG
         //std::cout << "lefthand: " << __leftHand.text << std::endl;
-        left = resolveIMM(__leftHand);
-        if(left == nullptr)
-        {
-            if(__leftHand.text[0] == '\"'){
-                left = resolveIMM(__leftHand);
-            }
-        }
-        if(left == nullptr)
-        {
-            left = getVariable(__leftHand.text);
-        }
-        if(left == nullptr)
-        {
-            //std::cout << "array check: " << __leftHand.text << std::endl;
-            char* lt = (char*)__leftHand.text.c_str();
-            while(lt[0] != '[' && lt[0] != 0x00)
-                lt++;
-            uint64_t len = (uint64_t)lt-(uint64_t)__leftHand.text.c_str();
-            if(len == 0)
-                goto NOTARRAYRESL_1;
-            char* arraytext = (char*)calloc(1,len+1);
-            memcpy(arraytext,__leftHand.text.c_str(),len);
-            if(options::ddebug)
-                std::cout << "array: " << arraytext << std::endl;
-            variable* array = getVariable(arraytext);
-            if(array == nullptr)
-                goto NOTARRAYRESL_1;
-            if(lt[0] != 0x00 && lt[1] != 0x00)
-            {
-                lt++;
-                char* it = lt;
-                while(it[0] != ']' && it[0] != 0x00)
-                    it++;
-                len = (uint64_t)it-(uint64_t)lt;
-                if(len == 0)
-                    goto NOTARRAYRESL_1;
-                char* index = (char*)calloc(1,len+1);
-                memcpy(index,lt,len);
-                if(options::ddebug)
-                    std::cout << "index: " << index << std::endl;
-                line indexLine = *t.Line;
-                indexLine.tpos = 0;
-                indexLine.text = index;
-                token indexToken = indexLine.nextToken();
-                variable* index_v = resolve(indexToken);
-                //
-                std::string fname = "operator[]";
-                std::vector<variable*> args__;
-                args__.push_back(array);
-                args__.push_back(index_v);
-                function* indexOP = getFunction(fname,args__);
-                if(indexOP)
-                    left = call(indexOP,args__);
-                else
-                    error::functionNotFound(*t.Line);
-            }
-        }
-        NOTARRAYRESL_1:;
-        if(left == nullptr)
-        {
-            if(__leftHand.text.back() == ')')
-            {
-                size_t fpo = __leftHand.text.find_first_of('(');
-                std::string fname = "";
-                if(fpo != std::string::npos)
-                    fname = __leftHand.text.substr(0,fpo);
-                __leftHand.text = __leftHand.text.substr(__leftHand.text.find_first_of('(')+1,__leftHand.text.size());
-                __leftHand.text.pop_back();
-                std::vector<variable*> args;
-                //std::cout << "left over: \""  << __leftHand.text <<"\""<< std::endl;
-                //std::cout << "fname: " << fname << std::endl;
-
-                std::string working;
-                for(char I : __leftHand.text)
-                {
-                    switch(I)
-                    {
-                        case(','):{
-                            token et;
-                            et.col = 0;
-                            et.Line = __leftHand.Line;
-                            et.text = working;
-                            variable* arg = resolve(et);
-							if(arg == nullptr)
-							{
-								error::noSuchIdentifier(et);
-								return nullptr;
-							}
-                            args.push_back(arg);
-                            working = "";
-                            break;
-                        }
-                        default:
-                            working.push_back(I);
-                            break;
-                    }
-                }
-                if(__leftHand.text != "")
-                {
-                    token et;
-                    et.col = 0;
-                    et.Line = __leftHand.Line;
-                    et.text = working;
-					variable* arg = resolve(et);
-					if(arg == nullptr)
-					{
-						error::noSuchIdentifier(et);
-						return nullptr;
-					}
-                    args.push_back(arg);
-                }
-                //std::cout << "fname: " << fname << std::endl;
-                function* func = getFunction(fname,args);
-				type* ctype = getType(fname);
-				if(func == nullptr && ctype == nullptr)
-				{
-					error::functionNotFound(*__leftHand.Line);
-					return nullptr;
-				}
-				if(args.size() == 1 && ctype != nullptr)
-				{
-					func = getTypeCastFunction(args[0]->dataType,ctype);
-					//left = typecastVariable(args[0],ctype);
-					if(func == nullptr)
-					{
-						error::functionNotFound(*__leftHand.Line);
-						return nullptr;
-					}
-				}
-				if(func == nullptr)
-				{
-					error::functionNotFound(*__leftHand.Line);
-					return nullptr;
-				}
-                if(options::ddebug)
-                    std::cout << "calling function " << getFunctionExpression(fname,args) << std::endl;
-                left = call(func,args);
-                //std::cout << "left dt: " <<std::hex<<(void*) left->dataType << std::endl;
-            }
-        }
-        //std::cout << "blub blub immediate blub blub" << std::endl;
+		try {
+			left = resolveIMM(__leftHand);
+		}
+		catch(noSuchLitop e){}
+		resolve_I(left,__leftHand, t);
     }
-
-    //if(!left)
-    //{
-    //    std::cout << "\033[31mERROR:\033[0m could not evaluate expression \""+t.text+"\"" << std::endl;
-    //}
+	if(left == nullptr)
+		noSuchIdentifier("",originCoreHere,source(currentFile,*t.Line,t),t.text);
     return left;
 }
