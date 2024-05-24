@@ -42,6 +42,8 @@
 #include <dump.hxx>
 #include <issues.hxx>
 
+#define IM_NOT_STUCK 0
+
 using namespace issues;
 
 void printToken(token& t);
@@ -56,6 +58,7 @@ litop* getLitop(std::string name)
         if(l->name == name)
             return l;
     noSuchLitop("",originCoreHere,source(),name);
+	return IM_NOT_STUCK;
 }
 
 /**
@@ -100,6 +103,7 @@ uint8_t HEXDIGTONUM(char dig)
 			compilerBug("expected digit.",originCoreHere,source(),"");
     }
     compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
+	return IM_NOT_STUCK;
 }
 
 #include <numberSystem.h>
@@ -193,6 +197,7 @@ function* getTypeCastFunction(type* in, type* out)//? only checks for explicit c
 	func->name = out->name;
 	func->parameters = {in};
     noSuchFunction("",originCoreHere,source(),func,{});
+	return IM_NOT_STUCK;
 }
 /**
  * @brief cast a variable to a different type
@@ -225,7 +230,7 @@ variable* typecastVariable(variable* in, type* targetType)
  */
 variable* resolveIMM(token& t)
 {
-    if(options::ddebug)
+    if(options::ddebug || true)
         std::cout << "resolveIMM: " << t.text << std::endl;
     uint64_t value = 0;
     uint64_t len = t.text.length();
@@ -304,11 +309,6 @@ variable* resolveIMM(token& t)
                                 std::vector<variable*> args = {tvar,estrv};
                                 std::string funcName = "operator+";
                                 function* concatFunction = getFunction(charPointerType,funcName,args);
-                                if(!concatFunction)
-                                {
-                                    std::cerr << "ERROR: could not find string concat function" << std::endl;
-                                    return (variable*)concatFunction;
-                                }
                                 tvar = call(concatFunction,args);
                             }
                             goto endLoop2;
@@ -337,9 +337,7 @@ variable* resolveIMM(token& t)
                                         switch(t.text[tpos])
                                         {
                                             case(0x00):
-                                                //error, end of text buffer mid expression
-                                                std::cerr << "error: end of text buffer mid expression" << std::endl;
-                                                goto endLoop2;
+                                                unexpectedBufferTermination("expression buffer",originCoreHere,source(currentFile,*t.Line,t));
                                             case('}'):
                                                 if(cbracec==0)
                                                     goto expressionEnded;
@@ -609,7 +607,8 @@ variable* resolveIMM(token& t)
                 goto resNumDefault;
             }
             else
-				compilerBug("not sure what would cause this.",originCoreHere,source(),"");
+				std::cout << "cock: " << t.text[0] << std::endl;
+				noSuchIdentifier("",originCoreHere,source(currentFile,*t.Line,t),t.text);
             break;
 
         //
@@ -667,6 +666,7 @@ variable* resolveIMM(token& t)
         }
     }
     noSuchIdentifier("",originCoreHere,source(),t.text);
+	return IM_NOT_STUCK;
 }
 
 #include <colors.h>
@@ -674,6 +674,7 @@ variable* resolveIMM(token& t)
 void sendVstcToken(token& t);
 void makeNewToken(std::string& working, uint64_t i, std::vector<token>& tokens,token& t)
 {
+	std::cout << "creating new token: \"" << working << "\"" << std::endl;
     if(working == "")
         return;
     token nt;
@@ -723,15 +724,13 @@ static void resolve_I(variable*& left, token& __leftHand, token& t)
     }
     if(left == nullptr)
     {
-		try {
-        	if(__leftHand.text.back() == ')')
-        	{
-        	    std::string fname = __leftHand.text.substr(0,__leftHand.text.find_first_of('(')-1);
-        	    __leftHand.text = __leftHand.text.substr(__leftHand.text.find_first_of('(')+1,__leftHand.text.size()-1);
-        	    std::cerr << "left over:"  << __leftHand.text << std::endl;
-        	}
-		}
-		catch(noSuchVariable e){}
+        if(__leftHand.text.back() == ')')
+        {
+            std::string fname = __leftHand.text.substr(0,__leftHand.text.find_first_of('(')-1);
+			uint64_t fstart = __leftHand.text.find_first_of('(')+1;
+            __leftHand.text = __leftHand.text.substr(fstart,(__leftHand.text.size()-fstart)-1);
+            //left = resolve(__leftHand);
+        }
     }
     if(left == nullptr)
     {
@@ -776,6 +775,77 @@ static void resolve_I(variable*& left, token& __leftHand, token& t)
     if(left == nullptr)
 		noSuchIdentifier("",originCoreHere,source(),__leftHand.text);
 }
+static void resolve_II(variable*& left, token& __leftHand, token& t)
+{
+	std::cout << "resolve_II: " << __leftHand.text << std::endl;
+	if(left == nullptr)
+    {
+        if(__leftHand.text.back() == ')')
+        {
+            size_t fpo = __leftHand.text.find_first_of('(');
+            std::string fname = "";
+            if(fpo != std::string::npos)
+                fname = __leftHand.text.substr(0,fpo);
+            __leftHand.text = __leftHand.text.substr(__leftHand.text.find_first_of('(')+1,__leftHand.text.size());
+            __leftHand.text.pop_back();
+            std::vector<variable*> args;
+            //std::cout << "dong over: \""  << __leftHand.text <<"\""<< std::endl;
+            //std::cout << "fname: " << fname << std::endl;
+            std::string working;
+            for(char I : __leftHand.text)
+            {
+                switch(I)
+                {
+                    case(','):{
+                        token et;
+                        et.col = 0;
+                        et.Line = __leftHand.Line;
+                        et.text = working;
+                        variable* arg = resolve(et);
+                        args.push_back(arg);
+                        working = "";
+                        break;
+                    }
+                    default:
+                        working.push_back(I);
+                        break;
+                }
+            }
+            if(__leftHand.text != "")
+            {
+                token et;
+                et.col = 0;
+                et.Line = __leftHand.Line;
+                et.text = working;
+				variable* arg = resolve(et);
+                args.push_back(arg);
+            }
+            //std::cout << "fname: " << fname << std::endl;
+			function* func = nullptr;
+			type* ctype = nullptr;
+			try {
+				func = getFunction(fname,args);
+			}catch(noSuchFunction e){func = nullptr;}
+			try {
+				ctype = getType(fname);
+				if(args.size() == 1)
+					func = getTypeCastFunction(args[0]->dataType,ctype);
+			}
+			catch(noSuchFunction e){func = nullptr;}
+			catch(noSuchType e){ctype == nullptr;}
+			if(func == nullptr)
+			{
+				func = new function;
+				func->name = fname;
+				func->vparams = args;
+				noSuchFunction("",originCoreHere,source(),func,{});
+			}
+            if(options::ddebug)
+                std::cout << "calling function " << getFunctionExpression(fname,args) << std::endl;
+            left = call(func,args);
+        }
+    }
+}
 /**
  * @brief resolves any expression
  * 
@@ -818,7 +888,7 @@ variable* resolve(token& t)
     if(options::ddebug)
     {
 		//std::cout << "expression: " << t.text << COLOR_FUNCTION << " ("<<t.Line->lineNum<<","<<t.Line->text<<","<<t.lineNum<<")" << COLOR_RESET << std::endl;
-		dump("expression",&t,"");
+		dump("expression",&t.text,"");
 		//printStacktrace(50);
 	}
 
@@ -905,11 +975,11 @@ variable* resolve(token& t)
                 }
                 break;
             case('*'):
-				if(getType(working) != nullptr)
-				{
+				try {
+					getType(working);
 					working.push_back(t.text[i]);
 					break;
-				}
+				}catch(noSuchType e){}
                 switch(t.text[i+1])
                 {
                     case('='):
@@ -1075,11 +1145,11 @@ variable* resolve(token& t)
             case('('):{
                 //collect expression in parentheses
                 //std::cout << "collecting parentheses" << std::endl;
-                function* func = getFunction(working);
-				type* ctype = getType(working);
-                if(func != nullptr)
-                {
-                    std::string expr;
+				type* ctype = nullptr;
+				function* func = nullptr;
+				try {
+					func = getFunction(working);
+					std::string expr;
                     //std::cout << "collecting function call" << std::endl;
                     while(t.text[i] != ')' && t.text[i]!= 0x00 && i<t.text.length())
                     {
@@ -1089,9 +1159,10 @@ variable* resolve(token& t)
                     if(t.text[i] == ')')
                         expr.push_back(')');
                     working+=expr;
-                }
-				else if(ctype != nullptr)
-				{
+					break;
+				}catch(noSuchFunction e){}
+				try {
+					ctype = getType(working);
 					std::string expr;
                     //std::cout << "collecting constructor call" << std::endl;
                     while(t.text[i] != ')' && t.text[i]!= 0x00 && i<t.text.length())
@@ -1102,32 +1173,28 @@ variable* resolve(token& t)
                     if(t.text[i] == ')')
                         expr.push_back(')');
                     working+=expr;
-				}
-                else
+					break;
+				}catch(noSuchType e){}
+
+                i++;
+                std::string expr;
+				uint64_t st = i;
+                while(t.text[i] != ')' && t.text[i]!= 0x00 && i<t.text.length())
                 {
+                    expr.push_back(t.text[i]);
                     i++;
-                    std::string expr;
-					uint64_t st = i;
-                    while(t.text[i] != ')' && t.text[i]!= 0x00 && i<t.text.length())
-                    {
-                        expr.push_back(t.text[i]);
-                        i++;
-                    }
-                    token et;
-					//std::cerr << "t: " << t.text << std::endl;
-                    et.text = expr;
-                    et.col = t.col;
-                    et.Line = t.Line;
-                    et.type = t.type;
-					et.lineNum = t.lineNum;
-					et.tcol = st+t.tcol;
-                    variable* rv = resolve(et);
-                    if(rv != nullptr)
-                    {
-                        if(rv->storage == storageType::IMMEDIATE)
-                            working+=std::to_string(rv->immediateValue);
-                    }
                 }
+                token et;
+				//std::cerr << "t: " << t.text << std::endl;
+                et.text = expr;
+                et.col = t.col;
+                et.Line = t.Line;
+                et.type = t.type;
+				et.lineNum = t.lineNum;
+				et.tcol = st+t.tcol;
+                variable* rv = resolve(et);
+                if(rv->storage == storageType::IMMEDIATE)
+                    working+=std::to_string(rv->immediateValue);
                 break;
             }
             case('\t'):
@@ -1168,15 +1235,43 @@ variable* resolve(token& t)
         )
         {
             token& __leftHand = tokens[i-1];
+			token& __rightHand = tokens[i+1];
+			token& __center = tokens[i];
+			#if false
+				std::cout << "tokens:\n";
+				if(left == nullptr)
+					dump("left",&__leftHand.text,"    ");
+				else
+					dump("left",left,"    ");
+				if(right == nullptr)
+					dump("right",&__rightHand.text,"    ");
+				else
+					dump("right",right,"    ");
+			#endif
+			#if true
+				std::cout << "tokens: ";
+				std::cout << "\"" << ((left == nullptr || true) ? (__leftHand.text) : (left->name)) << "\"";
+				std::cout << " | ";
+				std::cout << "\"" << ((right == nullptr || true) ? (__rightHand.text) : (right->name)) << "\"";
+				std::cout << std::endl;
+			#endif
             if(left == nullptr)
             {
-                __leftHand = tokens[i-1];
-                //std::cout << "lh: " << __leftHand.text << std::endl;
-                left = resolveIMM(__leftHand);
+                try {
+					left = resolve(__leftHand);
+				}
+				catch(noSuchIdentifier e){left = nullptr;}
             }
-            token& __rightHand = tokens[i+1];
             //PRINT_DEBUG
-            right = resolveIMM(__rightHand);
+			try {
+				right = resolve(__rightHand);
+			}
+			catch(noSuchIdentifier e)
+			{
+				right = nullptr;
+				//std::cout << "unresolved: " << e.name << std::endl;
+				//e.printStackTrace();
+			}
             if(left == nullptr || right == nullptr)
             {
                 //cant calculate at compile time
@@ -1192,9 +1287,9 @@ variable* resolve(token& t)
                 args.push_back(left);
                 if(tokens[i].text != "++")
                     args.push_back(right);
-                if(options::ddebug)
-                    std::cout << "calling function " << getFunctionExpression("operator"+tokens[i].text,args) << std::endl;
                 std::string fname = "operator"+tokens[i].text;
+				if(options::ddebug || true)
+                    std::cout << "calling function " << getFunctionExpression(fname,args) << std::endl;
                 function* func = getFunction(fname, args);
 				if (func->isDeprecated)
 					warn(getWarning("deprecated"), t.Line,
@@ -1226,27 +1321,39 @@ variable* resolve(token& t)
                     left->immediateValue |= right->immediateValue;
                 else if(tokens[i].text == "&")
                     left->immediateValue &= right->immediateValue;
-                else
-                    compilerBug("invalid operator",originCoreHere,source(),"");
+                //else
+                //    compilerBug("invalid operator \""+tokens[i].text+"\"",originCoreHere,source(),"");
                 //  -1   0  +1 +2
                 // 1024 * 1024 * 1024 * 1024 * 1024
                 // i+=2;
             }
         }
+		else
+			unexpectedTokenType("",originCoreHere,source(currentFile,*(tokens[i].Line),tokens[i]),{3,6,7,11,1});
     }
     TokenSize0:;
     if(tokens.size() == 1)
     {
         token& __leftHand = tokens[0];
-        //PRINT_DEBUG
-        //std::cout << "lefthand: " << __leftHand.text << std::endl;
+		std::cout << "last token: " << __leftHand.text << std::endl;
+		try {
+			left = getVariable(__leftHand.text);
+		}
+		catch(noSuchVariable e){}
 		try {
 			left = resolveIMM(__leftHand);
 		}
-		catch(noSuchLitop e){}
-		resolve_I(left,__leftHand, t);
+		catch(noSuchIdentifier e)
+		{
+			std::cout << "rimm error: "<<std::endl;
+			e.printStackTrace();
+		}
+		if(left == nullptr)
+			resolve_II(left,__leftHand, t);
     }
 	if(left == nullptr)
+	{
 		noSuchIdentifier("",originCoreHere,source(currentFile,*t.Line,t),t.text);
+	}
     return left;
 }

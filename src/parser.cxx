@@ -112,6 +112,54 @@ std::string getIndent() {
 	return ret;
 }
 
+static std::string getTokenTypename(uint64_t t)
+{
+    switch(t)
+    {
+        case(12):
+        case(9):
+            return "typename";
+        case(2):
+            return "immediate";
+        case(3):
+            return "operator";
+        case(6):
+        case(7):
+            return "string literal";
+        case(8):
+            return "keyword";
+        case(10):
+            return "variable name";
+		case(11):
+            return "function name";
+        case(1):
+            return "new unique identifier";
+        case(30):
+            return "opening round bracket";
+        case(31):
+            return "closing round bracket";
+        case(32):
+            return "opening sqaure bracket";
+        case(33):
+            return "closing square bracket";
+        case(34):
+            return "opening angle bracket";
+        case(35):
+            return "closing angle bracket";
+        case(36):
+            return "opening curly bracket";
+        case(37):
+            return "closing curly bracket";
+        case(40):
+            return "colon";
+        case(41):
+            return "semicolon";
+        case(42):
+            return "comma";
+    }
+    return "INVALID TOKEN TYPE ("+std::to_string(t)+")";
+}
+
 function* getFunction(std::string name)
 { 
 	scope* sc = currentScope;
@@ -179,7 +227,11 @@ std::string getPrintFunctionExpression(function* f, bool showVariableNames) {
  * @return std::string 
  */
 std::string getFunctionExpression(function* f, bool showVariableNames = false) {
-	std::string res = f->returnType->name + " " + f->name + "(";
+	std::string res;
+	if(f->returnType != nullptr)
+		res += f->returnType->name + " " + f->name + "(";
+	else
+		res += f->name + "(";
 	if (!showVariableNames) {
 		for (type* i : f->parameters)
 			res += i->name + ",";
@@ -287,6 +339,8 @@ function* getFunction(std::string& name, std::vector<variable*>& args) {
 	function* func = new function;
 	func->name = name;
 	func->vparams = args;
+	for(variable* v : func->vparams)
+		func->parameters.push_back(v->dataType);
 	noSuchFunction("",originCoreHere,source(),func,candidates);
 	return IM_NOT_STUCK;
 }
@@ -603,7 +657,7 @@ bool ignoreClassArg0 = false;
  * @callergraph
  * 
  * @param name 
- * @return type*, nullptr if no type of the given name exists
+ * @return type*, throws an exception if the type cannot be found
  */
 type* getType(std::string name) {
 	if(options::ddebug)
@@ -4167,8 +4221,8 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									}
 								}
 							}
-							if(options::ddebug)
-								std::cout << "declared variable: " << var->name << std::endl;
+							if(options::ddebug && false)
+								dump("declared variable",var,"");
 							//debug
 							if(true /*check for GAS (true for now)*/ && options::debugSymbols)
 							{setANB(16);
@@ -4328,9 +4382,6 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 	catch(issues::compilerBug e)
 	{
 		std::cerr << COLOR_RED << "COMPILER BUG" << COLOR_RESET << ": " << e.msg << "\n";
-		std::cerr << "origin: " << "\n";
-		for(origin& orig : e.trace)
-			std::cerr << "    " << orig.module << " " << orig.file << ":" << orig.line << "\n";
 		if(e.github == "")
 		{
 			std::cerr 
@@ -4348,6 +4399,61 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 			<< "that triggered this bug that would be very helpful.\n"
 			;
 		}
+		e.src.print();
+		//e.printTrace();
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(noSuchType e)
+	{
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": \"" << e.name << "\" does not name a type.\n";
+		//e.printTrace();
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(unexpectedTokenType e)
+	{
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": unexpected " << getTokenTypename(e.src.sourceToken.type) << ", expected ";
+		std::cerr << getTokenTypename(e.expectedTokenTypes.back());
+		e.expectedTokenTypes.pop_back();
+		while(e.expectedTokenTypes.size() > 1)
+		{
+			std::cerr << "," << getTokenTypename(e.expectedTokenTypes.back());
+		}
+		if(e.expectedTokenTypes.size() == 1)
+		{
+			std::cerr << " or " << getTokenTypename(e.expectedTokenTypes.back());
+		}
+		std::cerr << std::endl;
+		//e.printTrace();
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(noSuchIdentifier e)
+	{
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": unresolved identifier \"" << e.name << "\"\n";
+		//e.printTrace();
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(noSuchFunction e)
+	{
+		std::string neededExpression = getFunctionExpression(e.neededFunction);
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": no such function: " << neededExpression << "\n";
+		if(e.candidates.size() > 0)
+		{
+			std::cerr << "candidates: \n";
+			for(function* candidate : e.candidates)
+				std::cerr << "    " << getFunctionExpression(candidate,(candidate->vparams.size() > 0)) << "\n";
+		}
+		//e.printTrace();
+		e.printStackTrace();
+		std::cerr << "\r\n" << std::endl;
+		ErrorCount++;
 	}
 	if (++i >= lines.size()) return;
 }

@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 31st 2024 10:18:33 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -32,6 +32,9 @@
 #include <class_token.h>
 #include <common.h>
 #include <compiler.h>
+#include <issues.hxx>
+
+using namespace issues;
 
 //token types:
 // 0 - none
@@ -266,33 +269,33 @@ uint64_t tokenType(std::string& s)
 	else if(s.substr(0,strlen("mangling-")) == "mangling-")return 20;
 	else if(s.substr(0,strlen("ABI-")) == "ABI-")return 21;
 	else if(s.substr(0,strlen("SYMBOL-")) == "SYMBOL-")return 21;
-	else
-	{
-		//some identifier
+	//
+	//some identifier
+	//
+	try {
 		type* gt = getType(s);
-		if(gt != nullptr)
-		{
-			ltobj = gt;
-			return 9;//typename
-		}
+		ltobj = gt;
+		return 9;//typename
+	} catch(noSuchType e){}
+	try {
 		variable* gv = getVariable(s);
-		if(gv != nullptr)
-		{
-			ltobj = gv;
-			if(gv->isParameter)
-				return 60;
-			return 10;//variable
-		}
+		ltobj = gv;
+		if(gv->isParameter)
+			return 60;
+		return 10;//variable
+	} catch(noSuchVariable e){}
+	try {
 		function* gf = getFunction(s);
 		if(gf != nullptr)
 		{
 			ltobj = gf;
 			return 11;//function
 		}
-
-		//new identifier
-		return 1;//identifier
-	}
+	} catch(noSuchFunction e){}
+	//
+	//new identifier
+	//
+	return 1;
 }
 
 void sendVstcToken(token& t)
@@ -475,18 +478,20 @@ token line::nextToken(bool saveInfo)
 			case('|'):
 				goto skipReferenceTypeCheck;
 			case('&'):
-				if(getType(t.text) != nullptr)
+				try {
+					getType(t.text);
 					goto __default;
-				//else
-				//    std::cout << "\"" << t.text <<"\" != \"" << "operator" << this->text[I] <<"\"" << std::endl;
+				} catch(noSuchType e){}
 			case('/'):
 				skipReferenceTypeCheck:;
 				if(t.text.substr(0,strlen("operator")) == "operator" && t.text.back() == this->text[I])
 					goto __default;
 				goto skipPointerTypeCheck;
 			case('*'):
-				if(getType(t.text) != nullptr)
+				try {
+					getType(t.text);
 					goto __default;
+				} catch(noSuchType e){}
 			case('%'):
 			case('!'):
 				skipPointerTypeCheck:;

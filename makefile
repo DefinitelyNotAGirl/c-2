@@ -98,7 +98,7 @@ clean:
 	$(info  	DELETE	build/$(ABIDIR)/*.d)
 
 compiler:  $(OBJECTS_asm_asm) $(OBJECTS_asm_s) $(OBJECTS_cpp_cxx) $(OBJECTS_cpp_cpp) $(OBJECTS_c_c)
-	@$(LD) -g -rdynamic $(OBJECTS_asm_asm) $(OBJECTS_asm_s) $(OBJECTS_cpp_cxx) $(OBJECTS_cpp_cpp) $(OBJECTS_c_c) -Llib/ -lc -lstdc++ -lcargparse -o cp2
+	@$(LD) -g -rdynamic $(OBJECTS_asm_asm) $(OBJECTS_asm_s) $(OBJECTS_cpp_cxx) $(OBJECTS_cpp_cpp) $(OBJECTS_c_c) -Llib/ -lc -lstdc++ -lcargparse -lbacktrace -o cp2
 	$(info  	$(LD)	$@)
 
 docs:
