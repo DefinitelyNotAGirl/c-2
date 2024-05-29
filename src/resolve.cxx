@@ -215,6 +215,30 @@ variable* typecastVariable(variable* in, type* targetType)
     std::vector<variable*> args = {in};
     return call(castfunc,args);
 }
+
+#include <iomanip>
+/**
+ * @brief dumps a string and it's memory content in a table-style format
+ * 
+ * @param str string to dump
+ */
+static void dumpString(const std::string& str) {
+    // Print all characters on the first line
+    for (char c : str) {
+        std::cout << ' ' << c << " ";
+    }
+    std::cout << std::endl;
+
+    // Print the memory contents in hexadecimal format on the second line
+    for (unsigned char c : str) {
+        std::cout << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(c) << ' ';
+    }
+    std::cout << std::endl;  // Move to the next line
+
+    // Reset stream to decimal mode
+    std::cout << std::dec;
+    std::cout << std::endl;  // Move to the next line
+}
 /**
  * @brief resolves immediate values such as numbers and string literals
  * 
@@ -230,8 +254,11 @@ variable* typecastVariable(variable* in, type* targetType)
  */
 variable* resolveIMM(token& t)
 {
-    if(options::ddebug || true)
-        std::cout << "resolveIMM: " << t.text << std::endl;
+    if(options::ddebug)
+	{
+		std::cout << "resolveIMM:"<< std::endl;
+		dumpString(t.text);
+	}
     uint64_t value = 0;
     uint64_t len = t.text.length();
     bool checkLitop = false;
@@ -607,8 +634,9 @@ variable* resolveIMM(token& t)
                 goto resNumDefault;
             }
             else
-				std::cout << "cock: " << t.text[0] << std::endl;
+			{
 				noSuchIdentifier("",originCoreHere,source(currentFile,*t.Line,t),t.text);
+			}
             break;
 
         //
@@ -623,7 +651,9 @@ variable* resolveIMM(token& t)
                 std::cout << "0005\x0c" << t.lineNum <<'\x0c'<< t.tcol <<'\x0c'<< (numhs*2)+numlen <<'\x0c'<<value<<'\x0c'<<numsysname<<'\n';
             }
             if(ttlen == numlen)
-                goto skipLitopCheck;
+            {
+				goto skipLitopCheck;
+			}
             {
                 if(options::ddebug)
                     std::cout << "pre litop value: " <<std::dec<< value << std::endl;
@@ -674,7 +704,7 @@ variable* resolveIMM(token& t)
 void sendVstcToken(token& t);
 void makeNewToken(std::string& working, uint64_t i, std::vector<token>& tokens,token& t)
 {
-	std::cout << "creating new token: \"" << working << "\"" << std::endl;
+	//std::cout << "creating new token: \"" << working << "\"" << std::endl;
     if(working == "")
         return;
     token nt;
@@ -777,7 +807,7 @@ static void resolve_I(variable*& left, token& __leftHand, token& t)
 }
 static void resolve_II(variable*& left, token& __leftHand, token& t)
 {
-	std::cout << "resolve_II: " << __leftHand.text << std::endl;
+	//std::cout << "resolve_II: " << __leftHand.text << std::endl;
 	if(left == nullptr)
     {
         if(__leftHand.text.back() == ')')
@@ -861,6 +891,11 @@ static void resolve_II(variable*& left, token& __leftHand, token& t)
  */
 variable* resolve(token& t)
 {
+	if(t.text.front() == '(' && t.text.back() == ')')
+	{
+		t.tcol++;
+		t.text = t.text.substr(1,t.text.size()-2);
+	}
     if(options::ddebug)
     {
         std::cout << "resolving token: " << t.text << std::endl;
@@ -885,10 +920,10 @@ variable* resolve(token& t)
     }
     //vstcDisableSend = false;
 
-    if(options::ddebug)
+    if(options::ddebug || true)
     {
-		//std::cout << "expression: " << t.text << COLOR_FUNCTION << " ("<<t.Line->lineNum<<","<<t.Line->text<<","<<t.lineNum<<")" << COLOR_RESET << std::endl;
-		dump("expression",&t.text,"");
+		std::cout << "expression: " << t.text << COLOR_FUNCTION << " ("<<t.Line->lineNum<<","<<t.Line->text<<","<<t.lineNum<<")" << COLOR_RESET << std::endl;
+		//dump("expression",&t.text,"");
 		//printStacktrace(50);
 	}
 
@@ -1248,7 +1283,7 @@ variable* resolve(token& t)
 				else
 					dump("right",right,"    ");
 			#endif
-			#if true
+			#if false
 				std::cout << "tokens: ";
 				std::cout << "\"" << ((left == nullptr || true) ? (__leftHand.text) : (left->name)) << "\"";
 				std::cout << " | ";
@@ -1288,7 +1323,7 @@ variable* resolve(token& t)
                 if(tokens[i].text != "++")
                     args.push_back(right);
                 std::string fname = "operator"+tokens[i].text;
-				if(options::ddebug || true)
+				if(options::ddebug)
                     std::cout << "calling function " << getFunctionExpression(fname,args) << std::endl;
                 function* func = getFunction(fname, args);
 				if (func->isDeprecated)
@@ -1335,7 +1370,7 @@ variable* resolve(token& t)
     if(tokens.size() == 1)
     {
         token& __leftHand = tokens[0];
-		std::cout << "last token: " << __leftHand.text << std::endl;
+		//std::cout << "last token: " << __leftHand.text << std::endl;
 		try {
 			left = getVariable(__leftHand.text);
 		}
@@ -1345,11 +1380,13 @@ variable* resolve(token& t)
 		}
 		catch(noSuchIdentifier e)
 		{
-			std::cout << "rimm error: "<<std::endl;
-			e.printStackTrace();
+			//std::cout << "rimm error: "<<std::endl;
+			//e.printStackTrace();
 		}
 		if(left == nullptr)
+		{
 			resolve_II(left,__leftHand, t);
+		}
     }
 	if(left == nullptr)
 	{
