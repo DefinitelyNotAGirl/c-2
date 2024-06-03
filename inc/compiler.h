@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -33,11 +33,11 @@ class ABI;
 
 #include <common.h>
 #include <options.h>
-#include <class_line.h>
+#include <class_variable.h>
 #include <class_token.h>
+#include <class_line.h>
 #include <class_type.h>
 #include <class_litop.h>
-#include <class_variable.h>
 #include <storage.h>
 #include <function.h>
 #include <class_scope.h>
@@ -67,8 +67,7 @@ extern std::vector<std::string> startObjFiles;
 
 extern std::vector<std::string> dependencies;
 
-variable* resolve(token& t);
-variable* resolveIMM(char* token);
+variable* resolve(token& ft);
 
 std::string getIndent();
 
@@ -90,6 +89,7 @@ variable* getRegisterHandle(__register__ reg);
 std::string getPrintFunctionExpression(function* f, bool showVariableNames = false);
 
 std::string getNewName();
+std::string getNewVariableName();
 
 ABI* getABI(std::string name);
 

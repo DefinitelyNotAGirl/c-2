@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -136,6 +136,14 @@ int main(int argc, char** argv)
     if(options::fcpl != 3 && options::ddebug)
         std::cout << "cpu privilege level: " << options::fcpl << std::endl;
     globalScope->name = "global";
+	globalScope->func = new function;
+	globalScope->func->abi = defaultABI;
+	globalScope->func->fstore = new functionStorage;
+	globalScope->fstore = globalScope->func->fstore;
+	globalScope->func->returnType = nullptr;
+	globalScope->func->name = "global function";
+	globalScope->func->symbol = "cpe2InitiateGlobals";
+	codeGenUpdateFuction();
     if(options::ffreestanding)
         options::fnoautoinclude = true;
     moClassID = 1;

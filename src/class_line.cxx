@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 31st 2024 10:18:33 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -32,6 +32,9 @@
 #include <class_token.h>
 #include <common.h>
 #include <compiler.h>
+#include <issues.hxx>
+
+using namespace issues;
 
 //token types:
 // 0 - none
@@ -49,6 +52,7 @@
 // 12 - built in primitive type
 // 13 - short OP
 // 14 - description directive
+// 15 - builtin function name
 /**/
 // 20 - attribute
 // 21 - attribute (function only)
@@ -167,6 +171,7 @@ uint64_t tokenType(std::string& s)
 	else if(s[0] == '<')return 3;
 	else if(s[0] == '|')return 3;
 	else if(s[0] == '&')return 3;
+	else if(s[0] == '±')return 3;
 	//keywords
 	else if(s == "if")return 8;
 	else if(s == "else")return 8;
@@ -197,6 +202,15 @@ uint64_t tokenType(std::string& s)
 	else if(s == "mul")return 13;
 	else if(s == "div")return 13;
 	else if(s == "cast")return 13;
+	//builtin functions
+	else if(s == "memcpy")return 15;
+	else if(s == "sizeof")return 15;
+	else if(s == "typeof")return 15;
+	else if(s == "nameof")return 15;
+	else if(s == "memset")return 15;
+	else if(s == "addressof")return 15;
+	else if(s == "goto")return 15;
+	else if(s == "call")return 15;
 	//attributes
 	else if(s == "export")return 20;
 	else if(s == "public")return 20;
@@ -266,33 +280,33 @@ uint64_t tokenType(std::string& s)
 	else if(s.substr(0,strlen("mangling-")) == "mangling-")return 20;
 	else if(s.substr(0,strlen("ABI-")) == "ABI-")return 21;
 	else if(s.substr(0,strlen("SYMBOL-")) == "SYMBOL-")return 21;
-	else
-	{
-		//some identifier
+	//
+	//some identifier
+	//
+	try {
 		type* gt = getType(s);
-		if(gt != nullptr)
-		{
-			ltobj = gt;
-			return 9;//typename
-		}
+		ltobj = gt;
+		return 9;//typename
+	} catch(noSuchType e){}
+	try {
 		variable* gv = getVariable(s);
-		if(gv != nullptr)
-		{
-			ltobj = gv;
-			if(gv->isParameter)
-				return 60;
-			return 10;//variable
-		}
+		ltobj = gv;
+		if(gv->isParameter)
+			return 60;
+		return 10;//variable
+	} catch(noSuchVariable e){}
+	try {
 		function* gf = getFunction(s);
 		if(gf != nullptr)
 		{
 			ltobj = gf;
 			return 11;//function
 		}
-
-		//new identifier
-		return 1;//identifier
-	}
+	} catch(noSuchFunction e){}
+	//
+	//new identifier
+	//
+	return 1;
 }
 
 void sendVstcToken(token& t)
@@ -393,12 +407,14 @@ token line::nextToken(bool saveInfo)
 					case('<'):
 					case('>'):
 					case('&'):
+					case('±'):
 					case('|'):
 					case('!'):
 						goto __default;
 				}
 				if(t.text == "operator==")
 					goto __default;
+				skipAssignmentCheck:;
 				goto skipTemplateCheck;
 			case('<'):
 				for(typeTemplate* i : typeTemplates)
@@ -470,23 +486,26 @@ token line::nextToken(bool saveInfo)
 					goto __default;
 				if(t.text == "SYMBOL")
 					goto __default;
+			case('±'):
 			case('+'):
 				skipManglerAndAbiCheck:;
 			case('|'):
 				goto skipReferenceTypeCheck;
 			case('&'):
-				if(getType(t.text) != nullptr)
+				try {
+					getType(t.text);
 					goto __default;
-				//else
-				//    std::cout << "\"" << t.text <<"\" != \"" << "operator" << this->text[I] <<"\"" << std::endl;
+				} catch(noSuchType e){}
 			case('/'):
 				skipReferenceTypeCheck:;
 				if(t.text.substr(0,strlen("operator")) == "operator" && t.text.back() == this->text[I])
 					goto __default;
 				goto skipPointerTypeCheck;
 			case('*'):
-				if(getType(t.text) != nullptr)
+				try {
+					getType(t.text);
 					goto __default;
+				} catch(noSuchType e){}
 			case('%'):
 			case('!'):
 				skipPointerTypeCheck:;

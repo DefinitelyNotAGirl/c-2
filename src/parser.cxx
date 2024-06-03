@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 31st 2024 10:18:33 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -49,6 +49,11 @@
 #include <colors.h>
 #include <dump.hxx>
 #include <SYS_LINUX.h>
+#include <issues.hxx>
+
+#define IM_NOT_STUCK nullptr
+
+using namespace issues;
 
 std::vector<std::string> DataCode;
 std::vector<std::string> RoDataCode;
@@ -107,6 +112,54 @@ std::string getIndent() {
 	return ret;
 }
 
+static std::string getTokenTypename(uint64_t t)
+{
+    switch(t)
+    {
+        case(12):
+        case(9):
+            return "typename";
+        case(2):
+            return "immediate";
+        case(3):
+            return "operator";
+        case(6):
+        case(7):
+            return "string literal";
+        case(8):
+            return "keyword";
+        case(10):
+            return "variable name";
+		case(11):
+            return "function name";
+        case(1):
+            return "new unique identifier";
+        case(30):
+            return "opening round bracket";
+        case(31):
+            return "closing round bracket";
+        case(32):
+            return "opening sqaure bracket";
+        case(33):
+            return "closing square bracket";
+        case(34):
+            return "opening angle bracket";
+        case(35):
+            return "closing angle bracket";
+        case(36):
+            return "opening curly bracket";
+        case(37):
+            return "closing curly bracket";
+        case(40):
+            return "colon";
+        case(41):
+            return "semicolon";
+        case(42):
+            return "comma";
+    }
+    return "INVALID TOKEN TYPE ("+std::to_string(t)+")";
+}
+
 function* getFunction(std::string name)
 { 
 	scope* sc = currentScope;
@@ -124,7 +177,8 @@ arch* getArch(std::string name)
 	for(arch* i : architectures)
 		if(i->name == name)
 			return i;
-	return nullptr;
+	noSuchArchitecture("",originCoreHere,source(),name);
+	return IM_NOT_STUCK;
 }
 
 _system* getSystem(std::string name)
@@ -132,7 +186,8 @@ _system* getSystem(std::string name)
 	for(_system* i : systems)
 		if(i->name == name)
 			return i;
-	return nullptr;
+	noSuchSystem("",originCoreHere,source(),name);
+	return IM_NOT_STUCK;
 }
 
 /**
@@ -172,7 +227,11 @@ std::string getPrintFunctionExpression(function* f, bool showVariableNames) {
  * @return std::string 
  */
 std::string getFunctionExpression(function* f, bool showVariableNames = false) {
-	std::string res = f->returnType->name + " " + f->name + "(";
+	std::string res;
+	if(f->returnType != nullptr)
+		res += f->returnType->name + " " + f->name + "(";
+	else
+		res += f->name + "(";
 	if (!showVariableNames) {
 		for (type* i : f->parameters)
 			res += i->name + ",";
@@ -204,24 +263,9 @@ std::string getFunctionExpression(std::string name,
 	for (variable* i : args)
 	{
 		if(i == nullptr)
-		{
-			//,
-			//, dump compiler state
-			//,
-			{
-				errorCompilerBug;
-				//sdump(currentScope);
-				sdump(i);
-				sdump(&name);
-				printStacktrace(50);
-			}
-			continue;
-		}
+			compilerBug("(variable* i : args) == nullptr",originCoreHere,source(),"");
 		if(i->dataType == nullptr)
-		{
-			std::cout << "variable " << name << " has no data type" << std::endl;
-			continue;
-		}
+			compilerBug("(variable* i : args)->dataType == nullptr",originCoreHere,source(),"");
 		res += i->dataType->name + ",";
 	}
 	if (res.back() == ',') 
@@ -292,11 +336,13 @@ function* getFunction(std::string& name, std::vector<variable*>& args) {
 		}
 		sc = sc->parent;
 	}
-	error::candidateExpressions.clear();
-	error::functionExpr = getFunctionExpression(name, args);
-	for (function* candidate : candidates)
-		error::candidateExpressions.push_back(getFunctionExpression(candidate));
-	return nullptr;
+	function* func = new function;
+	func->name = name;
+	func->vparams = args;
+	for(variable* v : func->vparams)
+		func->parameters.push_back(v->dataType);
+	noSuchFunction("",originCoreHere,source(),func,candidates);
+	return IM_NOT_STUCK;
 }
 
 /**
@@ -347,11 +393,12 @@ function* getFunction(type* returnType, std::string& name, std::vector<variable*
 		}
 		sc = sc->parent;
 	}
-	error::candidateExpressions.clear();
-	error::functionExpr = getFunctionExpression(name, args);
-	for (function* candidate : candidates)
-		error::candidateExpressions.push_back(getFunctionExpression(candidate));
-	return nullptr;
+	function* func = new function;
+	func->name = name;
+	func->vparams = args;
+	func->returnType = returnType;
+	noSuchFunction("",originCoreHere,source(),func,candidates);
+	return IM_NOT_STUCK;
 }
 
 void printVariable(variable* v)
@@ -392,7 +439,8 @@ variable* getVariable(std::string name) {
 	{
 		if(i->name == name) return i;
 	}
-	return nullptr;
+	noSuchVariable("",originCoreHere,source(),name);
+	return IM_NOT_STUCK;
 }
 
 /**
@@ -406,15 +454,15 @@ variable* getVariable(std::string name) {
 void declareDwarfType(type* t)
 {setANB(16);
 	t->dwarfID = ++dbgAbbrev;
-	//
-	//.debug_info
-	//
+	//.
+	//. debug_info
+	//.
 	DebugCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
 	DebugCode.push_back(getIndent()+".string \""+t->name+"\"");
 	DebugCode.push_back(getIndent()+".quad "+intToString(t->size));
-	//
-	//.debug_abbrev
-	//
+	//.
+	//. debug_abbrev
+	//.
 	DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
 	DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::TAG_class_type));
 	DebugAbbrevCode.push_back(getIndent()+".byte 0");//no children
@@ -434,7 +482,6 @@ struct targtype
 std::vector<targtype*> targTypes;
 
 void updateCurrentScope(scope* sc);
-variable* resolveIMM(token& t);
 std::string c2oLocExpr(variable* v);
 extern bool vstcDisableSend;
 /**
@@ -476,18 +523,11 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
 				{
 					if(options::ddebug)
 						std::cout << "resolving integer template argument: \""+working+"\"" << std::endl;
-					variable* RTA = resolveIMM(TAT);
-					if(RTA == nullptr)
-					{
-						//error, cant resolve template argument
-						std::cerr << "ERROR: cant resolve template argument \"" << working << "\"" << std::endl;
-						return (type*)RTA;
-					}
+					variable* RTA = resolve(TAT);
+					if(RTA->storage != storageType::IMMEDIATE)
+						nonImmediateIntegerTemplateArgument("",originCoreHere,source(currentFile,L,TAT));
 					if(RTA->dataType != defaultUnsignedIntegerType)
-					{
-						std::cerr << "ERROR: value for integer template argument must be of type u64 or i64" << std::endl;
-						return nullptr;
-					}
+						invalidType("",originCoreHere,source(),{defaultUnsignedIntegerType,defaultSignedIntegerType},RTA->dataType);
 					RTA->name = tt->tArgs[i]->name;
 					tempVariables.push_back(RTA);
 					if(options::ddebug)std::cout << "template argument resolved!" << std::endl;
@@ -498,19 +538,13 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
 					if(options::ddebug)
 						std::cout << "resolving typename template argument: \""+working+"\"" << std::endl;
 					type* rtype = getType(working);
-					if(rtype == nullptr)
-					{
-						return rtype;
-					}
 					tat->rtype = rtype;
 					tat->tname = tt->tArgs[i]->name;
 					targTypes.push_back(tat);
 					if(options::ddebug)std::cout << "template argument resolved!" << std::endl;
 				}
 				else if(tt->tArgs[i]->Type == 3)
-				{
-					errorCompilerBug;
-				}
+					compilerBug("tt->tArgs[i]->Type == 3, missing implentation.",originCoreHere,source(),"");
 				//prepare for next argument
 				working = "";
 				i++;
@@ -624,13 +658,13 @@ bool ignoreClassArg0 = false;
  * @callergraph
  * 
  * @param name 
- * @return type*, nullptr if no type of the given name exists
+ * @return type*, throws an exception if the type cannot be found
  */
 type* getType(std::string name) {
 	if(options::ddebug)
 		std::cout << "fetching type: \"" << name << "\"" << std::endl;
 	if(name == "operator*")
-		return nullptr;
+		noSuchType("",originCoreHere,source(),name);
 	for(targtype* i : targTypes)
 	{
 		if(name == i->tname)
@@ -680,12 +714,6 @@ type* getType(std::string name) {
 			t->valueType = defaultPointerType;
 		else
 			t->valueType = getType(vtn);
-		if(!t->valueType)
-		{
-			//value type does not exist
-			std::cerr << "\033[31mERROR:\033[0m \"" << name.substr(0,name.length()-1) << "\" does not name a type!" << std::endl;
-			return nullptr;
-		}
 		t->__declared_file = t->valueType->__declared_file;
 		t->__declared_line = t->valueType->__declared_line;
 		t->size = POINTER_SIZE;
@@ -746,8 +774,8 @@ type* getType(std::string name) {
 			}
 		}
 	}
-
-	return nullptr;
+	noSuchType("",originCoreHere,source(),name);
+	return IM_NOT_STUCK;
 }
 
 void printToken(token& t)
@@ -775,7 +803,8 @@ ABI* getABI(std::string name)
 	for(ABI* abi : ABIs)
 		if(abi->name == name)
 			return abi;
-	return nullptr;
+	noSuchABI("",originCoreHere,source(),name);
+	return IM_NOT_STUCK;
 }
 
 scope* lastScope = nullptr;
@@ -1287,13 +1316,11 @@ bool emitExceptionSymbols = false;
 //,####################################################################################################################
 //,####################################################################################################################
 //,####################################################################################################################
-/**
- * @brief this can pretty much be treated as the compilers core
- * @callgraph
- * @callergraph
- * @param lines code to parse
- * @defgroup core
- */
+class dummy_endline{uint64_t __dummycontent;};
+#define endline ((dummy_endline*)0)
+class dummy_endparse{uint64_t __dummycontent;};
+#define endparse ((dummy_endparse*)0)
+void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>& lines, uint64_t& i);
 void parse(std::vector<line> lines) 
 {
 	if(lines.size() == 0)
@@ -1322,26 +1349,25 @@ void parse(std::vector<line> lines)
 	//,
 	bool is_vstc_send = options::vstc && currentFile == __reqFileVSTC;
 	bool is_vsls_send = options::vsls && currentFile == __reqFileVSTC;
-	while (true) {
-		//,####################################################################################################################
-		//,####################################################################################################################
-		//,####################################################################################################################
-		//,####################################################################################################################
-		//, ██████  ███████ ██████      ██      ██ ███    ██ ███████      ██████  ██████  ██████  ███████
-		//, ██   ██ ██      ██   ██     ██      ██ ████   ██ ██          ██      ██    ██ ██   ██ ██
-		//, ██████  █████   ██████      ██      ██ ██ ██  ██ █████       ██      ██    ██ ██   ██ █████
-		//, ██      ██      ██   ██     ██      ██ ██  ██ ██ ██          ██      ██    ██ ██   ██ ██
-		//, ██      ███████ ██   ██     ███████ ██ ██   ████ ███████      ██████  ██████  ██████  ███████
-		//,####################################################################################################################
-		//,####################################################################################################################
-		//,####################################################################################################################
-		//,####################################################################################################################
-		line& L = lines[i];
-		if (L.text.empty()) break;
-		//if(currentFile == __reqFileVSTC)
-		//{
-		//    std::cout << "\033[34mline "<<L.lineNum<<": " << L.text <<"\033[0m"<< std::endl;
-		//}
+	//,
+	//, parse
+	//,
+	for(line& L : lines)
+		parseline(L,is_vstc_send,is_vsls_send,lines,i);
+}
+/**
+ * @brief this can pretty much be treated as the compilers core
+ * @callgraph
+ * @callergraph
+ * @param L line to parse
+ * @param is_vstc_send wether or not to send vstc data
+ * @param is_vsls_send wether or not to send vsls data
+ * @defgroup core
+ */
+void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>& lines, uint64_t& i)
+{
+	try {
+		if (L.text.empty()) return;
 		//,
 		//,	line ddebug info
 		//,
@@ -1448,11 +1474,9 @@ void parse(std::vector<line> lines)
 				case(1):
 					L.tpos = 0;
 					__typeTemplate->code.push_back(L);
-					goto ENDLINE;
-					break;
+					throw endline;
 				default:
-					errorCompilerBug;
-					goto ERRORENDLINE;
+					compilerBug("parser default.",originCoreHere,source(),"");
 			}
 		}
 		if(true /*check for GAS (true for now)*/ && options::debugSymbols)
@@ -1514,9 +1538,9 @@ void parse(std::vector<line> lines)
 			}
 			case (5): // directive
 				if (t.text == "#EOL") {
-					goto ENDLINE;
+					throw endline;
 				} else if (t.text == "#EOF") {
-					goto ENDPARSER;
+					throw endparse;
 				} else if (t.text == "#include") {
 //,####################################################################################################################
 //,####################################################################################################################
@@ -1552,10 +1576,11 @@ void parse(std::vector<line> lines)
 								}
 							}
 							else
-								error::noSuchFile(t);
+								noSuchFile("",originCoreHere,source(currentFile,L,t),inc,{});
 							break;
 						}
 						case (34):
+							std::list<std::string> includePathsChecked;
 							t = L.nextToken();
 							//std::string fname =
 							//	t.text.substr(1, t.text.length() - 2);
@@ -1575,6 +1600,8 @@ void parse(std::vector<line> lines)
 									dependencies.push_back(inc);
 									goto sysIncludeSuccess;
 								}
+								else
+									includePathsChecked.push_back(inc);
 								inc += ".h2";
 								if (std::filesystem::exists(inc)) {
 									std::string rstFile = currentFile;
@@ -1586,8 +1613,10 @@ void parse(std::vector<line> lines)
 									dependencies.push_back(inc);
 									goto sysIncludeSuccess;
 								}
+								else
+									includePathsChecked.push_back(inc);
 							}
-							error::noSuchFile(t);
+							noSuchFile("",originCoreHere,source(currentFile,L,t),inc,includePathsChecked);
 							sysIncludeSuccess:;
 							if(true /*check for GAS (true for now)*/ && options::debugSymbols)
 							{
@@ -1631,12 +1660,7 @@ void parse(std::vector<line> lines)
 					} else if (t.text == "ABI") {
 						t			  = L.nextToken();
 						ABI* abi = getABI(t.text);
-						if(abi == nullptr)
-						{
-							error::noSuchABI(t);
-						}
-						else
-							defaultABI = abi;
+						defaultABI = abi;
 					} else if(t.text == "once") {
 						bool found = false;
 						for(std::string& i : includedFiles)
@@ -1650,7 +1674,7 @@ void parse(std::vector<line> lines)
 						if(found)
 						{
 							//std::cout << "parser stopped by \"#pragma once\"" << std::endl;
-							goto ENDPARSER;
+							throw endparse;
 						}
 					} else if(t.text == "stack-pointer") {
 						t = L.nextToken();
@@ -1885,12 +1909,7 @@ void parse(std::vector<line> lines)
 							goto recheckLspecAttribEnd;
 						}
 						if(t.type != 31)
-						{
-							printToken(t);
-							std::cout << "text: " << text << std::endl;
-							errorCompilerBug;
-							goto ERRORENDLINE;
-						}
+							unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{31});
 						t.text = text;
 					}
 					attribs.push_back(t);
@@ -1949,8 +1968,12 @@ void parse(std::vector<line> lines)
 													  << std::endl;
 										}
 									} else {
-										error::invalidClassAttribute(attr);
-										goto ERRORENDLINE;
+										invalidAttribute(
+											"",originCoreHere,source(currentFile,L,attr),
+											"class",
+											attr.text,
+											{"nodoc","deprecated","export","mangling-..."}
+										);
 									}
 								}
 								if (ntype->name.back() == ':')
@@ -1989,11 +2012,8 @@ void parse(std::vector<line> lines)
 //,####################################################################################################################
 						t = L.nextToken();
 						switch (t.type) {
-							case (9): {
-								// class redefinition error
-								error::expectedNewUnique(t);
-								break;
-							}
+							case(9):
+								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{9});
 							case (1): {
 								type* ntype		  = new type;
 								ntype->regMode = 0;
@@ -2051,11 +2071,6 @@ void parse(std::vector<line> lines)
 													}
 												} else if (t.type == 9) {
 													type* it = getType(t.text);
-													if (it == nullptr) {
-														error::noSuchType(t);
-														delete ntype;
-														goto ERRORENDLINE;
-													}
 													for (variable m :
 														 it->members) {
 														m.offset += startOffset;
@@ -2073,8 +2088,7 @@ void parse(std::vector<line> lines)
 													case(42):
 														break;
 													default:
-														error::noSuchType(t);
-														delete ntype;
+														unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{40,41,42});
 												}
 												t = L.nextToken();
 											}
@@ -2121,8 +2135,12 @@ void parse(std::vector<line> lines)
 													  << std::endl;
 										}
 									} else {
-										error::invalidClassAttribute(attr);
-										goto ERRORENDLINE;
+										invalidAttribute(
+											"",originCoreHere,source(currentFile,L,attr),
+											"class",
+											attr.text,
+											{"nodoc","deprecated","export","mangling-...","iteratable"}
+										);
 									}
 								}
 								mangling->mangle(ntype);
@@ -2152,8 +2170,7 @@ void parse(std::vector<line> lines)
 								} else if (t.type == 41) {
 									mOUT(moClassID, ntype);
 								} else {
-									printToken(t);
-									errorCompilerBug;
+									unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{40,41});
 								}
 								if(templateMode == 0)
 								{
@@ -2167,9 +2184,7 @@ void parse(std::vector<line> lines)
 								break;
 							}
 							default:
-								// error unexpected token
-								error::expectedNewUnique(t);
-								break;
+								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{1});
 						}
 					} else if (t.text == "litop") {
 //,####################################################################################################################
@@ -2206,17 +2221,11 @@ void parse(std::vector<line> lines)
 											switch (t.type) {
 												case (9): {
 													type* ct = getType(t.text);
-													if (ct == nullptr) {
-														error::noSuchType(t);
-														delete lop;
-														goto ERRORENDLINE;
-													}
 													break;
 												}
 												default:
-													error::noSuchType(t);
 													delete lop;
-													goto ERRORENDLINE;
+													unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{9});
 											}
 										} else {
 											t = L.nextToken();
@@ -2226,13 +2235,12 @@ void parse(std::vector<line> lines)
 										}
 										break;
 									default:
-										error::expectedShortop(t);
+										unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{13});
 								}
 								break;
 							}
-							default: {
-								error::expectedNewUnique(t);
-							}
+							default:
+								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{1});
 						}
 					} else if (t.text == "namespace") {
 //,####################################################################################################################
@@ -2294,10 +2302,7 @@ void parse(std::vector<line> lines)
 //,####################################################################################################################
 						if(options::ddebug)std::cout << "return" << std::endl;
 						if(currentScope->t == scopeType::GLOBAL)
-						{
-							error::lbGlobalScope(t);
-							goto ERRORENDLINE;
-						}
+							invalidUseOfKeywordInScope("",originCoreHere,source(currentFile,L,t),currentScope);
 						t = L.nextToken();
 						variable* retVal = resolve(t);
 						variable* ret = new variable;
@@ -2306,20 +2311,7 @@ void parse(std::vector<line> lines)
 						ret->storage = storageType::REGISTER;
 						ret->reg = currentScope->func->abi->integerReturn;
 						ret->dataType = currentScope->func->returnType;
-						if(retVal == nullptr)
-						{
-							error::genericError(0x2001);
-							delete ret;
-							goto ERRORENDLINE;
-						}
-						else if(ret == nullptr)
-						{
-							error::genericError(0x2002);
-							delete ret;
-							goto ERRORENDLINE;
-						}
-						else
-							mov(retVal,ret);
+						mov(retVal,ret);
 						jump(currentScope->func,currentScope->func->symbol+CPE2_SYMBOL_SCOPE_SEP+"epilogue");
 						delete ret;
 					} else if (t.text == "while") {
@@ -2351,17 +2343,8 @@ void parse(std::vector<line> lines)
 						conditionLine.tpos = 0;
 						conditionLine.text = L.restText();
 						token cond = conditionLine.nextToken();
-						//std::cout << "condition: " << cond.text << std::endl;
 						variable* condition = resolve(cond);
-						//cmp(__false__,condition);
-						if(jumplastcondition != nullptr)
-						{
-							jumplastcondition(sc->name);
-						}
-						else
-						{
-							errorCompilerBug;
-						}
+						jumplastcondition(sc->name);
 						if(options::asmSepComments)putComment("");
 						//prepare for body
 						updateCurrentScope(sc);
@@ -2425,17 +2408,8 @@ void parse(std::vector<line> lines)
 						placeSymbol(sc->reentrySymbol);
 						line conditionLine = lines[++i];
 						token cond = conditionLine.nextToken();
-						//std::cout << "condition: " << cond.text << std::endl;
 						variable* condition = resolve(cond);
-						//cmp(__false__,condition);
-						if(jumplastcondition != nullptr)
-						{
-							jumplastcondition(sc->name);
-						}
-						else
-						{
-							errorCompilerBug;
-						}
+						jumplastcondition(sc->name);
 						if(options::asmSepComments)putComment("");
 						//parse end line
 						updateCurrentScope(sc);
@@ -2471,10 +2445,7 @@ void parse(std::vector<line> lines)
 //,####################################################################################################################
 					} else if (t.text == "if") {
 						if(currentScope->t == scopeType::GLOBAL)
-						{
-							error::lbGlobalScope(t);
-							goto ERRORENDLINE;
-						}
+							invalidUseOfKeywordInScope("",originCoreHere,source(currentFile,L,t),currentScope);
 						if(options::ddebug)std::cout << "if" << std::endl;
 						if(options::asmSepComments)putComment("");
 						scope* sc = new scope;
@@ -2559,14 +2530,7 @@ void parse(std::vector<line> lines)
 						//std::cout << "condition: " << cl.text << std::endl;
 						variable* condition = resolve(cond);
 						//cmp(__false__,condition);
-						if(jumplastcondition != nullptr)
-						{
-							jumplastcondition(sc->name);
-						}
-						else
-						{
-							errorCompilerBug;
-						}
+						jumplastcondition(sc->name);
 						if(options::asmSepComments)putComment("");
 						//set return symbol
 						updateCurrentScope(sc);
@@ -2582,10 +2546,7 @@ void parse(std::vector<line> lines)
 //,####################################################################################################################
 					} else if (t.text == "else") {
 						if(currentScope->t == scopeType::GLOBAL)
-						{
-							error::lbGlobalScope(t);
-							goto ERRORENDLINE;
-						}
+							invalidUseOfKeywordInScope("",originCoreHere,source(currentFile,L,t),currentScope);
 						t = L.nextToken();
 						if(t.text == "if")
 						{
@@ -2662,14 +2623,7 @@ void parse(std::vector<line> lines)
 							variable* condition = resolve(cond);
 							variable* __false__ = getImmediateVariable(0);
 							//cmp(__false__,condition);
-							if(jumplastcondition != nullptr)
-							{
-								jumplastcondition(sc->name);
-							}
-							else
-							{
-								errorCompilerBug;
-							}
+							jumplastcondition(sc->name);
 							if(options::asmSepComments)putComment("");
 							//set return symbol
 							updateCurrentScope(sc);
@@ -2797,9 +2751,8 @@ void parse(std::vector<line> lines)
 							}
 							else
 							{
-								errorCompilerBug;
 								delete sc;
-								goto ERRORENDLINE;
+								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{40,36});
 							}
 							sc->t = scopeType::TRY;
 							sc->fstore = new functionStorage;
@@ -2853,31 +2806,9 @@ void parse(std::vector<line> lines)
 								t = L.nextToken();
 							}
 							if(t.type != 9)
-							{
-								//not a type name, error
-								error::expectedTypename(t);
-								goto ERRORENDLINE;
-							}
+								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{9});
 							catchType = getType(t.text);
 							handlerSymbol = std::string("____cpe2")+CPE2_SYMBOL_SCOPE_SEP+"exceptions"+CPE2_SYMBOL_SCOPE_SEP+"handler_"+CPE2_SYMBOL_SCOPE_SEP+catchType->mangledName;
-							#if false
-							if(catchType->ExceptionOffset == 0)
-							{
-								if(resources::ExceptionOffsets.count(catchType->name) == 1)
-								{
-									//std::cout << "catch type found, " << catchType->name << " : " << resources::ExceptionOffsets[catchType->name] << std::endl;
-									catchType->ExceptionOffset = resources::ExceptionOffsets[catchType->name];
-								}
-								else
-								{
-									catchType->ExceptionOffset = nextExceptionTypeOffset;
-									resources::ExceptionOffsets.insert({
-										std::pair<std::string,uint64_t>(catchType->name,catchType->ExceptionOffset)
-									});
-									nextExceptionTypeOffset+=8;
-								}
-							}
-							#endif
 						}
 						sc->name += CPE2_SYMBOL_SCOPE_SEP + catchType->mangledName;
 						//,
@@ -2887,11 +2818,7 @@ void parse(std::vector<line> lines)
 						{
 							t = L.nextToken();
 							if(t.type != 1)
-							{
-								//not a new unique identifier, error
-								error::expectedNewUnique(t);
-								goto ERRORENDLINE;
-							}
+								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{1});
 							var = new variable;
 							var->dataType = catchType;
 							var->name = t.text;
@@ -2912,19 +2839,11 @@ void parse(std::vector<line> lines)
 								t = L.nextToken();
 							}
 							if(t.type == 40)
-							{
 								sc->isIndentBased = true;
-							}
 							else if(t.type == 36)
-							{
 								sc->isIndentBased = false;
-							}
 							else
-							{
-								errorCompilerBug;
-								delete sc;
-								goto ERRORENDLINE;
-							}
+								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{40,36});
 						}
 						sc->func->fstore->stackOffset = alignToMultiple(sc->func->fstore->stackOffset,16);
 						if(sc->func->fstore->stackOffset > sc->func->fstore->stackSize)
@@ -3054,10 +2973,7 @@ void parse(std::vector<line> lines)
 //,####################################################################################################################
 						if(options::ddebug)std::cout << "throw" << std::endl;
 						if(currentScope->t == scopeType::GLOBAL)
-						{
-							error::lbGlobalScope(t);
-							goto ERRORENDLINE;
-						}
+							invalidUseOfKeywordInScope("",originCoreHere,source(currentFile,L,t),currentScope);
 						t = L.nextToken();
 						//,
 						//, get data to throw
@@ -3145,17 +3061,17 @@ void parse(std::vector<line> lines)
 							if(t.text == "data")
 							{
 								t = L.nextToken();
-								variable* vsize = resolveIMM(t);
-								if(vsize == nullptr){error::expectedIntegerImmediate(t);}
+								line vsizel(t);
+								token vsizet = vsizel.nextToken();
+								variable* vsize = resolve(vsizet);
+								if(vsize->storage != storageType::IMMEDIATE)
+									compilerBug("non immediate",originCoreHere,source(currentFile,L,t),"");
 								uint64_t size = vsize->immediateValue;
 								t = L.nextToken();
 								std::string name = t.text;
 								for(std::string sym : resourceSymbols){
 									if(sym == name)
-									{
-										std::cerr << "WARNING: symbol \"" << name << "\" already exists." << std::endl;
-										goto ERRORENDLINE;
-									}
+										compilerBug("symbol already exists.",originCoreHere,source(currentFile,L,t),"");
 								}
 								resourceSymbols.push_back(name);
 								RoDataCode.push_back(".align "+intToString(size));
@@ -3179,7 +3095,9 @@ void parse(std::vector<line> lines)
 										emitExceptionSymbols = true;
 										if(t.type != 0)
 										{
-											variable* val = resolveIMM(t);
+											variable* val = resolve(t);
+											if(val->storage != storageType::IMMEDIATE)
+												compilerBug("non immediate",originCoreHere,source(currentFile,L,t),"");
 											if(val != nullptr)
 												exceptionoffset+=val->immediateValue;
 										}
@@ -3188,9 +3106,11 @@ void parse(std::vector<line> lines)
 									}
 								}
 							}
-							else{errorCompilerBug;}
+							else
+								compilerBug("invalid symbol type",originCoreHere,source(currentFile,L,t),"");
 						}
-						else{errorCompilerBug;}
+						else
+							compilerBug("invalid resource type",originCoreHere,source(currentFile,L,t),"");
 					} else if (t.text == "async") {
 //,####################################################################################################################
 //,####################################################################################################################
@@ -3204,10 +3124,7 @@ void parse(std::vector<line> lines)
 						if(options::ddebug)std::cout << "asnyc" << std::endl;
 						t = L.nextToken();
 						if(t.type != 30)
-						{
-							errorCompilerBug;
-							goto ERRORENDLINE;
-						}
+							unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{30});
 						std::vector<variable*> inputs;
 						std::vector<type*> tinputs;
 						std::vector<std::pair<variable*,variable*>> cpy;//copy from a to b
@@ -3221,10 +3138,7 @@ void parse(std::vector<line> lines)
 								break;
 							}
 							if(t.type == 0)
-							{ 
-								errorCompilerBug;
-								goto ERRORENDLINE;
-							}
+								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{31,9});
 							//resolve input variable
 							line ivLine = L;
 							{
@@ -3234,21 +3148,10 @@ void parse(std::vector<line> lines)
 							//dump("resolving",&ivLine,"");
 							token ivt = ivLine.nextToken();
 							variable* var = resolve(ivt);
-							if(var == nullptr)
-							{
-								error::noSuchIdentifier(t);
-								goto ERRORENDLINE;
-							}
 							if(var->storage == storageType::IMMEDIATE)
-							{
-								errorCompilerBug;
-								goto ERRORENDLINE;
-							}
+								compilerBug("var->storage == storageType::IMMEDIATE",originCoreHere,source(currentFile,L,t),"");
 							if(var->storage == storageType::INVALID)
-							{
-								errorCompilerBug;
-								goto ERRORENDLINE;
-							}
+								compilerBug("var->storage == storageType::INVALID",originCoreHere,source(currentFile,L,t),"");
 							//,
 							//, move inputs to stack
 							//,
@@ -3391,20 +3294,11 @@ void parse(std::vector<line> lines)
 							for(variable* i : inputs)
 								sc->variables.push_back(i);
 							if(t.type == 36)
-							{
 								sc->isIndentBased = false;
-							}
 							else if(t.type == 40)
-							{
 								sc->isIndentBased = true;
-							}
 							else
-							{
-								delete sc;
-								delete func;
-								errorCompilerBug;
-								goto ERRORENDLINE;
-							}
+								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{36,40});
 							updateCurrentScope(sc);
 						}
 					} else if (t.text == "template") {
@@ -3436,8 +3330,7 @@ void parse(std::vector<line> lines)
 										else
 										{
 											delete ta;
-											error::expectedTemplateArg(t);
-											goto ERRORENDLINE;
+											compilerBug("invalid template argument type",originCoreHere,source(currentFile,L,t),"");
 										}
 										break;
 									case(35):
@@ -3446,8 +3339,7 @@ void parse(std::vector<line> lines)
 										break;
 									default:
 										delete ta;
-										error::expectedTemplateArg(t);
-										goto ERRORENDLINE;
+										unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{35,50});
 								}
 								t = L.nextToken();
 								//printToken(t);
@@ -3467,9 +3359,7 @@ void parse(std::vector<line> lines)
 										goto TEMPLATENOARGS;
 										break;
 									default:
-										error::expectedNewUnique(t);
-										delete ta;
-										goto ERRORENDLINE;
+										unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{35,1});
 								}
 								templateArgs.push_back(ta);
 							}
@@ -3490,10 +3380,6 @@ void parse(std::vector<line> lines)
 						uint64_t arraySizeCount = 0;
 						bool isArray = 0;
 						type* it = getType(t.text);
-						if (it == nullptr) {
-							error::noSuchType(t);
-							goto ERRORENDLINE;
-						}
 						t				 = L.nextToken();
 						line arrayCountLine = L;
 						arrayCountLine.tpos = 0;
@@ -3510,10 +3396,7 @@ void parse(std::vector<line> lines)
 							token sizeToken = arrayCountLine.nextToken();
 							variable* size = resolve(sizeToken);
 							if(size->storage != storageType::IMMEDIATE)
-							{
-								error::arraySizeImmediate(t);
-								goto ERRORENDLINE;
-							}
+								nonImmediateArraySize("",originCoreHere,source(currentFile,L,t),it);
 							arraySizeCount = size->immediateValue;
 							it = getType(it->name+"*");
 							t = L.nextToken();
@@ -3582,20 +3465,11 @@ void parse(std::vector<line> lines)
 									std::string ABIName =
 										attr.text.substr(strlen("ABI-"),attr.text.length());
 									abi = getABI(ABIName);
-									if (abi == nullptr) {
-										std::cerr << "ERROR: ABI \""<< ABIName<< "\" does not exist!"<< std::endl;
-									}
 								} else if (attr.text.substr(0, strlen("mangling-")) == "mangling-") {
 									std::string manglerName =
 										attr.text.substr(strlen("mangling-"),
 														 attr.text.length());
 									mangling = getMangler(manglerName);
-									if (mangling == nullptr) {
-										std::cerr << "ERROR: mangler \""
-												  << manglerName
-												  << "\" does not exist!"
-												  << std::endl;
-									}
 								} else if (attr.text.substr(
 											   0, strlen("primitive")) ==
 										   "primitive") {
@@ -3654,12 +3528,108 @@ void parse(std::vector<line> lines)
 									else if (attr.text == "primitivePRINTSTR")
 										op = primitiveOP::PRINTSTR;
 									else {
-										error::invalidFunctionAttribute(attr);
-										goto ERRORENDLINE;
+										invalidAttribute(
+											"",originCoreHere,source(currentFile,L,attr),
+											"function",attr.text,
+											{
+												"primitiveInPlace",
+												"primitiveFloat",
+												"primitiveAdd",
+												"primitiveSub",
+												"primitiveMul",
+												"primitiveDiv",
+												"primitiveMod",
+												"primitiveEqual",
+												"primitiveNotEqual",
+												"primitiveGreater",
+												"primitiveGreaterEqual",
+												"primitiveLess",
+												"primitiveLessEqual",
+												"primitiveAnd",
+												"primitiveXor",
+												"primitiveOr",
+												"primitiveNot",
+												"primitiveInc",
+												"primitiveDec",
+												"primitiveAssign",
+												"primitiveArrayIndex",
+												"primitiveInterrupt",
+												"primitiveCPUID",
+												"primitiveSYSCALL",
+												"primitivePRINTCHAR",
+												"primitivePRINTSTR",
+												"local",
+												"public",
+												"protected",
+												"private",
+												"inline",
+												"const",
+												"extern",
+												"noop",
+												"typecast",
+												"implicitcast",
+												"explicitcast",
+												"noreturn",
+												"nodoc",
+												"export",
+												"deprecated",
+												"SYMBOL-...",
+												"mangling-...",
+												"ABI-..."
+											}
+										);
 									}
 								} else {
-									error::invalidFunctionAttribute(attr);
-									goto ERRORENDLINE;
+									invalidAttribute(
+										"",originCoreHere,source(currentFile,L,attr),
+										"function",attr.text,
+										{
+											"primitiveInPlace",
+											"primitiveFloat",
+											"primitiveAdd",
+											"primitiveSub",
+											"primitiveMul",
+											"primitiveDiv",
+											"primitiveMod",
+											"primitiveEqual",
+											"primitiveNotEqual",
+											"primitiveGreater",
+											"primitiveGreaterEqual",
+											"primitiveLess",
+											"primitiveLessEqual",
+											"primitiveAnd",
+											"primitiveXor",
+											"primitiveOr",
+											"primitiveNot",
+											"primitiveInc",
+											"primitiveDec",
+											"primitiveAssign",
+											"primitiveArrayIndex",
+											"primitiveInterrupt",
+											"primitiveCPUID",
+											"primitiveSYSCALL",
+											"primitivePRINTCHAR",
+											"primitivePRINTSTR",
+											"local",
+											"public",
+											"protected",
+											"private",
+											"inline",
+											"const",
+											"extern",
+											"noop",
+											"typecast",
+											"implicitcast",
+											"explicitcast",
+											"noreturn",
+											"nodoc",
+											"export",
+											"deprecated",
+											"SYMBOL-...",
+											"mangling-...",
+											"ABI-..."
+										}
+									);
 								}
 							}
 							type* returnType = nullptr;
@@ -3691,10 +3661,6 @@ void parse(std::vector<line> lines)
 								switch (t.type) {
 									case (9):
 										returnType = getType(t.text);
-										if (returnType->incomplete) {
-											error::incompleteType(t);
-											goto ERRORENDLINE;
-										}
 										arg->dataType = returnType;
 										break;
 									case(31):
@@ -3703,8 +3669,7 @@ void parse(std::vector<line> lines)
 										goto FUNCTIONNOARGS;
 										break;
 									default:
-										error::expectedTypename(t);
-										goto ERRORENDLINE;
+										unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{31,9});
 								}
 								t = L.nextToken();
 								switch (t.type) {
@@ -3723,18 +3688,13 @@ void parse(std::vector<line> lines)
 										t = L.nextToken();
 										break;
 									default:
-										error::expectedNewUnique(t);
-										goto ERRORENDLINE;
+										unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{1});
 								}
 								paramTypes.push_back(returnType);
 								arguments.push_back(arg);
 							}
 							FUNCTIONNOARGS:;
 							returnType = it;
-							if (returnType->incomplete) {
-								error::incompleteType(t);
-								//goto ERRORENDLINE;
-							}
 							function* func		   = new function;
 							func->desc = currentd->desc;
 							func->returnDesc = currentd->ret;
@@ -3760,10 +3720,7 @@ void parse(std::vector<line> lines)
 									//dump("added cast function",func,"");
 								}
 								else
-								{
-									std::cerr << "ERROR: typecast must take exactly 1 argument" << std::endl;
-									goto ERRORENDLINE;
-								}
+									compilerBug("typecast function must take exactly 1 argument.",originCoreHere,source(),"");
 							}
 							for(variable* vp : func->vparams)
 							{
@@ -3965,10 +3922,8 @@ void parse(std::vector<line> lines)
 									}
 								}
 								mOUT(1, func);
-							} else {
-								errorCompilerBug;
-								dump("line: ",&L,"");
-							}
+							} else
+								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{40});
 						} else {
 //,####################################################################################################################
 //,####################################################################################################################
@@ -4020,8 +3975,6 @@ void parse(std::vector<line> lines)
 										Lblub.twhitespace+=2;
 										token blub = Lblub.nextToken();
 										variable* rblub = resolve(blub);
-										if(rblub == nullptr)
-											std::cout << "blub failed to resolve!" << std::endl;
 										uint64_t offset = rblub->immediateValue;
 										var->storage = storageType::MEMORY;
 										var->offset	 = offset;
@@ -4065,17 +4018,8 @@ void parse(std::vector<line> lines)
 										attr.text.substr(strlen("mangling-"),
 														 attr.text.length());
 									mangling = getMangler(manglerName);
-									if (mangling == nullptr) {
-										std::cerr << "ERROR: mangler \""
-												  << manglerName
-												  << "\" does not exist!"
-												  << std::endl;
-										ErrorCount++;
-									}
-								} else if (attr.text == "local")
-									isStatic = true;
-								else if (attr.text == "export")
-									var->doExport = true;
+								} else if (attr.text == "local") isStatic = true;
+								else if (attr.text == "export") var->doExport = true;
 								else if (attr.text == "public") access = 0;
 								else if (attr.text == "protected") access = 1;
 								else if (attr.text == "private") access = 2;
@@ -4083,11 +4027,18 @@ void parse(std::vector<line> lines)
 								else if (attr.text == "constexpr") isConstExpr = true;
 								else if (attr.text == "extern") isExtern = true;
 								else if (attr.text == "noalloc") noalloc = true;
-								else if (attr.text == "volatile")
-									isVolatile = true;
+								else if (attr.text == "volatile") isVolatile = true;
 								else {
-									error::invalidVariableAttribute(attr);
-									goto ERRORENDLINE;
+									invalidAttribute(
+										"",originCoreHere,source(currentFile,L,attr),
+										"function",attr.text,
+										{
+											"mangling-...","SYMBOL-...",
+											"local","export","extern","noalloc",
+											"public","protected","private",
+											"const","constexpr","volatile"
+										}
+									);
 								}
 							}
 							var->name	= name;
@@ -4229,26 +4180,7 @@ void parse(std::vector<line> lines)
 								{
 									if(var->storage == storageType::REGISTER && !isPointer)
 									{
-										if(var->usedAutoStorage)
-										{
-											//switch to memory storage
-											std::cout << "switching storage of: " << var->name << std::endl;
-											//if(
-											//    currentScope->t == scopeType::FUNCTION
-											//    || currentScope->t == scopeType::LOGICAL
-											//    || currentScope->t == scopeType::CONDITIONAL_BLOCK)
-											//{
-											//    currentScope->func->fstore->stackSize += childTargetDataType->size;
-											//    var->storage = storageType::MEMORY;
-											//    var->offset = currentScope->func->fstore->stackOffset;
-											//    var->reg = StackPointer;
-											//    currentScope->func->fstore->stackOffset = currentScope->func->fstore->stackSize;
-											//}
-											//else
-												errorCompilerBug;
-										}
-										else
-											std::cerr << "ERROR: dont do that" << std::endl;
+										compilerBug("invalid storage.",originCoreHere,source(),"");
 									}
 									else
 									{
@@ -4285,7 +4217,7 @@ void parse(std::vector<line> lines)
 												//storage
 												child->reg = var->reg;
 												child->offset += var->offset;
-												//finish up
+												//finish upf
 												child->parent = var;
 												var->children.push_back(child);
 												currentScope->variables.push_back(child);
@@ -4296,8 +4228,8 @@ void parse(std::vector<line> lines)
 									}
 								}
 							}
-							if(options::ddebug)
-								std::cout << "declared variable: " << var->name << std::endl;
+							if(options::ddebug && false)
+								dump("declared variable",var,"");
 							//debug
 							if(true /*check for GAS (true for now)*/ && options::debugSymbols)
 							{setANB(16);
@@ -4329,18 +4261,7 @@ void parse(std::vector<line> lines)
 							mOUT(moVariableID, var);
 							t = L.nextToken();
 							switch (t.type) {
-								case (3): // operator
-								{
-									// line tmpLine = L;
-									// tmpLine.stripTokens(attribs.size() + 1);
-									// std::vector<line> tmpLines;
-									// tmpLines.push_back(tmpLine);
-									// isConstExprAssignment = isConstExpr;
-									// std::cout << "line: " << tmpLine.text << std::endl;
-									// parse(tmpLines);
-									// isConstExprAssignment = false;
-									// break;
-								}
+								case (3):
 								case( 6):
 								case( 7):
 								case(10):
@@ -4350,33 +4271,24 @@ void parse(std::vector<line> lines)
 								{
 									//std::cout << "[VAAD] " << L.text << std::endl;
 									variable* result = resolve(t);
-									if(!result)
-									{
-										error::noSuchIdentifier(t);
-										goto ERRORENDLINE;
-									}
 									std::vector<variable*> args;
 									args.push_back(var);
 									args.push_back(result);
 									function* func = getFunction("operator=", args);
-									if (func != nullptr) {
-										if(isConstExpr)
-										{
-											var->storage = storageType::IMMEDIATE;
-											var->immediateValue = result->immediateValue;
-											//std::cout << "assigned \""<<result->immediateValue<<"\" to constexpr \""<<var->name <<"\""<< std::endl;
-										}
-										else
-										{
-											if (func->isDeprecated)
-												warn(getWarning("deprecated"), &L,
-													 "call to deprecated function \"" +
-														 func->name + "\"");
-											call(func, args);
-										}
+									if(isConstExpr)
+									{
+										var->storage = storageType::IMMEDIATE;
+										var->immediateValue = result->immediateValue;
+										//std::cout << "assigned \""<<result->immediateValue<<"\" to constexpr \""<<var->name <<"\""<< std::endl;
 									}
 									else
-										error::functionNotFound(L);
+									{
+										if (func->isDeprecated)
+											warn(getWarning("deprecated"), &L,
+												 "call to deprecated function \"" +
+													 func->name + "\"");
+										call(func, args);
+									}
 									break;
 								}
 								default:
@@ -4385,11 +4297,6 @@ void parse(std::vector<line> lines)
 									{
 										std::vector<variable*> args = {var};
 										call(var->dataType->ctor,args);
-									}
-									else
-									{
-										//no constructor found
-										//errorCompilerBug;
 									}
 									break;
 								}
@@ -4423,14 +4330,8 @@ void parse(std::vector<line> lines)
 						}
 						break;
 					}
-					case (10): {
-						// do smth with variable
-						break;
-					}
-					case (11): {
-						// function call
-						break;
-					}
+					default:
+						compilerBug("parser default.",originCoreHere,source(),"");
 				}
 				break;
 			case (10): {
@@ -4441,49 +4342,27 @@ void parse(std::vector<line> lines)
 				token backupToken = t;
 				line backupLine = L;
 				t = L.nextToken();
-				//if(t.type == 34)
-				//{
-				//	t = L.nextToken();
-				//	if(t.type == 34)
-				//	{
-				//		t.text = "<<";
-				//		t.type = 3;
-				//	}
-				//}
 				if(t.text.back() == '=')
 				{
 					token ot = t;
 					t = L.nextToken();
 					variable* result = resolve(t);
-					if(result == nullptr)
-					{
-						error::noSuchIdentifier(t);
-						goto ERRORENDLINE;
-					}
 					std::vector<variable*> args;
 					args.push_back(var);
 					args.push_back(result);
 					std::string fname = "operator"+ot.text;
 					function* func = getFunction(fname, args);
-					if (func != nullptr) {
-						if (func->isDeprecated)
-							warn(getWarning("deprecated"), &L,
-								 "call to deprecated function \"" +
-									 func->name + "\"");
-						call(func, args);
-					}
-					else
-						error::functionNotFound(L);
+					if (func->isDeprecated)
+						warn(getWarning("deprecated"), &L,
+							 "call to deprecated function \"" +
+								 func->name + "\"");
+					call(func, args);
 				}
 				else
 				{
 					L = backupLine;
 					t = backupToken;
-					if(resolve(t) == nullptr)
-					{
-						error::noSuchIdentifier(t);
-						goto ERRORENDLINE;
-					}
+					resolve(t);
 				}
 				break;
 			}
@@ -4504,15 +4383,99 @@ void parse(std::vector<line> lines)
 				break;
 			}
 			default:
-				errorCompilerBug;
-				dump("token",&t,"");
-				goto ERRORENDLINE;
+				compilerBug("parser defaulted on first token switch.",originCoreHere,source(),"");
 		}
-	ERRORENDLINE:;
-	ENDLINE:;
-		if (++i >= lines.size()) break;
 	}
-	ENDPARSER:;
-	dbgFile.pop();
-	templateMode = 0;//cant ever be too sure in a file exceeding 4.000 lines LMFAO
+	catch(issues::compilerBug e)
+	{
+		std::cerr << COLOR_RED << "COMPILER BUG" << COLOR_RESET << ": " << e.msg << "\n";
+		if(e.github == "")
+		{
+			std::cerr 
+			<< "this issue doesn't seem to have been reported yet,\n"
+			<< "please open a new issue on https://github.com/DefinitelyNotAGirl/c-2/issues and tag it as 'bug', thank you.\n"
+			<< "if you could pass along the source code that triggered this bug\n"
+			<< "as well as the options you ran the compiler with that would be very helpful.\n"
+			;
+		}
+		else
+		{
+			std::cerr
+			<< "this issue has already been reported here: " << e.github << "\n"
+			<< "if you were to chime in the source code and compiler options\n"
+			<< "that triggered this bug that would be very helpful.\n"
+			;
+		}
+		e.src.print();
+		//e.printTrace();
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(noSuchType e)
+	{
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": \"" << e.name << "\" does not name a type.\n";
+		//e.printTrace();
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(unexpectedTokenType e)
+	{
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": unexpected " << getTokenTypename(e.src.sourceToken.type) << ", expected ";
+		std::cerr << getTokenTypename(e.expectedTokenTypes.back());
+		e.expectedTokenTypes.pop_back();
+		while(e.expectedTokenTypes.size() > 1)
+		{
+			std::cerr << "," << getTokenTypename(e.expectedTokenTypes.back());
+			e.expectedTokenTypes.pop_back();
+		}
+		if(e.expectedTokenTypes.size() == 1)
+		{
+			std::cerr << " or " << getTokenTypename(e.expectedTokenTypes.back());
+		}
+		std::cerr << std::endl;
+		//e.printTrace();
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(noSuchIdentifier e)
+	{
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": unresolved identifier \"" << e.name << "\"\n";
+		//e.printTrace();
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(noSuchLitop e)
+	{
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": no such Literal operator \"" << e.name << "\"\n";
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(noSuchNumberSystem e)
+	{
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": no such number system \"" << e.name << "\"\n";
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(noSuchFunction e)
+	{
+		std::string neededExpression = getFunctionExpression(e.neededFunction);
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": no such function: " << neededExpression << "\n";
+		if(e.candidates.size() > 0)
+		{
+			std::cerr << "candidates: \n";
+			for(function* candidate : e.candidates)
+				std::cerr << "    " << getFunctionExpression(candidate,(candidate->vparams.size() > 0)) << "\n";
+		}
+		//e.printTrace();
+		e.printStackTrace();
+		std::cerr << "\r\n" << std::endl;
+		ErrorCount++;
+	}
+	if (++i >= lines.size()) return;
 }

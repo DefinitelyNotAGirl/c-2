@@ -2,7 +2,7 @@
  * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -165,7 +165,7 @@ namespace x86_64
                     else
                     {
                         ret->dataType = args[0]->dataType;
-                        ret->name = getNewName();
+                        ret->name = getNewVariableName();
                         fstore->setStorage(func,ret);
                         x86_64::mul(ret,args[0],args[1]);
                     }
@@ -179,7 +179,7 @@ namespace x86_64
                     else
                     {
                         ret->dataType = args[0]->dataType;
-                        ret->name = getNewName();
+                        ret->name = getNewVariableName();
                         fstore->setStorage(func,ret);
                         x86_64::div(ret,args[0],args[1]);
                     }
@@ -193,7 +193,7 @@ namespace x86_64
                     else
                     {
                         ret->dataType = args[0]->dataType;
-                        ret->name = getNewName();
+                        ret->name = getNewVariableName();
                         fstore->setStorage(func,ret);
                         x86_64::mod(ret,args[0],args[1]);
                     }
@@ -207,7 +207,7 @@ namespace x86_64
                     else
                     {
                         ret->dataType = args[0]->dataType;
-                        ret->name = getNewName();
+                        ret->name = getNewVariableName();
                         fstore->setStorage(func,ret);
                         x86_64::add(ret,args[0],args[1]);
                     }
@@ -221,7 +221,7 @@ namespace x86_64
                     else
                     {
                         ret->dataType = args[0]->dataType;
-                        ret->name = getNewName();
+                        ret->name = getNewVariableName();
                         fstore->setStorage(func,ret);
                         x86_64::sub(ret,args[0],args[1]);
                     }
@@ -235,7 +235,7 @@ namespace x86_64
                     else
                     {
                         ret->dataType = args[0]->dataType;
-                        ret->name = getNewName();
+                        ret->name = getNewVariableName();
                         fstore->setStorage(func,ret);
                         x86_64::mov(args[0],ret);
                         x86_64::inc(ret);
@@ -250,7 +250,7 @@ namespace x86_64
                     else
                     {
                         ret->dataType = args[0]->dataType;
-                        ret->name = getNewName();
+                        ret->name = getNewVariableName();
                         fstore->setStorage(func,ret);
                         x86_64::mov(args[0],ret);
                         x86_64::dec(ret);
@@ -263,7 +263,7 @@ namespace x86_64
                     {
                         pointerReg = args[0]->reg;
                         pointerRegSet:;
-                        ret->name = getNewName();
+                        ret->name = getNewVariableName();
                         ret->reg = pointerReg;
                         ret->storage = storageType::MEMORY;
                         ret->dataType = args[0]->dataType->valueType;

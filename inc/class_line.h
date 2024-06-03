@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -30,12 +30,19 @@
 #pragma once
 
 #include <common.h>
-
-class token;
+#include <compiler.h>
 
 class line
 {
 public:
+	line(){}
+	line(token& t)
+	{
+		if(t.Line != nullptr)
+			*this = *t.Line;
+		this->tpos = 0;
+		this->text = t.text;
+	}
     uint64_t tpos = 0;
     uint64_t ccol = 0;
     uint64_t tline = 0;
