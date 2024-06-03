@@ -2,7 +2,7 @@
  * Created Date: Wednesday August 2nd 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -49,7 +49,7 @@ functionStorage::functionStorage()
     {
         if((uint64_t)I & ARCH_REGISTER_MASK != 0)
         {
-            *((uint64_t*)rd) = (uint64_t)I;
+            *((uint64_t*)rd) = (uint64_t)I; 
             rd+=(uint64_t)24;
         }
     }
@@ -110,6 +110,7 @@ void functionStorage::registerStatus(__register__ reg,uint64_t value)
 
 uint64_t functionStorage::registerStatus(__register__ reg)
 {
+	//std::cout << "this: " << this << std::endl;
     uint64_t rd = (uint64_t)this->regData;
     while(*((uint64_t*)(rd)) != 0)
     {

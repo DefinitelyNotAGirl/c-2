@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:34:42 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -482,7 +482,6 @@ struct targtype
 std::vector<targtype*> targTypes;
 
 void updateCurrentScope(scope* sc);
-variable* resolveIMM(token& t);
 std::string c2oLocExpr(variable* v);
 extern bool vstcDisableSend;
 /**
@@ -524,7 +523,9 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
 				{
 					if(options::ddebug)
 						std::cout << "resolving integer template argument: \""+working+"\"" << std::endl;
-					variable* RTA = resolveIMM(TAT);
+					variable* RTA = resolve(TAT);
+					if(RTA->storage != storageType::IMMEDIATE)
+						nonImmediateIntegerTemplateArgument("",originCoreHere,source(currentFile,L,TAT));
 					if(RTA->dataType != defaultUnsignedIntegerType)
 						invalidType("",originCoreHere,source(),{defaultUnsignedIntegerType,defaultSignedIntegerType},RTA->dataType);
 					RTA->name = tt->tArgs[i]->name;
@@ -3060,7 +3061,11 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							if(t.text == "data")
 							{
 								t = L.nextToken();
-								variable* vsize = resolveIMM(t);
+								line vsizel(t);
+								token vsizet = vsizel.nextToken();
+								variable* vsize = resolve(vsizet);
+								if(vsize->storage != storageType::IMMEDIATE)
+									compilerBug("non immediate",originCoreHere,source(currentFile,L,t),"");
 								uint64_t size = vsize->immediateValue;
 								t = L.nextToken();
 								std::string name = t.text;
@@ -3090,7 +3095,9 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 										emitExceptionSymbols = true;
 										if(t.type != 0)
 										{
-											variable* val = resolveIMM(t);
+											variable* val = resolve(t);
+											if(val->storage != storageType::IMMEDIATE)
+												compilerBug("non immediate",originCoreHere,source(currentFile,L,t),"");
 											if(val != nullptr)
 												exceptionoffset+=val->immediateValue;
 										}
@@ -4421,6 +4428,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 		while(e.expectedTokenTypes.size() > 1)
 		{
 			std::cerr << "," << getTokenTypename(e.expectedTokenTypes.back());
+			e.expectedTokenTypes.pop_back();
 		}
 		if(e.expectedTokenTypes.size() == 1)
 		{
@@ -4436,6 +4444,20 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 	{
 		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": unresolved identifier \"" << e.name << "\"\n";
 		//e.printTrace();
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(noSuchLitop e)
+	{
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": no such Literal operator \"" << e.name << "\"\n";
+		e.printStackTrace();
+		std::cerr << "\n\n\r";
+		ErrorCount++;
+	}
+	catch(noSuchNumberSystem e)
+	{
+		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": no such number system \"" << e.name << "\"\n";
 		e.printStackTrace();
 		std::cerr << "\n\n\r";
 		ErrorCount++;

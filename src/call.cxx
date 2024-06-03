@@ -2,7 +2,7 @@
  * Created Date: Thursday August 3rd 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 31st 2024 10:18:33 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -122,6 +122,7 @@ void codeGenUpdateFuction()
 		case(scopeType::TRY):
 		case(scopeType::CATCH):
 		case(scopeType::TRY_CATCH):
+		case(scopeType::GLOBAL):
             codeGenFunc = currentScope->func;
 			if(codeGenFunc != nullptr)
             	code = &currentScope->func->code;

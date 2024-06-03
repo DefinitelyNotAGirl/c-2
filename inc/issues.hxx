@@ -201,6 +201,12 @@ namespace issues {
 			:valueType(valueType){ISSUES_CTOR_INIT;invoke(*this);}
 	};
 
+	class nonImmediateIntegerTemplateArgument : public fatal {
+	public:
+		nonImmediateIntegerTemplateArgument(ISSUES_CTOR_ARGS)
+			{ISSUES_CTOR_INIT;invoke(*this);}
+	};
+
 	class noSuchLitop : public fatal {
 	public:
 		std::string name;
@@ -250,6 +256,13 @@ namespace issues {
 	public:
 		std::string name;
 		noSuchArchitecture(ISSUES_CTOR_ARGS,std::string name)
+			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
+	};
+
+	class noSuchNumberSystem : public fatal {
+	public:
+		std::string name;
+		noSuchNumberSystem(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
 

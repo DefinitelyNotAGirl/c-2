@@ -52,6 +52,7 @@ using namespace issues;
 // 12 - built in primitive type
 // 13 - short OP
 // 14 - description directive
+// 15 - builtin function name
 /**/
 // 20 - attribute
 // 21 - attribute (function only)
@@ -170,6 +171,7 @@ uint64_t tokenType(std::string& s)
 	else if(s[0] == '<')return 3;
 	else if(s[0] == '|')return 3;
 	else if(s[0] == '&')return 3;
+	else if(s[0] == '±')return 3;
 	//keywords
 	else if(s == "if")return 8;
 	else if(s == "else")return 8;
@@ -200,6 +202,15 @@ uint64_t tokenType(std::string& s)
 	else if(s == "mul")return 13;
 	else if(s == "div")return 13;
 	else if(s == "cast")return 13;
+	//builtin functions
+	else if(s == "memcpy")return 15;
+	else if(s == "sizeof")return 15;
+	else if(s == "typeof")return 15;
+	else if(s == "nameof")return 15;
+	else if(s == "memset")return 15;
+	else if(s == "addressof")return 15;
+	else if(s == "goto")return 15;
+	else if(s == "call")return 15;
 	//attributes
 	else if(s == "export")return 20;
 	else if(s == "public")return 20;
@@ -396,12 +407,14 @@ token line::nextToken(bool saveInfo)
 					case('<'):
 					case('>'):
 					case('&'):
+					case('±'):
 					case('|'):
 					case('!'):
 						goto __default;
 				}
 				if(t.text == "operator==")
 					goto __default;
+				skipAssignmentCheck:;
 				goto skipTemplateCheck;
 			case('<'):
 				for(typeTemplate* i : typeTemplates)
@@ -473,6 +486,7 @@ token line::nextToken(bool saveInfo)
 					goto __default;
 				if(t.text == "SYMBOL")
 					goto __default;
+			case('±'):
 			case('+'):
 				skipManglerAndAbiCheck:;
 			case('|'):

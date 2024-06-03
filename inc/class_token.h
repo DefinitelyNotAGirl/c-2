@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tuesday July 25th 2023 1:02:01 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -30,12 +30,19 @@
 #pragma once
 
 #include <common.h>
+#include <compiler.h>
 
 class line;
 
 class token
 {
 public:
+	token(){}
+	token(variable* var)
+	{
+		this->text = var->name;
+		this->type = 10;
+	}
     line* Line = nullptr;
     std::string text;
     uint64_t col = 0;

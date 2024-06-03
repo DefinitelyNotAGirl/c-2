@@ -2,7 +2,7 @@
  * Created Date: Saturday May 11th 2024
  * Author: Lilith
  * -----
- * Last Modified: Saturday May 11th 2024 5:02:54 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -573,7 +573,13 @@ void dump(std::string name, functionStorage* obj, std::string indent)
 {
 	GENERIC_NULLPTR
 	GENERIC_OBJ_START
-	std::cout << INDENT << "DUMP IMPLEMENTATION MISSING" << std::endl;
+	dump("stackOffset",&obj->stackOffset,INDENT);
+	dump("stackSize",&obj->stackSize,INDENT);
+	for(__register__ I : registers)
+	{
+		uint64_t status = obj->registerStatus(I);
+		dump("register: "+registerNAME(I),&status,INDENT);
+	}
 	GENERIC_OBJ_END
 }
 //,####################################################################################################################
