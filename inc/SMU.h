@@ -61,15 +61,15 @@ namespace smu
 		/**
 		 * @brief stores the sections size inside the file
 		 */
-		uint64_t sizeInFile;
+		uint64_t sizeInFile = 0;
 		/**
 		 * @brief stores the sections size when loaded to memory
 		 */
-		uint64_t sizeInMemory;
+		uint64_t sizeInMemory = 0;
 		/**
 		 * @brief stores the data
 		 */
-		byte* data;
+		byte* data = nullptr;
 		bool readable;
 		bool writeable;
 		bool executable;
@@ -83,6 +83,7 @@ namespace smu
 		uint64_t virtualAddress;
 	public:
 		section();
+		~section();
 		section(std::string name,std::string targetFile,permissions perms, uint64_t loadAlignment = 0, uint64_t virtualAddress = 0);
 		/**
 		 * @brief adds all bytes in the initializer list to the end of the sections current data
@@ -103,5 +104,17 @@ namespace smu
 		 * @return uint64_t
 		 */
 		uint64_t size();
+		/**
+		 * @brief adds all the data from each section to this section
+		 * 
+		 * @param data 
+		 */
+		void operator<<(std::initializer_list<section> data);
+		/**
+		 * @brief adds all the data from section& data to this section
+		 * 
+		 * @param data 
+		 */
+		void operator<<(section& data);
 	};
 }

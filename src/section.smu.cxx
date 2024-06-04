@@ -40,6 +40,10 @@ namespace smu
 		this->writeable = ((((uint64_t)perms) & (1<<1)) >> 1);
 		this->executable= ((((uint64_t)perms) & (1<<2)) >> 2);
 	}
+	
+	section::~section() {
+		free(this->data);
+	}
 
 	void section::operator<<(std::initializer_list<byte> data)
 	{
@@ -48,6 +52,29 @@ namespace smu
 		uint64_t I = this->sizeInFile;
 		for(byte II : data)
 			this->data[I++] = II;
+		this->sizeInFile = newSize;
+	}
+
+	void section::operator<<(std::initializer_list<section> data)
+	{
+		uint64_t newSize = this->sizeInFile;
+		for(section& s : data)
+			newSize+=s.sizeInFile;
+		this->data = (byte*)realloc(this->data,newSize);
+		uint64_t I = this->sizeInFile;
+		for(section& II : data)
+			for(uint64_t III = 0;III<II.sizeInFile;III++)
+				this->data[I++] = II.data[III];
+		this->sizeInFile = newSize;
+	}
+
+	void section::operator<<(section& data)
+	{
+		uint64_t newSize = this->sizeInFile+data.sizeInFile;
+		this->data = (byte*)realloc(this->data,newSize);
+		uint64_t I = this->sizeInFile;
+		for(uint64_t II = 0;II<data.sizeInFile;II++)
+			this->data[I++] = data.data[II];
 		this->sizeInFile = newSize;
 	}
 
