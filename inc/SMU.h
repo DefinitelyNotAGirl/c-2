@@ -34,14 +34,18 @@
 typedef uint8_t byte;
 namespace smu
 {
+	/**
+	 * @brief bit fields: 0 = read | 1 = write | 2 = execute | 3-7: reserved MBZ
+	 * 
+	 */
 	enum class permissions {
-		readonly,
-		writeonly,
-		execute,
-		readWrite,
-		readExecute,
-		writeExecute,
-		readWriteExecute
+		readonly		=0b00000001,
+		writeonly		=0b00000010,
+		execute			=0b00000100,
+		readWrite		=0b00000011,
+		readExecute		=0b00000101,
+		writeExecute	=0b00000110,
+		readWriteExecute=0b00000111
 	};
 
 	class section {
@@ -83,7 +87,7 @@ namespace smu
 		/**
 		 * @brief adds all bytes in the initializer list to the end of the sections current data
 		 * 
-		 * @param data 
+		 * @param data
 		 */
 		void operator<<(std::initializer_list<byte> data);
 		/**
@@ -94,11 +98,10 @@ namespace smu
 		 */
 		uint64_t align(uint64_t n);
 		/**
-		 * @brief returns this->size
+		 * @brief returns the amount of bytes that are to be loaded to memory for this section
 		 * 
-		 * @return uint64_t this->size
+		 * @return uint64_t
 		 */
 		uint64_t size();
-
 	};
 }
