@@ -91,6 +91,24 @@ namespace smu
 		 */
 		void operator<<(std::initializer_list<byte> data);
 		/**
+		 * @brief adds all the bytes from uint64_t data to current data in the order in which they currently appear in memory
+		 * 
+		 * @param data
+		 */
+		void operator<<(uint64_t data);
+		/**
+		 * @brief adds all the bytes from uint32_t data to current data in the order in which they currently appear in memory
+		 * 
+		 * @param data
+		 */
+		void operator<<(uint32_t data);
+		/**
+		 * @brief adds all the bytes from uint16_t data to current data in the order in which they currently appear in memory
+		 * 
+		 * @param data
+		 */
+		void operator<<(uint16_t data);
+		/**
 		 * @brief adds padding bytes until this->size reaches a multiple of n
 		 * 
 		 * @param n 
