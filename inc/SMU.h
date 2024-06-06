@@ -31,7 +31,6 @@
 
 #include <compiler.h>
 
-typedef uint8_t byte;
 namespace smu
 {
 	/**
