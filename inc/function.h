@@ -2,7 +2,7 @@
  * Created Date: Wednesday August 2nd 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -79,7 +79,7 @@ public:
     uint64_t miscData = 0;
     std::vector<type*> parameters;
     std::vector<variable*> vparams;
-    std::vector<std::string> code;
+    section* code;
     ABI* abi = nullptr;
     functionStorage* fstore;
     std::string __declared_file;
