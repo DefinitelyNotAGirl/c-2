@@ -78,6 +78,30 @@ namespace smu
 		this->sizeInFile = newSize;
 	}
 
+	void section::operator<<(uint64_t data)
+	{
+		uint64_t newSize = this->sizeInFile+sizeof(data);
+		this->data = (byte*)realloc(this->data,newSize);
+		memcpy(this->data+this->sizeInFile,&data,sizeof(data));
+		this->sizeInFile = newSize;
+	}
+
+	void section::operator<<(uint32_t data)
+	{
+		uint64_t newSize = this->sizeInFile+sizeof(data);
+		this->data = (byte*)realloc(this->data,newSize);
+		memcpy(this->data+this->sizeInFile,&data,sizeof(data));
+		this->sizeInFile = newSize;
+	}
+
+	void section::operator<<(uint16_t data)
+	{
+		uint64_t newSize = this->sizeInFile+sizeof(data);
+		this->data = (byte*)realloc(this->data,newSize);
+		memcpy(this->data+this->sizeInFile,&data,sizeof(data));
+		this->sizeInFile = newSize;
+	}
+
 	void section::size()
 	{
 		return this->sizeInFile > this->sizeInMemory ? this->sizeInFile : this->sizeInMemory;
