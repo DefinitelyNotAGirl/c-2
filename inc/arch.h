@@ -2,7 +2,7 @@
  * Created Date: Sunday September 17th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -32,6 +32,22 @@
 #include <compiler.h>
 
 class location;
+
+/**
+ * @brief bit fields:
+ * 0: pseudo unix
+ * 1: true unix
+ * 2: apple
+ * 3: linux
+ * 4: windows
+ * 5-7: bit width
+ * 8-63: reserved, MBZ
+ */
+enum class Architecture : uint64_t {
+	Apple = (1<<0) | (1<<2) | (1<<5),
+	Linux = (1<<0) | (1<<1) | (1<<3) | (1<<5),
+	Windows = (1<<4) | (1<<5)
+};
 
 class arch
 {
