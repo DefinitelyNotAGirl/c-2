@@ -43,7 +43,7 @@ class location;
  * 5-7: bit width
  * 8-63: reserved, MBZ
  */
-enum class Architecture : uint64_t {
+enum class System : uint64_t {
 	Apple = (1<<0) | (1<<2) | (1<<5),
 	Linux = (1<<0) | (1<<1) | (1<<3) | (1<<5),
 	Windows = (1<<4) | (1<<5)
