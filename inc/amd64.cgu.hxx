@@ -37,8 +37,91 @@ namespace amd64
 	*	bits 0-2: register encoding
 	*	bit 3: REX register extension
 	*	bit 4: indicates that this is a model specific register, in which case the ECX value is held in bits 32-63
+	*	bit 5: indicates that this is a floating point register
 	*/
 	enum class Register : uint64_t {
+		/* original integer registers */
+		rax = 0x00,
+		rcx = 0x01,
+		rdx = 0x02,
+		rbx = 0x03,
+		rsp = 0x04,
+		rbp = 0x05,
+		rsi = 0x06,
+		rdi = 0x07,
+		/* high byte registers */
+		ah = 0x04,
+		ch = 0x05,
+		dh = 0x06,
+		bh = 0x07,
+		/* r8-r15 */
+		r8 = 0x08,
+		r9 = 0x09,
+		r10 = 0x0A,
+		r11 = 0x0B,
+		r12 = 0x0C,
+		r13 = 0x0D,
+		r14 = 0x0E,
+		r15 = 0x0F,
+		/* mmx */
+		mmx0 = 0x00,
+		mmx1 = 0x01,
+		mmx2 = 0x02,
+		mmx3 = 0x03,
+		mmx4 = 0x04,
+		mmx5 = 0x05,
+		mmx6 = 0x06,
+		mmx7 = 0x07,
+		/* xmm */
+		xmm0 = 0x00,
+		xmm1 = 0x01,
+		xmm2 = 0x02,
+		xmm3 = 0x03,
+		xmm4 = 0x04,
+		xmm5 = 0x05,
+		xmm6 = 0x06,
+		xmm7 = 0x07,
+		/* ymm */
+		ymm0 = 0x00,
+		ymm1 = 0x01,
+		ymm2 = 0x02,
+		ymm3 = 0x03,
+		ymm4 = 0x04,
+		ymm5 = 0x05,
+		ymm6 = 0x06,
+		ymm7 = 0x07,
+		/* model specific registers */
+		efer = 0xC000008000000010,
+		star = 0xC000008100000010,
+		lstar = 0xC000008200000010,
+		cstar = 0xC000008300000010,
+		sfmask = 0xC000008400000010,
+		fs_base = 0xC000010000000010,
+		gs_base = 0xC000010100000010,
+		kernel_gs_base = 0xC000010200000010,
+		tsc_aux = 0xC000010300000010,
+		syscfg = 0xC001001000000010,
+		iorr_base0 = 0xC001001600000010,
+		iorr_mask0 = 0xC001001700000010,
+		iorr_base1 = 0xC001001800000010,
+		iorr_mask1 = 0xC001001900000010,
+		tom2 = 0xC001001D00000010,
+		ls_cfg = 0xC001102000000010,
+		ic_cfg = 0xC001102100000010,
+		dc_cfg = 0xC001102200000010,
+		bu_cfg = 0xC001102300000010,
+		mc0_ctl = 0xC001004000000010,
+		mc0_status = 0xC001004100000010,
+		mc0_addr = 0xC001004200000010,
+		mc0_misc = 0xC001004300000010,
+		perf_ctl0 = 0xC001000000000010,
+		perf_ctr0 = 0xC001000400000010,
+		perf_ctl1 = 0xC001000100000010,
+		perf_ctr1 = 0xC001000500000010,
+		top_mem = 0xC001001A00000010,
+		top_mem2 = 0xC001001D00000010,
+		vm_cr = 0xC001011400000010,
+		vm_hsave_pa = 0xC001011700000010
 	};
 
 	enum class StorageMode {
