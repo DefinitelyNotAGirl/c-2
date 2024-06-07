@@ -29,6 +29,11 @@
  */
 
 #include <amd64.cgu.hxx>
+#include <CGU.AMD64.h>
+#include <SMU.h>
+#include <issues.hxx>
+
+using namespace issues;
 
 namespace amd64
 {
@@ -86,4 +91,43 @@ namespace amd64
 
 	namespace opcode {
 	}
+}
+
+namespace runtime::amd64
+{
+	void copy(variable* src, variable* dst)
+	{
+		if(src->storageArch != Architecture::AMD64)
+			compilerBug("invalid architecture",originCoreHere,source(),"");
+		if(dst->storageArch != Architecture::AMD64)
+			compilerBug("invalid architecture",originCoreHere,source(),"");
+		::amd64::VariableStorage* srcStore = src->storage;
+		::amd64::VariableStorage* dstStore = dst->storage;
+//,####################################################################################################################
+//,####################################################################################################################
+//, ██████  ██████                       ██       ██████  ██████
+//, ██   ██ ██   ██                       ██      ██   ██ ██   ██
+//, ██   ██ ██████      █████ █████ █████  ██     ██   ██ ██████
+//, ██   ██ ██   ██                       ██      ██   ██ ██   ██
+//, ██████  ██   ██                      ██       ██████  ██   ██
+//,####################################################################################################################
+//,####################################################################################################################
+		if( 
+			(srcStore->mode == ::amd64::StorageMode::DirectRegister)
+			&&
+			(dstStore->mode == ::amd64::StorageMode::DirectRegister)
+		)
+		{
+			code->push({
+				::amd64::prefix::REX(0,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
+				::amd64::opcode::mov::r16_32_64__rm16_32_64,
+				::amd64::modRM(srcStore->reg,dstStore->reg)
+			});
+		}
+	}
+	void clear(variable* target);
+	void thread(std::string& symbol);
+	void call(function* func);
+	void enter(uint64_t frameSize);
+	void leave();
 }

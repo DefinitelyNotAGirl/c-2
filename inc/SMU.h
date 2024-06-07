@@ -133,5 +133,45 @@ namespace smu
 		 * @param data 
 		 */
 		void operator<<(section& data);
+		/**
+		 * @brief adds all the data from each section to this section
+		 * 
+		 * @param data 
+		 */
+		void push(std::initializer_list<section> data){*this << data;}
+		/**
+		 * @brief adds all the data from section& data to this section
+		 * 
+		 * @param data 
+		 */
+		void push(section& data){*this << data;}
+		/**
+		 * @brief adds all bytes in the initializer list to the end of the sections current data
+		 * 
+		 * @param data
+		 */
+		void push(std::initializer_list<byte> data){*this << data;}
+		/**
+		 * @brief adds all the bytes from uint64_t data to current data in the order in which they currently appear in memory
+		 * 
+		 * @param data
+		 */
+		void push(uint64_t data){*this << data;}
+		/**
+		 * @brief adds all the bytes from uint32_t data to current data in the order in which they currently appear in memory
+		 * 
+		 * @param data
+		 */
+		void push(uint32_t data){*this << data;}
+		/**
+		 * @brief adds all the bytes from uint16_t data to current data in the order in which they currently appear in memory
+		 * 
+		 * @param data
+		 */
+		void push(uint16_t data){*this << data;}
 	};
 }
+
+using smu::section;
+
+extern section* code;

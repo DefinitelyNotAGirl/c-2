@@ -2,7 +2,7 @@
  * Created Date: Tuesday June 4th 2024
  * Author: Lilith
  * -----
- * Last Modified: Tuesday June 4th 2024 3:25:05 am
+ * Last Modified: Thursday June 6th 2024 10:09:55 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -42,7 +42,7 @@ namespace runtime
 	 */
 	void copy(variable* src, variable* dst)
 	{
-		x86_64::copy(src,dst);
+		amd64::copy(src,dst);
 	}
 
 	/**
@@ -52,7 +52,7 @@ namespace runtime
 	 */
 	void clear(variable* target)
 	{
-		x86_64::clear(target);
+		amd64::clear(target);
 	}
 
 	/**
@@ -62,7 +62,7 @@ namespace runtime
 	 */
 	void thread(std::string& symbol)
 	{
-		x86_64::thread(symbol);
+		amd64::thread(symbol);
 	}
 
 	/**
@@ -72,7 +72,7 @@ namespace runtime
 	 */
 	void call(function* func)
 	{
-		x86_64::call(func);
+		amd64::call(func);
 	}
 
 	/**
@@ -82,7 +82,7 @@ namespace runtime
 	 */
 	void enter(uint64_t frameSize)
 	{
-		x86_64::enter(frameSize);
+		amd64::enter(frameSize);
 	}
 
 	/**
@@ -91,6 +91,6 @@ namespace runtime
 	 */
 	void leave()
 	{
-		x86_64::leave();
+		amd64::leave();
 	}
 }

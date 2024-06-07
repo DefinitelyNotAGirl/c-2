@@ -29,7 +29,7 @@
  */
 #pragma once
 
-namespace runtime::x86_64
+namespace runtime::amd64
 {
 	void copy(variable* src, variable* dst);
 	void clear(variable* target);

@@ -102,9 +102,9 @@ namespace amd64
 		tsc_aux = 0xC000010300000010,
 		syscfg = 0xC001001000000010,
 		iorr_base0 = 0xC001001600000010,
-		iorr_mask0 = 0xC001001700000010,
+		iorrmask0 = 0xC001001700000010,
 		iorr_base1 = 0xC001001800000010,
-		iorr_mask1 = 0xC001001900000010,
+		iorrmask1 = 0xC001001900000010,
 		tom2 = 0xC001001D00000010,
 		ls_cfg = 0xC001102000000010,
 		ic_cfg = 0xC001102100000010,
@@ -375,107 +375,107 @@ namespace amd64
 	namespace opcode
 	{
 		namespace add{
-			constexpr byte r_m8__r8 = 0x00;
-			constexpr byte r_m16_32_64__r16_32_64 = 0x01;
-			constexpr byte r8__r_m8 = 0x02;
-			constexpr byte r16_32_64__r_m16_32_64 = 0x03;
+			constexpr byte rm8__r8 = 0x00;
+			constexpr byte rm16_32_64__r16_32_64 = 0x01;
+			constexpr byte r8__rm8 = 0x02;
+			constexpr byte r16_32_64__rm16_32_64 = 0x03;
 			constexpr byte AL__imm8 = 0x04;
 			constexpr byte rAX__imm16_32 = 0x05;
-			constexpr byte r_m8__imm8 = 0x80;
-			constexpr byte r_m16_32_64__imm16_32 = 0x81;
-			constexpr byte r_m16_32_64__imm8 = 0x83;
+			constexpr byte rm8__imm8 = 0x80;
+			constexpr byte rm16_32_64__imm16_32 = 0x81;
+			constexpr byte rm16_32_64__imm8 = 0x83;
 		}
 		namespace or{
-			constexpr byte r_m8__r8 = 0x08;
-			constexpr byte r_m16_32_64__r16_32_64 = 0x09;
-			constexpr byte r8__r_m8 = 0x0A;
-			constexpr byte r16_32_64__r_m16_32_64 = 0x0B;
+			constexpr byte rm8__r8 = 0x08;
+			constexpr byte rm16_32_64__r16_32_64 = 0x09;
+			constexpr byte r8__rm8 = 0x0A;
+			constexpr byte r16_32_64__rm16_32_64 = 0x0B;
 			constexpr byte AL__imm8 = 0x0C;
 			constexpr byte rAX__imm16_32 = 0x0D;
-			constexpr byte r_m8__imm8 = 0x80;
-			constexpr byte r_m16_32_64__imm16_32 = 0x81;
-			constexpr byte r_m16_32_64__imm8 = 0x83;
+			constexpr byte rm8__imm8 = 0x80;
+			constexpr byte rm16_32_64__imm16_32 = 0x81;
+			constexpr byte rm16_32_64__imm8 = 0x83;
 		}
 		namespace adc{
-			constexpr byte r_m8__r8 = 0x10;
-			constexpr byte r_m16_32_64__r16_32_64 = 0x11;
-			constexpr byte r8__r_m8 = 0x12;
-			constexpr byte r16_32_64__r_m16_32_64 = 0x13;
+			constexpr byte rm8__r8 = 0x10;
+			constexpr byte rm16_32_64__r16_32_64 = 0x11;
+			constexpr byte r8__rm8 = 0x12;
+			constexpr byte r16_32_64__rm16_32_64 = 0x13;
 			constexpr byte AL__imm8 = 0x14;
 			constexpr byte rAX__imm16_32 = 0x15;
-			constexpr byte r_m8__imm8 = 0x80;
-			constexpr byte r_m16_32_64__imm16_32 = 0x81;
-			constexpr byte r_m16_32_64__imm8 = 0x83;
+			constexpr byte rm8__imm8 = 0x80;
+			constexpr byte rm16_32_64__imm16_32 = 0x81;
+			constexpr byte rm16_32_64__imm8 = 0x83;
 		}
 		namespace sbb{
-			constexpr byte r_m8__r8 = 0x18;
-			constexpr byte r_m16_32_64__r16_32_64 = 0x19;
-			constexpr byte r8__r_m8 = 0x1A;
-			constexpr byte r16_32_64__r_m16_32_64 = 0x1B;
+			constexpr byte rm8__r8 = 0x18;
+			constexpr byte rm16_32_64__r16_32_64 = 0x19;
+			constexpr byte r8__rm8 = 0x1A;
+			constexpr byte r16_32_64__rm16_32_64 = 0x1B;
 			constexpr byte AL__imm8 = 0x1C;
 			constexpr byte rAX__imm16_32 = 0x1D;
-			constexpr byte r_m8__imm8 = 0x80;
-			constexpr byte r_m16_32_64__imm16_32 = 0x81;
-			constexpr byte r_m16_32_64__imm8 = 0x83;
+			constexpr byte rm8__imm8 = 0x80;
+			constexpr byte rm16_32_64__imm16_32 = 0x81;
+			constexpr byte rm16_32_64__imm8 = 0x83;
 		}
 		namespace and{
-			constexpr byte r_m8__r8 = 0x20;
-			constexpr byte r_m16_32_64__r16_32_64 = 0x21;
-			constexpr byte r8__r_m8 = 0x22;
-			constexpr byte r16_32_64__r_m16_32_64 = 0x23;
+			constexpr byte rm8__r8 = 0x20;
+			constexpr byte rm16_32_64__r16_32_64 = 0x21;
+			constexpr byte r8__rm8 = 0x22;
+			constexpr byte r16_32_64__rm16_32_64 = 0x23;
 			constexpr byte AL__imm8 = 0x24;
 			constexpr byte rAX__imm16_32 = 0x25;
-			constexpr byte r_m8__imm8 = 0x80;
-			constexpr byte r_m16_32_64__imm16_32 = 0x81;
-			constexpr byte r_m16_32_64__imm8 = 0x83;
+			constexpr byte rm8__imm8 = 0x80;
+			constexpr byte rm16_32_64__imm16_32 = 0x81;
+			constexpr byte rm16_32_64__imm8 = 0x83;
 		}
 		namespace sub{
-			constexpr byte r_m8__r8 = 0x28;
-			constexpr byte r_m16_32_64__r16_32_64 = 0x29;
-			constexpr byte r8__r_m8 = 0x2A;
-			constexpr byte r16_32_64__r_m16_32_64 = 0x2B;
+			constexpr byte rm8__r8 = 0x28;
+			constexpr byte rm16_32_64__r16_32_64 = 0x29;
+			constexpr byte r8__rm8 = 0x2A;
+			constexpr byte r16_32_64__rm16_32_64 = 0x2B;
 			constexpr byte AL__imm8 = 0x2C;
 			constexpr byte rAX__imm16_32 = 0x2D;
-			constexpr byte r_m8__imm8 = 0x80;
-			constexpr byte r_m16_32_64__imm16_32 = 0x81;
-			constexpr byte r_m16_32_64__imm8 = 0x83;
+			constexpr byte rm8__imm8 = 0x80;
+			constexpr byte rm16_32_64__imm16_32 = 0x81;
+			constexpr byte rm16_32_64__imm8 = 0x83;
 		}
 		namespace xor{
-			constexpr byte r_m8__r8 = 0x30;
-			constexpr byte r_m16_32_64__r16_32_64 = 0x31;
-			constexpr byte r8__r_m8 = 0x32;
-			constexpr byte r16_32_64__r_m16_32_64 = 0x33;
+			constexpr byte rm8__r8 = 0x30;
+			constexpr byte rm16_32_64__r16_32_64 = 0x31;
+			constexpr byte r8__rm8 = 0x32;
+			constexpr byte r16_32_64__rm16_32_64 = 0x33;
 			constexpr byte AL__imm8 = 0x34;
 			constexpr byte rAX__imm16_32 = 0x35;
-			constexpr byte r_m8__imm8 = 0x80;
-			constexpr byte r_m16_32_64__imm16_32 = 0x81;
-			constexpr byte r_m16_32_64__imm8 = 0x83;
+			constexpr byte rm8__imm8 = 0x80;
+			constexpr byte rm16_32_64__imm16_32 = 0x81;
+			constexpr byte rm16_32_64__imm8 = 0x83;
 		}
 		namespace cmp{
-			constexpr byte r_m8__r8 = 0x38;
-			constexpr byte r_m16_32_64__r16_32_64 = 0x39;
-			constexpr byte r8__r_m8 = 0x3A;
-			constexpr byte r16_32_64__r_m16_32_64 = 0x3B;
+			constexpr byte rm8__r8 = 0x38;
+			constexpr byte rm16_32_64__r16_32_64 = 0x39;
+			constexpr byte r8__rm8 = 0x3A;
+			constexpr byte r16_32_64__rm16_32_64 = 0x3B;
 			constexpr byte AL__imm8 = 0x3C;
 			constexpr byte rAX__imm16_32 = 0x3D;
-			constexpr byte r_m8__imm8 = 0x80;
-			constexpr byte r_m16_32_64__imm16_32 = 0x81;
-			constexpr byte r_m16_32_64__imm8 = 0x83;
+			constexpr byte rm8__imm8 = 0x80;
+			constexpr byte rm16_32_64__imm16_32 = 0x81;
+			constexpr byte rm16_32_64__imm8 = 0x83;
 		}
 		namespace movsxd{
-			constexpr byte r32_64__r_m32 = 0x63;
+			constexpr byte r32_64__rm32 = 0x63;
 		}
 		namespace push{
 			constexpr byte imm16_32 = 0x68;
 			constexpr byte imm8 = 0x6A;
-			constexpr byte r_m16_32 = 0xFF;
-			constexpr byte r_m64_16 = 0xFF;
+			constexpr byte rm16_32 = 0xFF;
+			constexpr byte rm64_16 = 0xFF;
 		}
 		namespace imul{
-			constexpr byte r16_32_64__r_m16_32_64__imm16_32 = 0x69;
-			constexpr byte r16_32_64__r_m16_32_64__imm8 = 0x6B;
-			constexpr byte AX__AL__r_m8 = 0xF6;
-			constexpr byte rDX__rAX__r_m16_32_64 = 0xF7;
+			constexpr byte r16_32_64__rm16_32_64__imm16_32 = 0x69;
+			constexpr byte r16_32_64__rm16_32_64__imm8 = 0x6B;
+			constexpr byte AX__AL__rm8 = 0xF6;
+			constexpr byte rDX__rAX__rm16_32_64 = 0xF7;
 		}
 		namespace ins{
 			constexpr byte m8__DX = 0x6C;
@@ -536,39 +536,39 @@ namespace amd64
 			constexpr byte rel8 = 0x7F;
 		}
 		namespace test{
-			constexpr byte r_m8__r8 = 0x84;
-			constexpr byte r_m16_32_64__r16_32_64 = 0x85;
+			constexpr byte rm8__r8 = 0x84;
+			constexpr byte rm16_32_64__r16_32_64 = 0x85;
 			constexpr byte AL__imm8 = 0xA8;
 			constexpr byte rAX__imm16_32 = 0xA9;
-			constexpr byte r_m8__imm8 = 0xF6;
-			constexpr byte r_m8__imm8 = 0xF6;
-			constexpr byte r_m16_32_64__imm16_32 = 0xF7;
-			constexpr byte r_m16_32_64__imm16_32 = 0xF7;
+			constexpr byte rm8__imm8 = 0xF6;
+			constexpr byte rm8__imm8 = 0xF6;
+			constexpr byte rm16_32_64__imm16_32 = 0xF7;
+			constexpr byte rm16_32_64__imm16_32 = 0xF7;
 		}
 		namespace xchg{
-			constexpr byte r8__r_m8 = 0x86;
-			constexpr byte r16_32_64__r_m16_32_64 = 0x87;
+			constexpr byte r8__rm8 = 0x86;
+			constexpr byte r16_32_64__rm16_32_64 = 0x87;
 		}
 		namespace mov{
-			constexpr byte r_m8__r8 = 0x88;
-			constexpr byte r_m16_32_64__r16_32_64 = 0x89;
-			constexpr byte r8__r_m8 = 0x8A;
-			constexpr byte r16_32_64__r_m16_32_64 = 0x8B;
+			constexpr byte rm8__r8 = 0x88;
+			constexpr byte rm16_32_64__r16_32_64 = 0x89;
+			constexpr byte r8__rm8 = 0x8A;
+			constexpr byte r16_32_64__rm16_32_64 = 0x8B;
 			constexpr byte m16__Sreg = 0x8C;
-			constexpr byte Sreg__r_m16 = 0x8E;
+			constexpr byte Sreg__rm16 = 0x8E;
 			constexpr byte AL__moffs8 = 0xA0;
 			constexpr byte rAX__moffs16_32_64 = 0xA1;
 			constexpr byte moffs8__AL = 0xA2;
 			constexpr byte moffs16_32_64__rAX = 0xA3;
-			constexpr byte r_m8__imm8 = 0xC6;
-			constexpr byte r_m16_32_64__imm16_32 = 0xC7;
+			constexpr byte rm8__imm8 = 0xC6;
+			constexpr byte rm16_32_64__imm16_32 = 0xC7;
 		}
 		namespace lea{
 			constexpr byte r16_32_64__m = 0x8D;
 		}
 		namespace pop{
-			constexpr byte r_m16_32 = 0x8F;
-			constexpr byte r_m64_16 = 0x8F;
+			constexpr byte rm16_32 = 0x8F;
+			constexpr byte rm64_16 = 0x8F;
 		}
 		namespace r16_32_64{
 			constexpr byte rAX = 0x90+r;
@@ -622,68 +622,68 @@ namespace amd64
 			constexpr byte m16_32_64__rAX = 0xAF;
 		}
 		namespace rol{
-			constexpr byte r_m8__imm8 = 0xC0;
-			constexpr byte r_m16_32_64__imm8 = 0xC1;
-			constexpr byte r_m8__1 = 0xD0;
-			constexpr byte r_m16_32_64__1 = 0xD1;
-			constexpr byte r_m8__CL = 0xD2;
-			constexpr byte r_m16_32_64__CL = 0xD3;
+			constexpr byte rm8__imm8 = 0xC0;
+			constexpr byte rm16_32_64__imm8 = 0xC1;
+			constexpr byte rm8__1 = 0xD0;
+			constexpr byte rm16_32_64__1 = 0xD1;
+			constexpr byte rm8__CL = 0xD2;
+			constexpr byte rm16_32_64__CL = 0xD3;
 		}
 		namespace ror{
-			constexpr byte r_m8__imm8 = 0xC0;
-			constexpr byte r_m16_32_64__imm8 = 0xC1;
-			constexpr byte r_m8__1 = 0xD0;
-			constexpr byte r_m16_32_64__1 = 0xD1;
-			constexpr byte r_m8__CL = 0xD2;
-			constexpr byte r_m16_32_64__CL = 0xD3;
+			constexpr byte rm8__imm8 = 0xC0;
+			constexpr byte rm16_32_64__imm8 = 0xC1;
+			constexpr byte rm8__1 = 0xD0;
+			constexpr byte rm16_32_64__1 = 0xD1;
+			constexpr byte rm8__CL = 0xD2;
+			constexpr byte rm16_32_64__CL = 0xD3;
 		}
 		namespace rcl{
-			constexpr byte r_m8__imm8 = 0xC0;
-			constexpr byte r_m16_32_64__imm8 = 0xC1;
-			constexpr byte r_m8__1 = 0xD0;
-			constexpr byte r_m16_32_64__1 = 0xD1;
-			constexpr byte r_m8__CL = 0xD2;
-			constexpr byte r_m16_32_64__CL = 0xD3;
+			constexpr byte rm8__imm8 = 0xC0;
+			constexpr byte rm16_32_64__imm8 = 0xC1;
+			constexpr byte rm8__1 = 0xD0;
+			constexpr byte rm16_32_64__1 = 0xD1;
+			constexpr byte rm8__CL = 0xD2;
+			constexpr byte rm16_32_64__CL = 0xD3;
 		}
 		namespace rcr{
-			constexpr byte r_m8__imm8 = 0xC0;
-			constexpr byte r_m16_32_64__imm8 = 0xC1;
-			constexpr byte r_m8__1 = 0xD0;
-			constexpr byte r_m16_32_64__1 = 0xD1;
-			constexpr byte r_m8__CL = 0xD2;
-			constexpr byte r_m16_32_64__CL = 0xD3;
+			constexpr byte rm8__imm8 = 0xC0;
+			constexpr byte rm16_32_64__imm8 = 0xC1;
+			constexpr byte rm8__1 = 0xD0;
+			constexpr byte rm16_32_64__1 = 0xD1;
+			constexpr byte rm8__CL = 0xD2;
+			constexpr byte rm16_32_64__CL = 0xD3;
 		}
 		namespace shl{
-			constexpr byte r_m8__imm8 = 0xC0;
-			constexpr byte r_m16_32_64__imm8 = 0xC1;
-			constexpr byte r_m8__1 = 0xD0;
-			constexpr byte r_m16_32_64__1 = 0xD1;
-			constexpr byte r_m8__CL = 0xD2;
-			constexpr byte r_m16_32_64__CL = 0xD3;
+			constexpr byte rm8__imm8 = 0xC0;
+			constexpr byte rm16_32_64__imm8 = 0xC1;
+			constexpr byte rm8__1 = 0xD0;
+			constexpr byte rm16_32_64__1 = 0xD1;
+			constexpr byte rm8__CL = 0xD2;
+			constexpr byte rm16_32_64__CL = 0xD3;
 		}
 		namespace shr{
-			constexpr byte r_m8__imm8 = 0xC0;
-			constexpr byte r_m16_32_64__imm8 = 0xC1;
-			constexpr byte r_m8__1 = 0xD0;
-			constexpr byte r_m16_32_64__1 = 0xD1;
-			constexpr byte r_m8__CL = 0xD2;
-			constexpr byte r_m16_32_64__CL = 0xD3;
+			constexpr byte rm8__imm8 = 0xC0;
+			constexpr byte rm16_32_64__imm8 = 0xC1;
+			constexpr byte rm8__1 = 0xD0;
+			constexpr byte rm16_32_64__1 = 0xD1;
+			constexpr byte rm8__CL = 0xD2;
+			constexpr byte rm16_32_64__CL = 0xD3;
 		}
 		namespace sal{
-			constexpr byte r_m8__imm8 = 0xC0;
-			constexpr byte r_m16_32_64__imm8 = 0xC1;
-			constexpr byte r_m8__1 = 0xD0;
-			constexpr byte r_m16_32_64__1 = 0xD1;
-			constexpr byte r_m8__CL = 0xD2;
-			constexpr byte r_m16_32_64__CL = 0xD3;
+			constexpr byte rm8__imm8 = 0xC0;
+			constexpr byte rm16_32_64__imm8 = 0xC1;
+			constexpr byte rm8__1 = 0xD0;
+			constexpr byte rm16_32_64__1 = 0xD1;
+			constexpr byte rm8__CL = 0xD2;
+			constexpr byte rm16_32_64__CL = 0xD3;
 		}
 		namespace sar{
-			constexpr byte r_m8__imm8 = 0xC0;
-			constexpr byte r_m16_32_64__imm8 = 0xC1;
-			constexpr byte r_m8__1 = 0xD0;
-			constexpr byte r_m16_32_64__1 = 0xD1;
-			constexpr byte r_m8__CL = 0xD2;
-			constexpr byte r_m16_32_64__CL = 0xD3;
+			constexpr byte rm8__imm8 = 0xC0;
+			constexpr byte rm16_32_64__imm8 = 0xC1;
+			constexpr byte rm8__1 = 0xD0;
+			constexpr byte rm16_32_64__1 = 0xD1;
+			constexpr byte rm8__CL = 0xD2;
+			constexpr byte rm16_32_64__CL = 0xD3;
 		}
 		namespace retn{
 			constexpr byte imm16 = 0xC2;
@@ -1099,14 +1099,14 @@ namespace amd64
 		}
 		namespace call{
 			constexpr byte rel16_32 = 0xE8;
-			constexpr byte r_m16_32 = 0xFF;
-			constexpr byte r_m64 = 0xFF;
+			constexpr byte rm16_32 = 0xFF;
+			constexpr byte rm64 = 0xFF;
 		}
 		namespace jmp{
 			constexpr byte rel16_32 = 0xE9;
 			constexpr byte rel8 = 0xEB;
-			constexpr byte r_m16_32 = 0xFF;
-			constexpr byte r_m64 = 0xFF;
+			constexpr byte rm16_32 = 0xFF;
+			constexpr byte rm64 = 0xFF;
 		}
 		namespace int1{
 			constexpr byte eFlags = 0xF1;
@@ -1118,24 +1118,24 @@ namespace amd64
 			constexpr byte _ = 0xF5;
 		}
 		namespace not{
-			constexpr byte r_m8 = 0xF6;
-			constexpr byte r_m16_32_64 = 0xF7;
+			constexpr byte rm8 = 0xF6;
+			constexpr byte rm16_32_64 = 0xF7;
 		}
 		namespace neg{
-			constexpr byte r_m8 = 0xF6;
-			constexpr byte r_m16_32_64 = 0xF7;
+			constexpr byte rm8 = 0xF6;
+			constexpr byte rm16_32_64 = 0xF7;
 		}
 		namespace mul{
-			constexpr byte AX__AL__r_m8 = 0xF6;
-			constexpr byte rDX__rAX__r_m16_32_64 = 0xF7;
+			constexpr byte AX__AL__rm8 = 0xF6;
+			constexpr byte rDX__rAX__rm16_32_64 = 0xF7;
 		}
 		namespace div{
-			constexpr byte AL__AH__AX__r_m8 = 0xF6;
-			constexpr byte rDX__rAX__r_m16_32_64 = 0xF7;
+			constexpr byte AL__AH__AX__rm8 = 0xF6;
+			constexpr byte rDX__rAX__rm16_32_64 = 0xF7;
 		}
 		namespace idiv{
-			constexpr byte AL__AH__AX__r_m8 = 0xF6;
-			constexpr byte rDX__rAX__r_m16_32_64 = 0xF7;
+			constexpr byte AL__AH__AX__rm8 = 0xF6;
+			constexpr byte rDX__rAX__rm16_32_64 = 0xF7;
 		}
 		namespace clc{
 			constexpr byte _ = 0xF8;
@@ -1156,12 +1156,12 @@ namespace amd64
 			constexpr byte _ = 0xFD;
 		}
 		namespace inc{
-			constexpr byte r_m8 = 0xFE;
-			constexpr byte r_m16_32_64 = 0xFF;
+			constexpr byte rm8 = 0xFE;
+			constexpr byte rm16_32_64 = 0xFF;
 		}
 		namespace dec{
-			constexpr byte r_m8 = 0xFE;
-			constexpr byte r_m16_32_64 = 0xFF;
+			constexpr byte rm8 = 0xFE;
+			constexpr byte rm16_32_64 = 0xFF;
 		}
 		namespace callf{
 			constexpr byte m16_32_64 = 0xFF;

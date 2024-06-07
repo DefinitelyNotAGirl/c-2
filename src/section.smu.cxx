@@ -30,6 +30,8 @@
 
 #include <SMU.h>
 
+section* code;
+
 namespace smu
 {
 	section::section(){}
