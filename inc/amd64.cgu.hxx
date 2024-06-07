@@ -38,6 +38,7 @@ namespace amd64
 	*	bit 3: REX register extension
 	*	bit 4: indicates that this is a model specific register, in which case the ECX value is held in bits 32-63
 	*	bit 5: indicates that this is a floating point register
+	*	bit 6: indicates that this is an x86-64 control register
 	*/
 	enum class Register : uint64_t {
 		/* original integer registers */
@@ -125,31 +126,33 @@ namespace amd64
 	};
 
 	enum class StorageMode {
-		IndirectImmediate__ImmediateOffset,
-		IndirectImmediate__RegisterOffset,
-		IndirectRegister__ImmediateOffset,
-		IndirectRegister__RegisterOffset,
+		IndirectImmediate,
+		IndirectRegister,
 		DirectImmediate,
 		DirectRegister,
+		SII,
+		SIB
 	};
 	/**
 	 * @brief contains storage information for variables
 	 * 
 	 */
 	class VariableStorage {
+	public:
 		StorageMode mode;
-		ImmediateValue immBase;
-		ImmediateValue immOffset;
-		Register regBase;
-		Register regOffset;
+		ImmediateValue immediate;
+		ImmediateValue displacement;
+		Register reg;
+		byte SIB;
 	};
 	/**
 	* @brief each value in this enum really only has 2 bits, the upper 6 are to be ignored
 	*/
 	enum class AddressingMode : uint8_t {
-		RegisterDirect = 0b11,
-		RegisterIndirect = 0b00,
-		IndexedRegisterIndirect = 0b00
+		RegisterDirect 			= 0b11,
+		RegisterIndirect  		= 0b00,
+		RegisterIndirect_disp8  = 0b01,
+		RegisterIndirect_disp32 = 0b10
 	};
 	
 	uint64_t imm64(uint64_t value);

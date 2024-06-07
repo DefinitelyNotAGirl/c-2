@@ -28,10 +28,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include <amd64.cgu.hxx>
-#include <CGU.AMD64.h>
-#include <SMU.h>
 #include <issues.hxx>
+#include <SMU.h>
+#include <amd64.cgu.hxx>
 
 using namespace issues;
 
@@ -123,6 +122,52 @@ namespace runtime::amd64
 				::amd64::opcode::mov::r16_32_64__rm16_32_64,
 				::amd64::modRM(srcStore->reg,dstStore->reg)
 			});
+		}
+//,####################################################################################################################
+//,####################################################################################################################
+//, ██████  ██████                       ██       ██ ██████
+//, ██   ██ ██   ██                       ██      ██ ██   ██
+//, ██   ██ ██████      █████ █████ █████  ██     ██ ██████
+//, ██   ██ ██   ██                       ██      ██ ██   ██
+//, ██████  ██   ██                      ██       ██ ██   ██
+//,####################################################################################################################
+//,####################################################################################################################
+		if( 
+			(srcStore->mode == ::amd64::StorageMode::DirectRegister)
+			&&
+			(dstStore->mode == ::amd64::StorageMode::IndirectRegister)
+		)
+		{
+			if(dstStore->displacement.imm64 == 0x00)
+			{
+				code->push({
+					::amd64::prefix::REX(1,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
+					::amd64::opcode::mov::r16_32_64__rm16_32_64,
+					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect,dstStore->reg)
+				});
+			}
+			else if(dstStore->displacement.imm64 <= 0xFF)
+			{
+				code->push({
+					::amd64::prefix::REX(1,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
+					::amd64::opcode::mov::r16_32_64__rm16_32_64,
+					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect_disp8,dstStore->reg)
+					(byte)srcStore->displacement.imm64
+				});
+				if(srcStore->displacement.isSymbol)
+					compilerBug("linker information not implemented, cant use symbol");
+			}
+			else if(dstStore->displacement.imm64 <= 0xFFFFFFFF)
+			{
+				code->push({
+					::amd64::prefix::REX(1,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
+					::amd64::opcode::mov::r16_32_64__rm16_32_64,
+					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect_disp32,dstStore->reg)
+				});
+				code->push(::amd64::imm32(dstStore->displacement.imm64));
+				if(srcStore->displacement.isSymbol)
+					compilerBug("linker information not implemented, cant use symbol");
+			}
 		}
 	}
 	void clear(variable* target);
