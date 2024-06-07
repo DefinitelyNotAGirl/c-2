@@ -28,7 +28,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include <compiler.h>
+#include <amd64.cgu.hxx>
 
 namespace amd64
 {
@@ -37,24 +37,53 @@ namespace amd64
 		return value;
 	}
 
-	byte modRM()
+	/**
+	 * @brief this is short hand for modRM(reg,AddressingMode::RegisterDirect,rm)
+	 * 
+	 * @param reg reg operrand
+	 * @param rm reg/mem opperand
+	 * @return amd64 modRM byte ready for execution
+	 *
+	 */
+	byte modRM(Register reg,Register rm)
 	{
-		return 0x00;
+		return modRM(reg,AddressingMode::RegisterDirect,rm);
 	}
-
-	byte SIB()
+	/**
+	 * @brief
+	 * 
+	 * @param reg reg operrand
+	 * @param rm reg/mem opperand
+	 * @return amd64 modRM byte ready for execution
+	 */
+	byte modRM(Register reg,AddressingMode mod,Register rm)
 	{
-		return 0x00;
+		return (reg<<3) | (mod<<6) | (rm<<0);
+	}
+	/**
+	 * @brief
+	 * 
+	 * @param scale must be either 1,2,4 or 8 
+	 * @param index register holding the index
+	 * @param base register holding the base address
+	 * @return amd64 SIB byte ready for execution
+	 */
+	byte SIB(uint8_t scale, Register index, Register base)
+	{
+		return (scale<<6) | (index<<3) | (base<<0);
 	}
 
 	namespace prefix
 	{
+		byte REX(bool W, bool R, bool X, bool B)
+		{
+			return 0x40 | (W<<3) | (R<<2) | (X<<1) | (B<<0);
+		}
 		namespace legacy
 		{
 		}
 	}
 
-	namespace opcode
-	{
+	namespace opcode {
 	}
 }
