@@ -33,19 +33,40 @@
 namespace amd64
 {
 	/**
+	* @brief
+	*	bits 0-2: register encoding
+	*	bit 3: REX register extension
+	*	bit 4: indicates that this is a model specific register, in which case the ECX value is held in bits 32-63
+	*/
+	enum class Register : uint64_t {
+	};
+
+	enum class StorageMode {
+		IndirectImmediate__ImmediateOffset,
+		IndirectImmediate__RegisterOffset,
+		IndirectRegister__ImmediateOffset,
+		IndirectRegister__RegisterOffset,
+		DirectImmediate,
+		DirectRegister,
+	};
+	/**
+	 * @brief contains storage information for variables
+	 * 
+	 */
+	class VariableStorage {
+		StorageMode mode;
+		ImmediateValue immBase;
+		ImmediateValue immOffset;
+		Register regBase;
+		Register regOffset;
+	};
+	/**
 	* @brief each value in this enum really only has 2 bits, the upper 6 are to be ignored
 	*/
 	enum class AddressingMode : uint8_t {
 		RegisterDirect = 0b11,
 		RegisterIndirect = 0b00,
 		IndexedRegisterIndirect = 0b00
-	};
-	
-	/**
-	* @brief each value in this enum really only has 3 bits, the upper 5 are to be ignored
-	*/
-	enum class Register : uint8_t {
-		
 	};
 	
 	uint64_t imm64(uint64_t value);
