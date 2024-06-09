@@ -57,26 +57,26 @@ namespace smu
 		this->sizeInFile = newSize;
 	}
 
-	void section::operator<<(std::initializer_list<section> data)
+	void section::operator<<(std::initializer_list<section*> data)
 	{
 		uint64_t newSize = this->sizeInFile;
-		for(section& s : data)
-			newSize+=s.sizeInFile;
+		for(section* s : data)
+			newSize+=s->sizeInFile;
 		this->data = (byte*)realloc(this->data,newSize);
 		uint64_t I = this->sizeInFile;
-		for(section& II : data)
-			for(uint64_t III = 0;III<II.sizeInFile;III++)
-				this->data[I++] = II.data[III];
+		for(section* II : data)
+			for(uint64_t III = 0;III<II->sizeInFile;III++)
+				this->data[I++] = II->data[III];
 		this->sizeInFile = newSize;
 	}
 
-	void section::operator<<(section& data)
+	void section::operator<<(section* data)
 	{
-		uint64_t newSize = this->sizeInFile+data.sizeInFile;
+		uint64_t newSize = this->sizeInFile+data->sizeInFile;
 		this->data = (byte*)realloc(this->data,newSize);
 		uint64_t I = this->sizeInFile;
-		for(uint64_t II = 0;II<data.sizeInFile;II++)
-			this->data[I++] = data.data[II];
+		for(uint64_t II = 0;II<data->sizeInFile;II++)
+			this->data[I++] = data->data[II];
 		this->sizeInFile = newSize;
 	}
 
@@ -104,19 +104,20 @@ namespace smu
 		this->sizeInFile = newSize;
 	}
 
-	void section::size()
+	uint64_t section::size()
 	{
 		return this->sizeInFile > this->sizeInMemory ? this->sizeInFile : this->sizeInMemory;
 	}
 
-	void section::align(uint64_t n)
+	uint64_t section::align(uint64_t n)
 	{
 		uint64_t bytesNeeded = n - (this->sizeInFile % n);
 		if(bytesNeeded == 0)
-			return;
+			return this->sizeInFile;
 		uint64_t newSize = this->sizeInFile+bytesNeeded;
 		this->data = (byte*)realloc(this->data,newSize);
 		memset(this->data+this->sizeInFile,0x90,bytesNeeded);
 		this->sizeInFile = newSize;
+		return newSize;
 	}
 }

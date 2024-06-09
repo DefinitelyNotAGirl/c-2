@@ -1,4 +1,3 @@
-
 /*
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
@@ -35,7 +34,6 @@
 
 #include <common.h>
 #include <compiler.h>
-#include <codegen.h>
 #include <error.h>
 #include <bits.h>
 #include <cmath>
@@ -60,6 +58,8 @@ litop* getLitop(std::string name)
     noSuchLitop("",originCoreHere,source(),name);
 	return IM_NOT_STUCK;
 }
+
+extern variable* call(function* func,std::vector<variable*> args);
 
 /**
  * @brief 
@@ -305,8 +305,7 @@ static variable* resolveInteger(token& t)
 	variable* var = new variable;
 	var->name = getNewVariableName();
 	var->dataType = defaultUnsignedIntegerType;
-	var->storage = storageType::IMMEDIATE;
-	var->immediateValue = value;
+	compilerBug("unimplemented: assign immediate");
 	return var;
 }
 
@@ -334,8 +333,7 @@ static variable* resolveString(token& t)
 	str->dataType = charPointerType;
 	str->symbol = getNewName();
 	str->name = getNewVariableName();
-	str->storage = storageType::SYMBOL_ADDR;
-	DataCode.push_back(str->symbol+":");
+	compilerBug("unimplemented: set storage and create symbol");
 	while(i < (text.length()-1))
 	{ 
 		char c = text[i];
@@ -351,27 +349,27 @@ static variable* resolveString(token& t)
 				switch(ec)
 				{
 					case('n'):
-						DataCode.push_back("\t.byte 10");
+						compilerBug("unimplemented: push 0x0A");
 						i++;
 						break;
 					case('t'):
-						DataCode.push_back("\t.byte 9");
+						compilerBug("unimplemented: push 0x09");
 						i++;
 						break;
 					case('v'):
-						DataCode.push_back("\t.byte 11");
+						compilerBug("unimplemented: push 0x0B");
 						i++;
 						break;
 					case('r'):
-						DataCode.push_back("\t.byte 13");
+						compilerBug("unimplemented: push 0x0D");
 						i++;
 						break;
 					case('"'):
-						DataCode.push_back("\t.byte 34");
+						compilerBug("unimplemented: push 0x22");
 						i++;
 						break;
 					case('`'):
-						DataCode.push_back("\t.byte 96");
+						compilerBug("unimplemented: push 0x60");
 						i++;
 						break;
 					default:
@@ -379,12 +377,12 @@ static variable* resolveString(token& t)
 						{
 							if((text.length()>(i+2)) && isdigit(text[i+2]))
 							{
-								DataCode.push_back("\t.byte "+std::to_string((HEXDIGTONUM(ec)<<4) | (HEXDIGTONUM(text[i+2])<<0)));
+								compilerBug("unimplemented: push 2 number characters");
 								i+=2;
 							}
 							else
 							{
-								DataCode.push_back("\t.byte "+std::to_string(HEXDIGTONUM(ec)));
+								compilerBug("unimplemented: push 1 number character");
 								i++;
 							}
 						}
@@ -430,11 +428,11 @@ static variable* resolveString(token& t)
 			}
 			default:
 				resstr_default:;
-				DataCode.push_back("\t.byte "+std::to_string(((uint64_t)c)));
+				compilerBug("unimplemented: push character");
 		}
 		i++;
 	}
-	DataCode.push_back("\t.byte 0");
+	compilerBug("unimplemented: push string terminator");
 	return str;
 }
 

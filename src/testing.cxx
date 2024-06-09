@@ -1,11 +1,11 @@
-/**
- * Created Date: Thursday August 3rd 2023
+/*
+ * Created Date: Saturday June 8th 2024
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 3rd 2023 2:01:37 pm
+ * Last Modified: Saturday June 8th 2024 11:54:00 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
- * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
+ * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -27,20 +27,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#pragma once
 
 #include <compiler.h>
-#include "pops.h"
+#include <SMU.h>
+#include <amd64.cgu.hxx>
+#include <CGU.AMD64.h>
 
-extern std::vector<std::string>* code;
-extern functionStorage* fstore;
-
-variable* primitiveCall(function* func,std::vector<variable*> args);
-
-void saveRegister(__register__ reg);
-void restoreRegisters();
-void pushRegSave();
-void popRegSave();
-
-void CodePlaceSymbol(std::string& symbol);
-void jmp(std::string symbol);
+namespace testing 
+{
+	void main()
+	{
+		std::cout << ">>>>>>>>>>>> TEST BUILD RUNNING <<<<<<<<<<<<" << std::endl;
+		//.
+		//. required sections
+		//.
+		section* text;
+		section* data;
+		section* rodata;
+		//.
+		//. data types
+		//.
+		type* u64 = new type;
+		u64->size = 8;
+		u64->mangledName = "u64";
+		u64->name = "u64";
+	}
+}

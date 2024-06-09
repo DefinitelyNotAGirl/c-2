@@ -2,7 +2,7 @@
  * Created Date: Wednesday May 22nd 2024
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:38:05 am
+ * Last Modified: Monday June 3rd 2024 11:44:37 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -147,6 +147,8 @@ namespace issues {
 		std::string github; //link to issue, empty string if no issue exists
 		compilerBug(ISSUES_CTOR_ARGS, std::string github)
 			:github(github){ISSUES_CTOR_INIT;invoke(*this);}
+		compilerBug(std::string msg)
+			:github(""){this->msg = msg;this->src = source();invoke(*this);}
 	};
 
 	class unexpectedTokenType : public fatal {

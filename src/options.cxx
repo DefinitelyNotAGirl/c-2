@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -32,7 +32,6 @@
 #include <util.h>
 #include <options.h>
 #include <compiler.h>
-#include <codegen.h>
 #include <miscout.h>
 
 bool strToBool(std::string str)
@@ -167,27 +166,6 @@ void CARGHANDLER_INCLUDE(CARGPARSE_HANDLER_ARGS)
 
 void CARGHANDLER_MSYNTAX(CARGPARSE_HANDLER_ARGS)
 {
-    std::string syn = args.front();
-    if(syn == "Intel")
-    {
-        syntax = SYNTAX_INTEL;
-        return;
-    }
-    if(syn == "gas")
-    {
-        syntax = SYNTAX_GAS;
-        return;
-    }
-    if(syn == "AT&T")
-    {
-        syntax = SYNTAX_GAS;
-        return;
-    }
-    if(syn == "ATT")
-    {
-        syntax = SYNTAX_GAS;
-        return;
-    }
 }
 
 void CARGHANDLER_HELP(CARGPARSE_HANDLER_ARGS);

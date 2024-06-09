@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
+ * Last Modified: Monday June 3rd 2024 11:44:37 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -29,7 +29,6 @@
  */
 /** @file */
 
-#include <codegen.h>
 #include <common.h>
 #include <compiler.h>
 #include <error.h>
@@ -170,15 +169,6 @@ function* getFunction(std::string name)
 		sc = sc->parent;
 	}
 	return nullptr;
-}
-
-arch* getArch(std::string name)
-{
-	for(arch* i : architectures)
-		if(i->name == name)
-			return i;
-	noSuchArchitecture("",originCoreHere,source(),name);
-	return IM_NOT_STUCK;
 }
 
 _system* getSystem(std::string name)
@@ -401,21 +391,6 @@ function* getFunction(type* returnType, std::string& name, std::vector<variable*
 	return IM_NOT_STUCK;
 }
 
-void printVariable(variable* v)
-{
-	std::cerr << "##### variable #####" << std::endl;
-	std::cerr << "addr: " << std::hex << (void*)v << std::endl;
-	std::cerr << "name: " << v->name << std::endl;
-	std::cerr << "storage: " << (uint64_t)v->storage << std::endl;
-	std::cerr << "auto storage: " << v->usedAutoStorage << std::endl;
-	std::cerr << "reg: " << registerNAME(v->reg) << std::endl;
-	std::cerr << "offset: " << v->offset << std::endl;
-	std::cerr << "offsetReg: " << registerNAME(v->offsetReg) << std::endl;
-	std::cerr << "offsetType: " << (uint64_t)v->offsetType << std::endl;
-	std::cerr << "imm val: " << v->immediateValue << std::endl;
-	std::cerr << "####################" << std::endl;
-}
-
 std::vector<variable*> tempVariables;
 /**
  * @brief Get the Variable object
@@ -452,27 +427,9 @@ variable* getVariable(std::string name) {
  * @param t 
  */
 void declareDwarfType(type* t)
-{setANB(16);
-	t->dwarfID = ++dbgAbbrev;
-	//.
-	//. debug_info
-	//.
-	DebugCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
-	DebugCode.push_back(getIndent()+".string \""+t->name+"\"");
-	DebugCode.push_back(getIndent()+".quad "+intToString(t->size));
-	//.
-	//. debug_abbrev
-	//.
-	DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
-	DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::TAG_class_type));
-	DebugAbbrevCode.push_back(getIndent()+".byte 0");//no children
-	DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_name));
-	DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
-	DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_byte_size));
-	DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_data8));
-	DebugAbbrevCode.push_back(getIndent()+".uleb128 0");//terminate
-	DebugAbbrevCode.push_back(getIndent()+".uleb128 0");
-popANB();}
+{
+	compilerBug("unimplemented: declare dwarf debug type");
+}
 
 struct targtype 
 {
@@ -524,10 +481,7 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
 					if(options::ddebug)
 						std::cout << "resolving integer template argument: \""+working+"\"" << std::endl;
 					variable* RTA = resolve(TAT);
-					if(RTA->storage != storageType::IMMEDIATE)
-						nonImmediateIntegerTemplateArgument("",originCoreHere,source(currentFile,L,TAT));
-					if(RTA->dataType != defaultUnsignedIntegerType)
-						invalidType("",originCoreHere,source(),{defaultUnsignedIntegerType,defaultSignedIntegerType},RTA->dataType);
+					compilerBug("unimplemented: RTA validity check");
 					RTA->name = tt->tArgs[i]->name;
 					tempVariables.push_back(RTA);
 					if(options::ddebug)std::cout << "template argument resolved!" << std::endl;
@@ -569,15 +523,11 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
 	types.push_back(tti);//push tti prematurely in order to be able to fetch pointer type
 	type* tti_pointer = getType(tti->name+"&");
 	ctor->parameters = {tti_pointer};
-	ctor->fstore = new functionStorage;
 	variable* arg_this = new variable;
 	arg_this->dataType = tti_pointer;
 	arg_this->name = "this";
 	ctor->vparams = {arg_this};
-	//ctor->abi->setArgStorages(ctor,ctor->vparams);
-	arg_this->storage = storageType::REGISTER;
-	arg_this->reg = defaultABI->ctorThisRegister;
-	ctor->fstore->registerStatus(arg_this->reg,1);
+	compilerBug("unimplemented: this storage");
 	ctor->isLocal = true;
 	ctor->doExport = false;
 	ctor->returnType = getType("void");
@@ -590,7 +540,6 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
 	scope* ttiScope = new scope;
 	ttiScope->t = scopeType::CLASS;
 	ttiScope->cl = tti;
-	ttiScope->fstore = ctor->fstore;
 	ttiScope->func = ctor;
 	ttiScope->isIndentBased = true;
 	ttiScope->parent = tt->sc;
@@ -604,43 +553,16 @@ type* createTypeTemplateInstance(std::string instanceString,typeTemplate* tt,std
 	mOUT(moClassID, tti);
 	//finish up constructor
 	{
-		//std::cout << "ctor code:" << std::endl;
-		for(std::string& i : ctor->code)
-		{
-			i = "    "+i;
-		}
-		std::vector<std::string> lines;
+		section* fcode = new section;
 		if(!ctor->isLocal)
-			lines.push_back(getIndent()+".global " + ctor->symbol);
-		if(!options::nod)
-		{
-			//optimizer data
-			lines.push_back("// @function "+ctor->symbol);
-			for(variable* arg : ctor->vparams)
-				lines.push_back("// @parameter "+c2oLocExpr(arg));
-			lines.push_back("// @return rax");
-			for(__register__ i : ctor->abi->VolatileRegisters)
-				lines.push_back("// @modifies "+registerNAME(i));
-			for(__register__ i : ctor->abi->nonVolatile)
-				lines.push_back("// @preserves "+registerNAME(i));
-		}
+			compilerBug("unimplemented: create global symbol");
 		//finish up function
-		ctor->abi->genProlouge(lines, ttiScope);
-		for(std::string& i : ctor->code)
-			lines.push_back(i);
-		ctor->abi->genEpilouge(lines, ttiScope);
-		for(std::vector<std::string>* block : ttiScope->extraCodeBlocks)
-			for(std::string& i : *block)
-				lines.push_back(i);
-		for (std::string& i : lines)
-			TextCode.push_back(i);
-		TextCode.push_back("");
-		//if(true /*check for GAS (true for now)*/ && options::debugSymbols)
-		//{
-		//    //terminator
-		//    DebugCode.push_back(getIndent()+".uleb128 0");
-		//    DebugCode.push_back(getIndent()+".uleb128 0");
-		//}
+		ctor->abi->genProlouge(fcode, ttiScope);
+		fcode->push(ctor->code);
+		ctor->abi->genEpilouge(fcode, ttiScope);
+		for(section* block : ttiScope->extraCodeBlocks)
+			fcode->push(block);
+		compilerBug("unimplemented: add function code to output");
 		mOUT(moFunctionID, ctor);
 	}
 	targTypes.clear();
@@ -822,68 +744,7 @@ void updateCurrentScope(scope* sc)
 		std::cout << "\033[35m[INFO]\033[0m updating scope: " << sc->name << std::endl;
 	lastScope = currentScope;
 	currentScope = sc;
-	codeGenUpdateFuction();
-}
-
-void info(std::string i)
-{
-	std::cout << "\033[35m[INFO]\033[0m " << i << std::endl;
-}
-
-variable* getImmediateVariable(uint64_t v)
-{
-	variable* var = new variable;
-	var->name = getNewName();
-	var->dataType = defaultUnsignedIntegerType;
-	var->storage = storageType::IMMEDIATE;
-	var->immediateValue = v;
-	return var;
-}
-
-variable* getRegisterHandle(__register__ reg)
-{
-	variable* var = new variable;
-	var->name = getNewName();
-	var->dataType = defaultUnsignedIntegerType;
-	var->storage = storageType::REGISTER;
-	var->reg = reg;
-	return var;
-}
-
-/**
- * @brief 
- * 
- * @callgraph
- * @callergraph
- * 
- * @param v 
- * @return std::string 
- */
-std::string c2oLocExpr(variable* v)
-{
-	switch(v->storage)
-	{
-		case(storageType::MEMORY):{
-			setANB(16);
-			std::string ret = registerNAME(v->offsetReg)+",";
-			ret += intToString(v->offset);
-			ret += ",0x1";
-			popANB();
-			break;
-		}case(storageType::MEMORY_ABSOLUTE):{
-			setANB(16);
-			std::string ret = "absolute,";
-			ret += intToString(v->offset);
-			ret += ",0x1";
-			popANB();
-			return ret;
-			break;
-		}case(storageType::REGISTER):{
-			return registerNAME(v->reg);
-			break;
-		}
-	}
-	return "LOCATION";
+	compilerBug("unimplemented: change code generation destination");
 }
 
 #include <resources.hxx>
@@ -943,39 +804,6 @@ void printTypeTemplate(typeTemplate* tt)
 	std::cout << "########" << std::endl;
 }
 
-variable* __false__ = getImmediateVariable(0);
-
-void createMemoryHandle(__register__ reg, uint64_t offset, variable* handle)
-{
-	handle->dataType = defaultUnsignedIntegerType;
-	handle->storage = storageType::MEMORY;
-	handle->reg = reg;
-	handle->offset = offset;
-	handle->offsetType = storageType::IMMEDIATE;
-}
-
-void createSymbolHandle(std::string symbol, variable* handle)
-{
-	handle->storage = storageType::SYMBOL_ADDR;
-	handle->symbol = symbol;
-}
-
-void createGlobalVariableHandle(std::string symbol,variable* handle,type* dataType)
-{
-	handle->storage = storageType::SYMBOL;
-	handle->symbol = symbol;
-	handle->dataType = dataType;
-}
-
-variable createRegisterHandle(__register__ reg, type* dataType)
-{
-	variable var;
-	var.dataType = dataType;
-	var.storage = storageType::REGISTER;
-	var.reg = reg;
-	return var;
-}
-
 uint64_t alignToMultiple(uint64_t value, uint64_t alignment) 
 {
     // Ensure alignment is not zero to avoid division by zero
@@ -994,6 +822,11 @@ uint64_t alignToMultiple(uint64_t value, uint64_t alignment)
 
     // Return the aligned value
     return value + adjustment;
+}
+
+variable* call(function* func,std::vector<variable*> args)
+{
+	return nullptr;
 }
 
 revstack<std::string> scopenames;
@@ -1063,85 +896,44 @@ bool endBody(scope*& ts, token& t, line& L)
 		}
 		if(ts->t == scopeType::FUNCTION)
 		{
-			//targTypes.clear();
-			std::vector<std::string> lines;
+			section* fcode = new section;
 			if(!ts->func->isLocal)
 			{
-				currentScope = ts->parent;
-				lines.push_back(getIndent()+".global " + ts->func->symbol);
-				currentScope = ts;
-			}
-			if(!options::nod)
-			{
-				//optimizer data
-				lines.push_back("// @function "+ts->func->symbol);
-				for(variable* arg : ts->func->vparams)
-					lines.push_back("// @parameter "+c2oLocExpr(arg));
-				lines.push_back("// @return rax");
-				for(__register__ i : ts->func->abi->VolatileRegisters)
-					lines.push_back("// @modifies "+registerNAME(i));
-				for(__register__ i : ts->func->abi->nonVolatile)
-					lines.push_back("// @preserves "+registerNAME(i));
+				compilerBug("unimplemented: place function symbol");
 			}
 			//finish up function
-			ts->func->abi->genProlouge(lines, ts);
-			for (std::string& i : ts->func->code)
-				lines.push_back(i);
-			ts->func->abi->genEpilouge(lines, ts);
-			for(std::vector<std::string>* block : ts->extraCodeBlocks)
-				for(std::string& i : *block)
-					lines.push_back(i);
-			for (std::string& i : lines)
-				TextCode.push_back(i);
-			TextCode.push_back("");
-			if(true /*check for GAS (true for now)*/ && options::debugSymbols)
-			{
-				//terminator
-				DebugCode.push_back(getIndent()+".uleb128 0");
-				DebugCode.push_back(getIndent()+".uleb128 0");
-			}
+			ts->func->abi->genProlouge(fcode, ts);
+			compilerBug("unimplemented: add function code to output");
+			fcode->push(ts->func->code);
+			ts->func->abi->genEpilouge(fcode, ts);
+			for(section* block : ts->extraCodeBlocks)
+				fcode->push(block);
+			compilerBug("unimplemented: function debug information");
 			mOUT(moFunctionID, ts->func);
 		}
 		else if(ts->t == scopeType::CONDITIONAL_BLOCK)
 		{
-			//jump(ts->func,ts->parent->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(ts->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry");
-			//if(ts->extraCodeBlocks.size() >= 2)
-			//    code = ts->extraCodeBlocks[1];
-			//else
-			//    code = ts->extraCodeBlocks.back();
-			//code = &currentScope->func->code;
 			if(EXPR_GETBIT_00(ts->miscData))
 			{
 				uint64_t IV = 0;
-				for(std::string& V : *ts->extraCodeBlocks[1])
-				{
-					ts->extraCodeBlocks[0]->push_back(V);
-				}
-				for(std::vector<std::string>* block : ts->extraCodeBlocks)
+				ts->extraCodeBlocks[0]->push(ts->extraCodeBlocks[1]);
+				for(section* block : ts->extraCodeBlocks)
 				{
 					if(IV != 1)
 					{
 						ts->parent->extraCodeBlocks.push_back(block);
-						//info("for loop body block: (IV)"+std::to_string(IV));
-						//for(std::string& i : *block)
-						//    info("    "+i);
 					}
-					//ts->parent->extraCodeBlocks.push_back(block);
 					IV++;
 				}
-				if(ts->fstore->stackSize > ts->parent->fstore->stackSize)
-					ts->parent->fstore->stackSize = ts->fstore->stackSize;
-				jump(ts->reentrySymbol);
+				compilerBug("unimplemented: stack frame management");
+				compilerBug("unimplemented: jump to ts->reentrySymbol");
 			}
 			else
 			{
-				for(std::vector<std::string>* block : ts->extraCodeBlocks)
-				{
+				for(section* block : ts->extraCodeBlocks)
 					ts->parent->extraCodeBlocks.push_back(block);
-				}
-				if(ts->fstore->stackSize > ts->parent->fstore->stackSize)
-					ts->parent->fstore->stackSize = ts->fstore->stackSize;
-				jump(ts->reentrySymbol);
+				compilerBug("unimplemented: stack frame management");
+				compilerBug("unimplemented: jump to ts->reentrySymbol");
 			}
 			//else
 			//    std::cout << ts->fstore->stackSize << " <= " << ts->parent->fstore->stackSize << std::endl;
@@ -1150,87 +942,44 @@ bool endBody(scope*& ts, token& t, line& L)
 		}
 		else if(ts->t == scopeType::LOGICAL)
 		{
-			for(std::string& i : ts->func->code)
-			{
-				//info("logical block line: "+i);
-				ts->parent->func->code.push_back(i);
-			}
-			for(std::vector<std::string>* block : ts->extraCodeBlocks)
-			{
-				//info("logical block end block: ");
-				//for(std::string& i : *block)
-				//    info("    "+i);
+			ts->parent->func->code->push(ts->func->code);
+			for(section* block : ts->extraCodeBlocks)
 				ts->parent->extraCodeBlocks.push_back(block);
-			}
-			if(ts->fstore->stackSize > ts->parent->fstore->stackSize)
-				ts->parent->fstore->stackSize = ts->fstore->stackSize;
-			//else
-			//    std::cout << ts->fstore->stackSize << " <= " << ts->parent->fstore->stackSize << std::endl;
-			//if(ts->fstore->stackOffset > ts->parent->fstore->stackOffset)
-			//    ts->parent->fstore->stackOffset = ts->fstore->stackOffset;
+			compilerBug("unimplemented: stack frame management");
 		}
 		else if(ts->t == scopeType::DUMMY)
 		{
-			for(std::string& i : ts->func->code)
-			{
-				ts->parent->func->code.push_back(i);
-			}
+			ts->parent->func->code->push(ts->func->code);
 		}
 		else if(ts->t == scopeType::TRY)
 		{
-			if(ts->fstore->stackSize > ts->parent->fstore->stackSize)
-				ts->parent->fstore->stackSize = ts->fstore->stackSize;
+			compilerBug("unimplemented: stack frame management");
 			ts->parent->func->code = ts->func->code;
 			for(uint64_t I = 0;I<ts->extraCodeBlocks.size();I++)
 				ts->parent->extraCodeBlocks.push_back(ts->extraCodeBlocks[I]);
 		}
 		else if(ts->t == scopeType::CATCH)
 		{
-			if(ts->fstore->stackSize > ts->parent->fstore->stackSize)
-				ts->parent->fstore->stackSize = ts->fstore->stackSize;
-			//!
-			//! debug code
-			//!
-			if(false)
-			{
-				std::cout << "current code block: " << std::endl;
-				for(std::string& l : *code)
-				{
-					std::cout << l << std::endl;
-				}
-				std::cout << "<code end>" << std::endl;
-				std::cout << "ts extra code blocks: " << std::endl;
-				uint64_t I = 0;
-				for(std::vector<std::string>* exb : ts->extraCodeBlocks)
-				{
-					std::cout << "["<<I++<<"]: " << std::endl;
-					for(std::string& l : *exb)
-					{
-						std::cout << l << std::endl;
-					}
-					std::cout << "<code end>" << std::endl;
-				}
-			}
-			jmp(ts->parent->reentrySymbol);
-			for(std::string& l : *ts->extraCodeBlocks[0])ts->parent->extraCodeBlocks[0]->push_back(l);
-			for(std::string& l : *ts->extraCodeBlocks[1])ts->parent->extraCodeBlocks[1]->push_back(l);
-			ts->parent->extraCodeBlocks.push_back(&ts->func->code);
+			compilerBug("unimplemented: stack frame management");
+			compilerBug("unimplemented: jump to ts->parent->reentrySymbol");
+			ts->parent->extraCodeBlocks[0]->push(ts->extraCodeBlocks[0]);
+			ts->parent->extraCodeBlocks[1]->push(ts->extraCodeBlocks[1]);
+			ts->parent->extraCodeBlocks.push_back(ts->func->code);
 			for(uint64_t I = 2;I<ts->extraCodeBlocks.size();I++)
 				ts->parent->extraCodeBlocks.push_back(ts->extraCodeBlocks[I]);
 		}
 		else if(ts->t == scopeType::TRY_CATCH)
 		{
-			if(ts->fstore->stackSize > ts->parent->fstore->stackSize)
-				ts->parent->fstore->stackSize = ts->fstore->stackSize;
+			compilerBug("unimplemented: stack frame management");
 			if(t.type == 8 && t.text == "catch")
 			{
 				goToParentScope = false;
 			}
 			else
 			{
-				for(std::string& l : *ts->extraCodeBlocks[0])ts->parent->func->code.push_back(l);//install handlers
-				for(std::string  l :  ts->func->code		)ts->parent->func->code.push_back(l);//run try
-				for(std::string& l : *ts->extraCodeBlocks[1])ts->parent->func->code.push_back(l);//reset handlers
+				ts->parent->func->code->push(ts->extraCodeBlocks[0]);//install handlers
+				ts->parent->func->code->push(ts->func->code);//run try
+				ts->parent->func->code->push(ts->extraCodeBlocks[1]);//reset handlers
 				for(uint64_t I = 2;I<ts->extraCodeBlocks.size();I++)//pass the extra blocks further up
 					ts->parent->extraCodeBlocks.push_back(ts->extraCodeBlocks[I]);
 			}
@@ -1330,19 +1079,7 @@ void parse(std::vector<line> lines)
 	//, DWARF debug info
 	//,
 	{
-		if(true /*check for GAS (true for now)*/ && options::debugSymbols)
-		{
-			//emit file debug information
-			dbgFileMax++;
-			dbgFile.push(dbgFileMax);
-			if(code)
-			{
-				std::cout << "code: "  << (void*)code << std::endl;
-				code->push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
-			}
-			else
-				TextCode.push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
-		}
+		compilerBug("unimplemented: debug file information");
 	}
 	//,
 	//, VSTC
@@ -1463,7 +1200,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 		{
 			if(currentScope->lastReentrySym != "")
 			{
-				placeSymbol(currentScope->lastReentrySym);
+				compilerBug("unimplemented: place currentScope->lastReentrySym");
 				currentScope->lastReentrySym = "";
 			}
 		}
@@ -1479,23 +1216,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 					compilerBug("parser default.",originCoreHere,source(),"");
 			}
 		}
-		if(true /*check for GAS (true for now)*/ && options::debugSymbols)
-		{
-			//emit file debug information
-			if(currentScope->t != scopeType::GLOBAL && currentScope->t != scopeType::NAMESPACE && currentScope->t != scopeType::CLASS)
-			{
-				if(code)
-					code->push_back(getIndent()+".loc "+std::to_string(dbgFile.top())+" "+std::to_string(L.lineNum));
-			}
-		}
-		if(options::ddebug){
-			info("first token: ");
-			printToken(t);
-		}
-		if(options::asmVerbose >= 3)
-		{
-			putComment(L.text);
-		}
+		compilerBug("unimplemented: debug line information");
 		switch (t.type) {
 			case(14): //description directive
 			{
@@ -1566,14 +1287,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								currentFile = rstFile;
 								resetScope();
 								includedFiles.push_back(inc);
-								if(true /*check for GAS (true for now)*/ && options::debugSymbols)
-								{
-									//emit file debug information
-									if(code)
-										code->push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
-									else
-										TextCode.push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
-								}
+								compilerBug("unimplemented: debug file information");
 							}
 							else
 								noSuchFile("",originCoreHere,source(currentFile,L,t),inc,{});
@@ -1618,14 +1332,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							}
 							noSuchFile("",originCoreHere,source(currentFile,L,t),inc,includePathsChecked);
 							sysIncludeSuccess:;
-							if(true /*check for GAS (true for now)*/ && options::debugSymbols)
-							{
-								//emit file debug information
-								if(code)
-									code->push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
-								else
-									TextCode.push_back(getIndent()+".file "+std::to_string(dbgFile.top())+" \""+currentFile+"\"");
-							}
+							compilerBug("unimplemented: debug file information");
 							if(options::ddebug)
 								std::cout << "included file: " << inc << std::endl;
 							break;
@@ -1676,9 +1383,6 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							//std::cout << "parser stopped by \"#pragma once\"" << std::endl;
 							throw endparse;
 						}
-					} else if(t.text == "stack-pointer") {
-						t = L.nextToken();
-						StackPointer = registerID(t.text);
 					}
 				} else if (t.text == "#autodecl") {
 //,####################################################################################################################
@@ -1873,18 +1577,6 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						}
 						if (gLines.size() > 0) parse(gLines);
 					}
-				} else if (t.text == "#outcom") {
-//,####################################################################################################################
-//,####################################################################################################################
-//,  ██  ██    ██████  ██    ██ ████████  ██████  ██████  ███    ███
-//, ████████  ██    ██ ██    ██    ██    ██      ██    ██ ████  ████
-//,  ██  ██   ██    ██ ██    ██    ██    ██      ██    ██ ██ ████ ██
-//, ████████  ██    ██ ██    ██    ██    ██      ██    ██ ██  ██  ██
-//,  ██  ██    ██████   ██████     ██     ██████  ██████  ██      ██
-//,####################################################################################################################
-//,####################################################################################################################
-					std::string comment = L.restText();
-					putComment(comment);
 				}
 				break;
 			case (26):
@@ -2073,7 +1765,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 													type* it = getType(t.text);
 													for (variable m :
 														 it->members) {
-														m.offset += startOffset;
+														compilerBug("unimplemented: class member child offset");
 														ntype->members
 															.push_back(m);
 													}
@@ -2229,8 +1921,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 											}
 										} else {
 											t = L.nextToken();
-											lop->value =
-												resolve(t)->immediateValue;
+											compilerBug("unimplemented: litop resolve value");
 											litops.push_back(lop);
 										}
 										break;
@@ -2305,15 +1996,8 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							invalidUseOfKeywordInScope("",originCoreHere,source(currentFile,L,t),currentScope);
 						t = L.nextToken();
 						variable* retVal = resolve(t);
-						variable* ret = new variable;
-						//std::cout << "cs: " << currentScope->name << std::endl;
-						//std::cout << "line: " << L.text << std::endl;
-						ret->storage = storageType::REGISTER;
-						ret->reg = currentScope->func->abi->integerReturn;
-						ret->dataType = currentScope->func->returnType;
-						mov(retVal,ret);
-						jump(currentScope->func,currentScope->func->symbol+CPE2_SYMBOL_SCOPE_SEP+"epilogue");
-						delete ret;
+						compilerBug("unimplemented: return, copy data");
+						compilerBug("unimplemented: return, jump to epilogue");
 					} else if (t.text == "while") {
 //,####################################################################################################################
 //,####################################################################################################################
@@ -2325,36 +2009,31 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 //,####################################################################################################################
 //,####################################################################################################################
 						//parse condition line
-						if(options::asmSepComments)putComment("");
 						scope* sc = new scope;
 						sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"while"+std::to_string(currentScope->whileCounter++);
 						sc->parent = currentScope;
 						sc->isIndentBased = true;
 						sc->t = scopeType::CONDITIONAL_BLOCK;
-						sc->fstore = new functionStorage;
 						sc->func = new function;
 						*(sc->func) = *(currentScope->func);
-						*(sc->fstore) = *(currentScope->fstore);
-						sc->func->code = std::vector<std::string>();
+						sc->func->code = new section;
 						sc->reentrySymbol = sc->name+CPE2_SYMBOL_SCOPE_SEP"reentry";
 						sc->leadingSpace=currentScope->leadingSpace+tabLength;
-						placeSymbol(sc->reentrySymbol);
+						compilerBug("unimplemented: while, place reentry symbol");
 						line conditionLine = L;
 						conditionLine.tpos = 0;
 						conditionLine.text = L.restText();
 						token cond = conditionLine.nextToken();
 						variable* condition = resolve(cond);
-						jumplastcondition(sc->name);
-						if(options::asmSepComments)putComment("");
+						compilerBug("unimplemented: while, conditional jump");
 						//prepare for body
 						updateCurrentScope(sc);
-						std::vector<std::string>* endcode = new std::vector<std::string>;
-						for(std::string& i : currentScope->func->code)
-							endcode->push_back(i);
-						currentScope->func->code = std::vector<std::string>();
-						currentScope->extraCodeBlocks.push_back(&currentScope->func->code);
+						section* endcode = new section;
+						endcode->push(currentScope->func->code);
+						currentScope->func->code = new section;
+						currentScope->extraCodeBlocks.push_back(currentScope->func->code);
 						currentScope->extraCodeBlocks.push_back(endcode);
-						placeSymbol(currentScope->name);
+						compilerBug("unimplemented: while, place symbol: currentScope->name");
 //,####################################################################################################################
 //,####################################################################################################################
 //, ███████  ██████  ██████
@@ -2373,16 +2052,14 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						sc->parent = currentScope;
 						sc->isIndentBased = true;
 						sc->t = scopeType::LOGICAL;
-						sc->fstore = new functionStorage;
 						sc->func = new function;
 						//sc->parent->conditionalCounter++;
 						*(sc->func) = *(currentScope->func);
-						*(sc->fstore) = *(currentScope->fstore);
-						sc->func->code = std::vector<std::string>();
+						sc->func->code = new section;
 						//currentScope->reentrySymbol = sc->parent->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
 						//sc->extraCodeBlocks.push_back(&sc->func->code);
 						updateCurrentScope(sc);
-						placeSymbol(currentScope->name);
+						compilerBug("unimplemented: for, place symbol currentScope->name");
 						//parse begin line
 						line beginLine = L;
 						beginLine.text = L.restText();
@@ -2391,7 +2068,6 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						std::vector<line> beginLines = {beginLine};
 						parse(beginLines);
 						//parse condition line
-						if(options::asmSepComments)putComment("");
 						sc = new scope;
 						sc->leadingSpace=currentScope->leadingSpace;
 						sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"body";
@@ -2399,21 +2075,17 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						sc->isIndentBased = true;
 						SETBIT_00(sc->miscData);
 						sc->t = scopeType::CONDITIONAL_BLOCK;
-						sc->fstore = new functionStorage;
 						sc->func = new function;
 						*(sc->func) = *(currentScope->func);
-						*(sc->fstore) = *(currentScope->fstore);
-						sc->func->code = std::vector<std::string>();
+						sc->func->code = new section;
 						sc->reentrySymbol = sc->parent->name+CPE2_SYMBOL_SCOPE_SEP"reentry";
-						placeSymbol(sc->reentrySymbol);
+						compilerBug("unimplemented: for, set reentry symbol");
 						line conditionLine = lines[++i];
 						token cond = conditionLine.nextToken();
 						variable* condition = resolve(cond);
-						jumplastcondition(sc->name);
-						if(options::asmSepComments)putComment("");
+						compilerBug("unimplemented: for, conditional jump");
 						//parse end line
 						updateCurrentScope(sc);
-						if(options::asmSepComments)putComment("");
 						line endLine = lines[++i];
 						{
 							uint64_t bi = endLine.text.size()-1;
@@ -2427,13 +2099,12 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						std::vector<line> endLines = {endLine};
 						parse(endLines);
 						//prepare for body
-						std::vector<std::string>* endcode = new std::vector<std::string>;
-						for(std::string& i : currentScope->func->code)
-							endcode->push_back(i);
-						currentScope->func->code = std::vector<std::string>();
-						currentScope->extraCodeBlocks.push_back(&currentScope->func->code);
+						section* endcode = new section;
+						endcode->push(currentScope->func->code);
+						currentScope->func->code = new section;
+						currentScope->extraCodeBlocks.push_back(currentScope->func->code);
 						currentScope->extraCodeBlocks.push_back(endcode);
-						placeSymbol(currentScope->name);
+						compilerBug("unimplemented: for, set body entry symbol");
 //,####################################################################################################################
 //,####################################################################################################################
 //, ██ ███████
@@ -2447,27 +2118,23 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						if(currentScope->t == scopeType::GLOBAL)
 							invalidUseOfKeywordInScope("",originCoreHere,source(currentFile,L,t),currentScope);
 						if(options::ddebug)std::cout << "if" << std::endl;
-						if(options::asmSepComments)putComment("");
 						scope* sc = new scope;
 						sc->leadingSpace=currentScope->leadingSpace+tabLength;
 						sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"if"+std::to_string(currentScope->ifCounter++);
 						sc->parent = currentScope;
 						sc->isIndentBased = true;
 						sc->t = scopeType::CONDITIONAL_BLOCK;
-						sc->fstore = new functionStorage;
 						sc->func = new function;
 						sc->parent->conditionalCounter++;
 						//std::cout << "transfer " << currentScope->name << " -> " << sc->name << std::endl;
 						*(sc->func) = *(currentScope->func);
-						*(sc->func->fstore) = *(currentScope->func->fstore);
-						*(sc->fstore) = *(currentScope->fstore);
 						//std::cout << "parent stack offset: " <<std::dec<< sc->fstore->stackOffset << std::endl;
 						//std::cout << "parent func stack offset: " <<std::dec<< sc->func->fstore->stackOffset << std::endl;
 						//std::cout << "parent stack size: " <<std::dec<< sc->fstore->stackSize << std::endl;
 						//std::cout << "parent func stack size: " <<std::dec<< sc->func->fstore->stackSize << std::endl;
-						sc->func->code = std::vector<std::string>();
+						sc->func->code = new section;
 						sc->reentrySymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
-						sc->extraCodeBlocks.push_back(&sc->func->code);
+						sc->extraCodeBlocks.push_back(sc->func->code);
 						//generate conditional jump code
 						line cl = L;
 						cl.text = "";
@@ -2530,11 +2197,10 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						//std::cout << "condition: " << cl.text << std::endl;
 						variable* condition = resolve(cond);
 						//cmp(__false__,condition);
-						jumplastcondition(sc->name);
-						if(options::asmSepComments)putComment("");
+						compilerBug("unimplemented: if, conditional jump");
 						//set return symbol
 						updateCurrentScope(sc);
-						placeSymbol(sc->func,sc->name);
+						compilerBug("unimplemented: if, set return symbol");
 //,####################################################################################################################
 //,####################################################################################################################
 //, ███████ ██      ███████ ███████     ██ ███████
@@ -2551,20 +2217,17 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						if(t.text == "if")
 						{
 							if(options::ddebug)std::cout << "else if" << std::endl;
-							if(options::asmSepComments)putComment("");
 							scope* sc = new scope;
 							sc->leadingSpace=currentScope->leadingSpace+tabLength;
 							sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"elseif"+std::to_string(currentScope->elseIfCounter++);
 							sc->parent = currentScope;
 							sc->isIndentBased = true;
 							sc->t = scopeType::CONDITIONAL_BLOCK;
-							sc->fstore = new functionStorage;
 							sc->func = new function;
 							*(sc->func) = *(currentScope->func);
-							*(sc->fstore) = *(currentScope->fstore);
 							//std::cout << "transfer " << currentScope->name << " -> " << sc->name << std::endl;
-							sc->func->code = std::vector<std::string>();
-							sc->extraCodeBlocks.push_back(&sc->func->code);
+							sc->func->code = new section;
+							sc->extraCodeBlocks.push_back(sc->func->code);
 							sc->reentrySymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
 							//generate conditional jump code
 							line cl = L;
@@ -2619,15 +2282,11 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								endCLine3:;
 							}
 							cond = cl.nextToken();
-							//std::cout << "condition: " << cond.text << std::endl;
 							variable* condition = resolve(cond);
-							variable* __false__ = getImmediateVariable(0);
-							//cmp(__false__,condition);
-							jumplastcondition(sc->name);
-							if(options::asmSepComments)putComment("");
+							compilerBug("unimplemented: else if, conditional jump");
 							//set return symbol
 							updateCurrentScope(sc);
-							placeSymbol(sc->func,sc->name);
+							compilerBug("unimplemented: else if, set return symbol");
 						}
 						else
 						{
@@ -2647,16 +2306,13 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							sc->parent = currentScope;
 							sc->isIndentBased = true;
 							sc->t = scopeType::LOGICAL;
-							sc->fstore = new functionStorage;
 							sc->func = new function;
 							*(sc->func) = *(currentScope->func);
-							*(sc->fstore) = *(currentScope->fstore);
-							sc->func->code = std::vector<std::string>();
+							sc->func->code = new section;
 							sc->reentrySymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
-							//sc->extraCodeBlocks.push_back(&sc->func->code);
 							//set return symbol
 							updateCurrentScope(sc);
-							placeSymbol(currentScope->name);
+							compilerBug("unimplemented: else, set return symbol");
 						}
 					} else if (t.text == "try") {
 //,####################################################################################################################
@@ -2679,14 +2335,12 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							sc->parent = currentScope;
 							sc->isIndentBased = true;
 							sc->t = scopeType::TRY_CATCH;
-							sc->fstore = new functionStorage;
 							sc->func = new function;
 							//sdump(currentScope);
 							*(sc->func) = *(currentScope->func);
-							*(sc->fstore) = *(currentScope->fstore);
-							sc->func->code = std::vector<std::string>();
-							sc->extraCodeBlocks.push_back(new std::vector<std::string>);//pre code
-							sc->extraCodeBlocks.push_back(new std::vector<std::string>);//post code
+							sc->func->code = new section;
+							sc->extraCodeBlocks.push_back(new section);//pre code
+							sc->extraCodeBlocks.push_back(new section);//post code
 							sc->reentrySymbol = sc->name+CPE2_SYMBOL_SCOPE_SEP"epilogue";
 							scope* acs = currentScope;
 							currentScope = sc;
@@ -2694,40 +2348,20 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							//+ pre code
 							//+
 							{
+								compilerBug("unimplemented: try, pre code");
 								code = sc->extraCodeBlocks[0];
-								placeSymbol(sc->name+CPE2_SYMBOL_SCOPE_SEP"prologue");
 								//-
 								//- save registers
 								//-
 								{
-									variable slhandle;
-									createMemoryHandle(StackPointer,sc->fstore->stackOffset,&slhandle);
-									std::vector<std::pair<uint64_t,__register__>>* offsets = new std::vector<std::pair<uint64_t,__register__>>;
-									std::vector<__register__> regs;
-									for(__register__ reg : sc->func->abi->nonVolatile)regs.push_back(reg);
-									for(__register__ reg : sc->func->abi->VolatileRegisters)regs.push_back(reg);
-									for(__register__ reg : regs)
-									{
-										if(sc->fstore->registerStatus(reg) == 1)
-										{
-											variable sreg = createRegisterHandle(reg,defaultPointerType);
-											slhandle.offset = sc->fstore->stackOffset;
-											mov(&sreg,&slhandle);
-											offsets->push_back(std::pair<uint64_t,__register__>(sc->fstore->stackOffset,reg));
-											sc->fstore->stackOffset+=((((uint64_t)reg)&BITMASK_REGISTER_SIZE) / 0x1000000);
-    										if(sc->fstore->stackOffset > sc->fstore->stackSize)
-    										    sc->fstore->stackSize = sc->fstore->stackOffset;
-										}
-									}
-									sc->cl = (type*)offsets;
 								}
 							}
 							//+
 							//+ post code
 							//+
 							{
+								compilerBug("unimplemented: try, post code");
 								code = sc->extraCodeBlocks[1];
-								placeSymbol(sc->reentrySymbol);
 							}
 							currentScope = acs;
 							updateCurrentScope(sc);
@@ -2755,16 +2389,11 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{40,36});
 							}
 							sc->t = scopeType::TRY;
-							sc->fstore = new functionStorage;
 							sc->func = new function;
 							*(sc->func) = *(currentScope->func);
-							*(sc->fstore) = *(currentScope->fstore);
-							sc->func->code = std::vector<std::string>();
-							//sc->reentrySymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"try_catch"+std::to_string(currentScope->tryCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
-							//sc->extraCodeBlocks.push_back(&sc->func->code);
-							//set return symbol
+							sc->func->code = new section;
 							updateCurrentScope(sc);
-							placeSymbol(currentScope->name);
+							compilerBug("unimplemented: try, place entry symbol");
 						}
 						currentScope->tryCounter++;
 					} else if (t.text == "catch") {
@@ -2783,13 +2412,11 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"catch";
 						sc->parent = currentScope;
 						sc->t = scopeType::CATCH;
-						sc->fstore = new functionStorage;
 						sc->func = new function;
 						*(sc->func) = *(currentScope->func);
-						*(sc->fstore) = *(currentScope->fstore);
-						sc->func->code = std::vector<std::string>();
-						std::vector<std::string>* preCode = new std::vector<std::string>;
-						std::vector<std::string>* postCode = new std::vector<std::string>;
+						sc->func->code = new section;
+						section* preCode = new section;
+						section* postCode = new section;
 						sc->extraCodeBlocks.push_back(preCode);
 						sc->extraCodeBlocks.push_back(postCode);
 						//,
@@ -2822,10 +2449,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							var = new variable;
 							var->dataType = catchType;
 							var->name = t.text;
-							var->reg = StackPointer;
-							var->offset = sc->func->fstore->stackOffset+16;
-							var->offsetType = storageType::IMMEDIATE;
-							var->storage = storageType::MEMORY;
+							compilerBug("unimplemented: catch, exception data storage");
 							sc->variables.push_back(var);
 						}
 						//,
@@ -2845,25 +2469,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							else
 								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{40,36});
 						}
-						sc->func->fstore->stackOffset = alignToMultiple(sc->func->fstore->stackOffset,16);
-						if(sc->func->fstore->stackOffset > sc->func->fstore->stackSize)
-							sc->func->fstore->stackSize = sc->func->fstore->stackOffset;
-						variable Handler;
-						variable stackSave;
-						variable stackSaveSP;
-						variable newHandler;
-						variable rax = createRegisterHandle(__register__::rax,defaultPointerType);
-						variable rcx = createRegisterHandle(__register__::rcx,defaultPointerType);
-						variable r15 = createRegisterHandle(__register__::r15,defaultPointerType);
-						variable xmm0 = createRegisterHandle(__register__::xmm0,defaultFloatType);
-						variable sp = createRegisterHandle(StackPointer,defaultPointerType);
-						createSymbolHandle(sc->name,&newHandler);
-						newHandler.dataType = defaultPointerType;
-						createGlobalVariableHandle(handlerSymbol,&Handler,defaultPointerType);
-						createMemoryHandle(StackPointer,sc->func->fstore->stackOffset,&stackSave);
-						stackSave.dataType = defaultPointerType;
-						variable HandlerSP = Handler;
-						HandlerSP.offset = 8;
+						compilerBug("unimplemented: catch, stack frame management");
 						//,
 						//, pre code
 						//,
@@ -2881,54 +2487,30 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 	lea rcx, [rsp + 16]  ; Load effective address of rsp + 16 into rcx
 	mov [rax + 8], rcx   ; Move the value in rcx to [rax + 8]
 */
+							compilerBug("unimplemented: catch, pre code");
 							code = preCode;
-							pushRegSave();
-							if(sc->func->fstore->registerStatus(__register__::rax) == 1)saveRegister(__register__::rax);
-							if(sc->func->fstore->registerStatus(__register__::rcx) == 1)saveRegister(__register__::rcx);
-							if(sc->func->fstore->registerStatus(__register__::xmm0) == 1)saveRegister(__register__::xmm0);
-							putComment("");
-							putComment("add handler");
-							putComment("");
 							//,
 							//, install new handler
 							//,
 							{
-								mov(&Handler,&rax);
-								add(&rax,&rax,&r15);
-								mov(location(__register__::rax,0),&xmm0);
-								mov(&xmm0,location(__register__::rsp,sc->func->fstore->stackOffset));
-								mov(&newHandler,&rcx);
-								mov(&rcx,location(__register__::rax,0));
-								lea(__register__::rsp,sc->func->fstore->stackOffset+16,__register__::rcx);
-								mov(&rcx,location(__register__::rax,8));
 							}
-							restoreRegisters();
-							popRegSave();
 						}
 						//,
 						//, post code
 						//,
 						{
+							compilerBug("unimplemented: catch, post code");
 							code = postCode;
-							putComment("");
-							putComment("restore handler");
-							putComment("");
 							//+
 							//+ restore old handler
 							//+
 							{
-								mov(&Handler,&rax);
-								add(&rax,&rax,&r15);
-								mov(location(__register__::rsp,sc->func->fstore->stackOffset),&xmm0);
-								mov(&xmm0,location(__register__::rax,0));
 							}
 						}
-						sc->func->fstore->stackOffset += 16+var->dataType->size;
-						if(sc->func->fstore->stackOffset > sc->func->fstore->stackSize)
-							sc->func->fstore->stackSize = sc->func->fstore->stackOffset;
+						compilerBug("unimplemented: catch, stack frame management");
 						//set return symbol
 						updateCurrentScope(sc);
-						placeSymbol(currentScope->name);
+						compilerBug("unimplemented: catch, set return symbol");
 						//,
 						//, handler code
 						//,
@@ -2937,29 +2519,20 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							//+ restore registers
 							//+
 							{
-								variable slhandle;
-								createMemoryHandle(StackPointer,sc->parent->fstore->stackOffset,&slhandle);
-								for(std::pair<uint64_t,__register__> save : *((std::vector<std::pair<uint64_t,__register__>>*)sc->parent->cl))
-								{
-									slhandle.offset = save.first;
-									variable sreg = createRegisterHandle(save.second,defaultPointerType);
-									mov(&slhandle,&sreg);
-								}
+								compilerBug("unimplemented: catch, restore registers");
 							}
 							//+
 							//+ restore stack pointer
 							//+
 							{
-								sub(var->offset,StackPointer);
+								compilerBug("unimplemented: catch, restore stack pointer");
 							}
 						}
 						//,
 						//, add resource code
 						//,
 						{
-							resourceCode.push_back(
-								"c2resource symbol data 8 "+handlerSymbol+" exceptionoffset 16;"
-							);
+							compilerBug("unimplemented: catch, resource code");
 						}
 					} else if (t.text == "throw") {
 //,####################################################################################################################
@@ -2984,65 +2557,37 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							//+ check if throwVal is held in rax
 							//+
 							{
-								if(throwVal->storage == storageType::REGISTER && throwVal->reg == __register__::rax)
-								{
-									throwVal->reg = __register__::rdi;
-									mov(__register__::rax,__register__::rdi);
-								}
-								else if(throwVal->storage == storageType::MEMORY && throwVal->reg == __register__::rax)
-								{
-									throwVal->reg = __register__::rdi;
-									mov(__register__::rax,__register__::rdi);
-								}
+								compilerBug("unimplemented: throw, check if throwVal is held in rax");
 							}
 						}
 						//,
 						//, get arg destination
 						//,
-						variable argDestination;
 						std::string handlerSymbol = std::string("____cpe2")+CPE2_SYMBOL_SCOPE_SEP+"exceptions"+CPE2_SYMBOL_SCOPE_SEP+"handler_"+CPE2_SYMBOL_SCOPE_SEP+throwVal->dataType->mangledName;
-						variable rax = createRegisterHandle(__register__::rax,defaultPointerType);
-						variable rcx = createRegisterHandle(__register__::rcx,defaultPointerType);
-						variable r15 = createRegisterHandle(__register__::r15,defaultPointerType);
-						variable sp = createRegisterHandle(StackPointer,defaultPointerType);
-						variable Handler;
-						variable Handler_sp;
-						variable Handler_addr;
-						createMemoryHandle(__register__::rax,8,&Handler_sp);
-						createMemoryHandle(__register__::rax,0,&Handler_addr);
-						createGlobalVariableHandle(handlerSymbol,&Handler,defaultPointerType);
-						{
-							argDestination.storage = storageType::MEMORY;
-							argDestination.reg = __register__::rcx;
-							argDestination.dataType = defaultPointerType;
-							mov(&Handler,&rax);
-							add(&rax,&rax,&r15);
-							mov(&Handler_sp,&rax);
-						}
+						compilerBug("unimplemented: throw, get arg destination");
 						//,
 						//, pass data
 						//,
 						{
-							mov(throwVal,&argDestination);
+							compilerBug("unimplemented: throw, pass data");
 						}
 						//,
 						//, load saved stack pointer
 						//,
 						{
-							variable sp = createRegisterHandle(StackPointer,defaultPointerType);
-							mov(&rax,&sp);
+							compilerBug("unimplemented: throw, load saved stack pointer");
 						}
 						//,
 						//, get handler address
 						//,
 						{
-							mov(&Handler_addr,&rax);
+							compilerBug("unimplemented: throw, get handler address");
 						}
 						//,
 						//, jump to handler
 						//,
 						{
-							jmpPtr(__register__::rax);
+							compilerBug("unimplemented: throw, jump to rax");
 						}
 					} else if (t.text == "c2resource") {
 //,####################################################################################################################
@@ -3064,9 +2609,9 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								line vsizel(t);
 								token vsizet = vsizel.nextToken();
 								variable* vsize = resolve(vsizet);
-								if(vsize->storage != storageType::IMMEDIATE)
-									compilerBug("non immediate",originCoreHere,source(currentFile,L,t),"");
-								uint64_t size = vsize->immediateValue;
+								compilerBug("unimplemented: vsize immediate check");
+								uint64_t size = 0;
+								compilerBug("unimplemented: size assignment");
 								t = L.nextToken();
 								std::string name = t.text;
 								for(std::string sym : resourceSymbols){
@@ -3074,32 +2619,24 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 										compilerBug("symbol already exists.",originCoreHere,source(currentFile,L,t),"");
 								}
 								resourceSymbols.push_back(name);
-								RoDataCode.push_back(".align "+intToString(size));
-								RoDataCode.push_back(".global "+name);
-								RoDataCode.push_back(name+":");
+								compilerBug("unimplemented: create global symbol");
 								t = L.nextToken();
 								if(t.type == 0)
 								{
 									filldata:;
-									while(size >= 8){size -= 8;RoDataCode.push_back(".quad 0");}
-									while(size >= 4){size -= 4;RoDataCode.push_back(".dword 0");}
-									while(size >= 2){size -= 2;RoDataCode.push_back(".word 0");}
-									while(size >= 1){size -= 1;RoDataCode.push_back(".byte 0");}
+									compilerBug("unimplemented: resource data fill");
 								}
 								else
 								{
 									if(t.text == "exceptionoffset")
 									{
-										RoDataCode.push_back(".quad "+intToString(exceptionoffset));
+										compilerBug("unimplemented: exceptionoffset data");
 										t = L.nextToken();
 										emitExceptionSymbols = true;
 										if(t.type != 0)
 										{
 											variable* val = resolve(t);
-											if(val->storage != storageType::IMMEDIATE)
-												compilerBug("non immediate",originCoreHere,source(currentFile,L,t),"");
-											if(val != nullptr)
-												exceptionoffset+=val->immediateValue;
+											compilerBug("unimplemented: exceptionoffset data");
 										}
 										size -= 8;
 										goto filldata;
@@ -3148,22 +2685,12 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							//dump("resolving",&ivLine,"");
 							token ivt = ivLine.nextToken();
 							variable* var = resolve(ivt);
-							if(var->storage == storageType::IMMEDIATE)
-								compilerBug("var->storage == storageType::IMMEDIATE",originCoreHere,source(currentFile,L,t),"");
-							if(var->storage == storageType::INVALID)
-								compilerBug("var->storage == storageType::INVALID",originCoreHere,source(currentFile,L,t),"");
+							compilerBug("unimplemented: async input variable storage validity checking");
 							//,
 							//, move inputs to stack
 							//,
 							{
-								variable* nv = new variable(*var);
-								nv->storage = storageType::MEMORY;
-								nv->reg = __register__::rax;
-								nv->offset = stackOffset;
-								stackOffset+=nv->dataType->size;
-								inputs.push_back(nv);
-								tinputs.push_back(nv->dataType);
-								cpy.push_back(std::pair<variable*,variable*>(var,nv));
+								compilerBug("unimplemented: move async inputs to stack");
 							}
 							t = L.nextToken();
 							if(t.type == 31)
@@ -3182,27 +2709,18 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						//, create new stack (result stored in rax)
 						//,
 						{
-							uint64_t stackSize = 0x1000;//4KiB starting stack space
-							mov(uint64_t(0),__register__::rdi); // let the kernel choose the address
-							mov(stackSize  ,__register__::rsi); // initial stack size
-							mov(uint64_t((1<<0) | (1<<1)), __register__::rdx); // read write
-							mov(uint64_t((1<<1) | (1<<5) | (1<<8)), __register__::r10); // flags: private,anonymous,growsdown
-							mov(uint64_t(0), __register__::r8);// not used with anonymous
-							mov(uint64_t(0), __register__::r9);// offset = 0
-							mov(uint64_t(9), __register__::rax);// sys_mmap
-							code->push_back(getIndent()+"syscall");
+							compilerBug("unimplemented: get stack space for async thread");
 							//-
 							//- check for mmap errors
 							//-
 							{
-								//TODO: implement error checking
+								compilerBug("unimplemented: mmap error checking");
 							}
 							//-
 							//- adjust base pointer
 							//-
 							{
-								//sub(stackSize,__register__::rax);
-								code->push_back(getIndent()+"sub rax, [__cpe2_exceptionFrameSize]");
+								compilerBug("unimplemented: adjust base pointer");
 							}
 						}
 						//,
@@ -3211,9 +2729,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						{
 							for(std::pair<variable*,variable*>& cpyp : cpy)
 							{
-								mov(cpyp.first,cpyp.second);
-								cpyp.second->reg = __register__::rbp;
-								cpyp.second->offset += 16;
+								compilerBug("unimplemented: create copy of async inputs");
 							}
 						}
 						//,
@@ -3226,34 +2742,21 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							{
 								using namespace linux_6;
 								uint64_t clone_flags = CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_THREAD | CLONE_PTRACE;
-								mov(clone_flags,__register__::rdi);
-								mov(__register__::rax,__register__::rsi);
-								//mov(__register__::rax,__register__::r14);
-								mov(56,__register__::rax);
-								code->push_back(getIndent()+"syscall");
+								compilerBug("unimplemented: sys_clone call");
 							}
-							variable rax = createRegisterHandle(__register__::rax,defaultUnsignedIntegerType);
-							variable* zero = getImmediateVariable(0);
-							cmp(zero,&rax);
-							//code->push_back(getIndent()+"cmove rsp, r14");
 							std::string skipSymbol = getNewName();
-							jne(skipSymbol);
+							compilerBug("unimplemented: sys_clone result checking");
 							//,
 							//, new thread code
 							//,
 							{
-								mov(__register__::rsp,__register__::r15);
-								mov(__register__::rsp,__register__::rbp);
-								code->push_back(getIndent()+"add r15, [__cpe2_exceptionFrameSize]");
-								variable exceptionFrameSize;
-								variable rsp = createRegisterHandle(__register__::rsp,defaultUnsignedIntegerType);
-								code->push_back(getIndent()+"call "+threadCodeSymbol);
+								compilerBug("unimplemented: branch thread initialization");
 							}
 							//,
 							//, old thread code
 							//,
 							{
-								placeSymbol(skipSymbol);
+								compilerBug("unimplemented: origin thread symbol placement");
 								//TODO: error handling
 							}
 						}
@@ -3269,9 +2772,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							func->parameters = tinputs;
 							func->vparams = inputs;
 							func->returnType = defaultUnsignedIntegerType;
-							func->fstore = new functionStorage;
-							func->fstore->stackOffset = stackOffset;
-							func->fstore->stackSize = stackOffset;
+							compilerBug("unimplemented: async scope storage properties");
 							func->isDeprecated = false;
 							func->isPrimitive = false;
 							func->primitiveFloat = false;
@@ -3285,7 +2786,6 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							func->isLocal = false;
 							func->miscData = (1<<1);
 							sc->name = func->name;
-							sc->fstore = func->fstore;
 							sc->func = func;
 							sc->leadingSpace = currentScope->leadingSpace+tabLength;
 							sc->parent = currentScope;
@@ -3395,9 +2895,8 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							isArray = true;
 							token sizeToken = arrayCountLine.nextToken();
 							variable* size = resolve(sizeToken);
-							if(size->storage != storageType::IMMEDIATE)
-								nonImmediateArraySize("",originCoreHere,source(currentFile,L,t),it);
-							arraySizeCount = size->immediateValue;
+							compilerBug("unimplemented: array size immediate check");
+							compilerBug("unimplemented: array size");
 							it = getType(it->name+"*");
 							t = L.nextToken();
 						}
@@ -3733,7 +3232,6 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								}
 							}
 							resetCurrentD();
-							func->fstore		   = new functionStorage;
 							func->isDeprecated	   = isDeprecated;
 							func->isPrimitive	   = isPrimitive;
 							func->primitiveFloat   = primitiveFloat;
@@ -3773,9 +3271,6 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									sc->isIndentBased = false;
 								}
 								sc->t			  = scopeType::FUNCTION;
-								func->fstore->registerStatus(StackPointer,1);
-								//func->fstore->registerStatus(StackFramePointer,1);
-								sc->fstore		  = func->fstore;
 								sc->func		  = func;
 								// declare variables for arguments
 								func->abi->setArgStorages(func,arguments);
@@ -3798,8 +3293,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 											//name
 											child->name = arg->name+msep+child->name;
 											//storage
-											child->storage = storageType::MEMORY;
-											child->reg = arg->reg;
+											compilerBug("unimplemented: child storage");
 											//finish up
 											child->parent = arg;
 											arg->children.push_back(child);
@@ -3818,8 +3312,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 											//name
 											child->name = arg->name+msep+child->name;
 											//storage
-											child->reg = arg->reg;
-											child->offset += arg->offset;
+											compilerBug("unimplemented: child storage");
 											//finish up
 											child->parent = arg;
 											arg->children.push_back(child);
@@ -3828,99 +3321,19 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 												std::cout << "declared child: " << child->name << std::endl;
 										}
 									}
-									if (options::asmVerbose >= 2 || options::ddebug) {
-										std::string comment = "    # " +
-															  arg->name +
-															  " is stored ";
-										if (arg->storage ==
-											storageType::MEMORY) {
-											if (arg->offset < 0)
-												comment += "at "+registerNAME(arg->reg);
-											else 
-												comment += "at "+registerNAME(arg->reg)+"+";
-											comment += std::to_string(
-												(int64_t)arg->offset);
-										} else if (arg->storage ==
-												   storageType::REGISTER) {
-											comment +=
-												"in " + registerNAME(arg->reg);
-										} else if (arg->storage ==
-												   storageType::
-													   MEMORY_ABSOLUTE) {
-											std::stringstream stream;
-											stream << std::hex
-												   << (int64_t)arg->offset;
-											comment += "at 0x" + stream.str();
-										}
-										if(options::asmVerbose >= 2)
-											sc->func->code.push_back(comment);
-										if(options::ddebug)
-											std::cout << comment << std::endl;
-									}
 								}
 								updateCurrentScope(sc);
-								//debug info
-								if(true /*check for GAS (true for now)*/ && options::debugSymbols)
+								//,
+								//, debug info
+								//,
 								{
-									setANB(16);
-									//function.debug
-									std::vector<std::string>* cc = code;
-									code = &TextCode;
-									placeSymbol(func->symbol+CPE2_SYMBOL_SCOPE_SEP"debug");
-									code->push_back(getIndent()+".type "+func->symbol+", @function");
-									code = cc;
-									//.debug_info
-									DebugCode.push_back(getIndent()+".uleb128 "+intToString(++dbgAbbrev));
-									DebugCode.push_back(getIndent()+".string \""+func->name+"\"");
-									DebugCode.push_back(getIndent()+".string \""+func->symbol+"\"");
-									//.debug_abbrev
-									DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
-									DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::TAG_subprogram));
-									DebugAbbrevCode.push_back(getIndent()+".byte 1");//bool indicating the presence of child tags (0 for testing purposes)
-									//mark main
-									if(func->symbol == "cpe2main")
-									{
-										DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_main_subprogram));
-										DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_flag_present));
-									}
-									if(!func->isLocal)
-									{
-										DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_external));
-										DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_flag_present));
-									}
-									//name
-									DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_name));
-									DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
-									//symbol (linkage name)
-									DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_linkage_name));
-									DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
-									//terminator
-									DebugAbbrevCode.push_back(getIndent()+".uleb128 0");
-									DebugAbbrevCode.push_back(getIndent()+".uleb128 0");
-									popANB();
+									compilerBug("unimplemented: debug info");
 								}
 								if (options::ddebug)
 									std::cout << "body started" << std::endl;
 							} else if (t.type == 41) {
 								// function declaration
-								func->abi->setArgStorages(func,arguments);
-								if (!isPrimitive)
-								{
-									if(!options::nod)
-									{
-										//optimizer data
-										MiscCode.push_back("// @function "+func->symbol);
-										for(variable* arg : func->vparams)
-											MiscCode.push_back("// @parameter "+c2oLocExpr(arg));
-										MiscCode.push_back("// @return rax");
-										for(__register__ i : func->abi->VolatileRegisters)
-											MiscCode.push_back("// @modifies "+registerNAME(i));
-										for(__register__ i : func->abi->nonVolatile)
-											MiscCode.push_back("// @preserves "+registerNAME(i));
-										MiscCode.push_back(".extern " +
-											func->symbol);
-									}
-								}
+								compilerBug("unimplemented: function argument storage");
 								mOUT(1, func);
 							} else
 								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{40});
@@ -3957,57 +3370,11 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									lspecToken = attr;
 									if (isdigit(attr.text[1])) {
 										// absolute memory address
-										token blub = t;
-										blub.text  = attr.text.substr(
-											 1, attr.text.size() - 2);
-										uint64_t addr =
-											resolve(blub)->immediateValue;
-										var->storage =
-											storageType::MEMORY_ABSOLUTE;
-										var->offset = addr;
-									} else if (attr.text[1] == '+' ||
-											   attr.text[1] == '-') {
-										// address relative to stack pointer
-										line Lblub = *t.Line;
-										Lblub.text = attr.text.substr(2, attr.text.size() - 3);
-										Lblub.tpos = 0;
-										//Lblub.twhitespace+=attr.tcol;
-										Lblub.twhitespace+=2;
-										token blub = Lblub.nextToken();
-										variable* rblub = resolve(blub);
-										uint64_t offset = rblub->immediateValue;
-										var->storage = storageType::MEMORY;
-										var->offset	 = offset;
-										var->reg = StackPointer;
-										if (currentScope->t == scopeType::CLASS) {
-											var->reg = defaultABI->ctorThisRegister;
-										}
+										compilerBug("unimplemented: variable absolute memory storage specifier");
+									} else if (attr.text[1] == '+' || attr.text[1] == '-') {
+										compilerBug("unimplemented: variable stack storage specifier");
 									} else {
-										// register
-										std::string rname = attr.text.substr(
-											1, attr.text.size() - 2);
-										__register__ reg = registerID(rname);
-										if (reg == __register__::invalid)
-										{
-											std::cout
-												<< "invalid register name: "
-												<< rname << std::endl;
-											ErrorCount++;
-										}
-										uint64_t rsize =
-											BITMASK_REGISTER_SIZE & (uint64_t)reg;
-										rsize>>=24;
-										if (rsize < it->size) {
-											std::cerr
-												<< "ERROR: register \"" << rname
-												<< "\" is too small to fit "
-												   "variable of type \""
-												<< it->name << "\"!"
-												<< std::endl;
-											ErrorCount++;
-										}
-										var->storage = storageType::REGISTER;
-										var->reg	 = reg;
+										compilerBug("unimplemented: variable register storage specifier");
 									}
 								} else if (attr.text.substr(0, strlen("SYMBOL-")) == "SYMBOL-") {
 									var->symbol = attr.text.substr(strlen("SYMBOL-"),attr.text.length());
@@ -4042,39 +3409,19 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								}
 							}
 							var->name	= name;
-							var->access = access;
+							compilerBug("unimplemented: variable access specifier");
 							if(var->symbol.empty())
 								mangling->mangle(var);
 							if(isExtern)
 							{
-								var->storage = storageType::SYMBOL;
-								MiscCode.push_back(".extern " + var->symbol);
+								compilerBug("unimplemented: external variable");
 							}
-							if (var->storage == storageType::INVALID) {
-								// auto storage
-								var->usedAutoStorage = true;
-								if (currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH)
-								{
-									currentScope->fstore->setStorage(currentScope->func,var);
-								}
-								else if (currentScope->t == scopeType::CLASS) {
-									var->offset	 = currentScope->cl->size;
-									var->storage = storageType::MEMORY;
-									var->reg = defaultABI->ctorThisRegister;
-								}
-							}
+							compilerBug("unimplemented: auto storage");
 							if(isArray)
 							{
 								if(currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH)
 								{
-									uint64_t stackArrayBase = currentScope->fstore->stackOffset;
-									currentScope->fstore->stackOffset+=(var->dataType->valueType->size*arraySizeCount);
-									if(currentScope->fstore->stackOffset > currentScope->fstore->stackSize)
-										currentScope->fstore->stackSize = currentScope->fstore->stackOffset;
-									std::vector<variable*> eqArgs = {var,getImmediateVariable(stackArrayBase)};
-									std::vector<variable*> addArgs = {var,getRegisterHandle(StackPointer)};
-									call(getFunction("operator=",eqArgs),eqArgs);
-									call(getFunction("operator+=",addArgs),addArgs);
+									compilerBug("unimplemented: stack stored array");
 								}
 								else if(currentScope->t == scopeType::CLASS)
 								{
@@ -4082,55 +3429,19 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									currentScope->cl->size+=(var->dataType->valueType->size*arraySizeCount);
 								}
 							}
-							if (options::asmVerbose >= 2 &&
-								currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH) {
-								std::string comment = getIndent() + "# " +
-													  var->name + " is stored ";
-								if (var->storage == storageType::MEMORY) {
-									if (var->offset < 0) comment += "at "+registerNAME(var->reg);
-									else comment += "at "+registerNAME(var->reg)+"+";
-									comment +=
-										std::to_string((int64_t)var->offset);
-								} else if (var->storage ==
-										   storageType::REGISTER) {
-									comment += "in " + registerNAME(var->reg);
-								} else if (var->storage ==
-										   storageType::MEMORY_ABSOLUTE) {
-									std::stringstream stream;
-									stream << std::hex << (int64_t)var->offset;
-									comment += "at 0x" + stream.str();
-								}
-								currentScope->func->code.push_back(comment);
-							}
 							if (currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH) {
-								if (var->storage == storageType::REGISTER)
-									currentScope->fstore->registerStatus(
-										var->reg, 1);
+								compilerBug("unimplemented: register status");
 							}
-							if (var->storage == storageType::REGISTER) {
+							compilerBug("unimplemented: register storage checks");
+							if (false) {
 								//(uint64_t)var->reg & 0x504C532043554D20494E53494445204D45 /* UwU */
-								if (((uint64_t)var->reg & BITMASK_REGISTER_CPL) < options::fcpl) {
-									if(is_vsls_send)std::cout << "5001-" << lspecToken.lineNum <<'-'<< lspecToken.col+L.leadingSpaces <<'-'<< lspecToken.text.length() <<'-'<<lspecToken.text<<"-cpl-registers"<< '\n';
-									else if (warn(getWarning("cpl-registers"), &L,
-											 "insufficient privilege level to "
-											 "access register \"" +
-												 registerNAME(var->reg) +
-												 "\"")) {
-										note("required privilege level: " +
-											 std::to_string((uint64_t)var->reg &
-															0x000000FF00) +
-											 " or lower.");
-										note("current privilege level: " + std::to_string(options::fcpl));
-										note("use --fcpl <some number> or \"#pragma cpl <some number>\" to set the privilege level.");
-									}
+								compilerBug("unimplemented: storage cpl check");
+								if (false) {
 								}
-								if(var->reg == StackPointer)
-								{
-									if(is_vsls_send)std::cout << "5002-" << L.lineNum <<'-'<< lspecToken.col+L.leadingSpaces <<'-'<< lspecToken.text.length() <<'-'<<lspecToken.text<<"-stack-pointer-storage"<< '\n';
-									else warn(getWarning("stack-pointer-storage"), &L, registerNAME(StackPointer)+" is currently used to store the stack pointer, you should not mess with the stack pointer unless you know what you're doing!");
-								}
-							} else if (var->storage ==
-									   storageType::MEMORY_ABSOLUTE) {
+							}
+								compilerBug("unimplemented: stack-pointer storage check");
+							compilerBug("unimplemented: absolute memory storage check");
+							if(false) {
 								if(is_vsls_send)std::cout << "5003-" << lspecToken.lineNum <<'-'<< lspecToken.col+L.leadingSpaces <<'-'<< lspecToken.text.length() <<'-'<<"memory-absolute"<< '\n';
 								else if (warn(getWarning("memory-absolute"), &L,
 										 "saving variable at an absolute "
@@ -4141,27 +3452,13 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 										 "address");
 							}
 							if (currentScope->t == scopeType::CLASS) {
-								if (var->storage == storageType::REGISTER) {
-									// error register storage invalid for member
-									// variables
-									std::cout << "BLUB BLUB" << std::endl;
-									printVariable(var);
-									std::cout << "current scope: " << currentScope->name << std::endl;
-								} else {
-									if (var->storage ==
-											storageType::MEMORY_ABSOLUTE &&
-										var->isStatic == false) {
-										// error absolute address only legal for
-										// local members
-										std::cout << "BLUB" << std::endl;
-									} else {
+								compilerBug("unimplemented: storage validity check");
+								if(true){
+									compilerBug("unimplemented: storage validity check");
+									if(true){
 										currentScope->cl->members.push_back(
 											*var);
-										if (currentScope->cl->size <
-											var->offset + var->dataType->size)
-											currentScope->cl->size =
-												var->offset +
-												var->dataType->size;
+										compilerBug("unimplemented: member offset");
 									}
 								}
 								if(options::ddebug)
@@ -4178,11 +3475,8 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								//std::cout << "ctdt: " << std::hex << (void*)childTargetDataType << std::endl;
 								if(childTargetDataType->members.size() > 0)
 								{
-									if(var->storage == storageType::REGISTER && !isPointer)
-									{
-										compilerBug("invalid storage.",originCoreHere,source(),"");
-									}
-									else
+									compilerBug("unimplemented: storage validity check");
+									if(true)
 									{
 										std::string msep = isPointer ? "->" : ".";
 										if(isPointer)
@@ -4195,8 +3489,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 												//name
 												child->name = var->name+msep+child->name;
 												//storage
-												child->storage = storageType::MEMORY;
-												child->reg = var->reg;
+												compilerBug("unimplemented: child storage");
 												//finish up
 												child->parent = var;
 												var->children.push_back(child);
@@ -4215,8 +3508,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 												//name
 												child->name = var->name+msep+child->name;
 												//storage
-												child->reg = var->reg;
-												child->offset += var->offset;
+												compilerBug("unimplemented: child storage");
 												//finish upf
 												child->parent = var;
 												var->children.push_back(child);
@@ -4230,33 +3522,13 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							}
 							if(options::ddebug && false)
 								dump("declared variable",var,"");
-							//debug
-							if(true /*check for GAS (true for now)*/ && options::debugSymbols)
-							{setANB(16);
-								//
-								//.debug_info
-								//
-								DebugCode.push_back(getIndent()+".uleb128 "+intToString(++dbgAbbrev));
-								DebugCode.push_back(getIndent()+".string \""+var->name+"\"");
-								DebugCode.push_back(getIndent()+".string \""+var->symbol+"\"");
-								DebugCode.push_back(getIndent()+".quad "+intToString(var->dataType->dwarfID));
-								//
-								//.debug_abbrev
-								//
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString(dbgAbbrev));
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::TAG_variable));
-								DebugAbbrevCode.push_back(getIndent()+".byte 0");//no children
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_name));
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_linkage_name));
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_external));
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_flag_present));
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::AT_type));
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 "+intToString((uint64_t)DWARF5::FORM_ref8));
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 0");//terminate
-								DebugAbbrevCode.push_back(getIndent()+".uleb128 0");
-							popANB();}
+							//,
+							//, debug info
+							//,
+							if(options::debugSymbols)
+							{
+								compilerBug("unimplemented: generate debug info");
+							}
 							//docs
 							mOUT(moVariableID, var);
 							t = L.nextToken();
@@ -4277,9 +3549,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									function* func = getFunction("operator=", args);
 									if(isConstExpr)
 									{
-										var->storage = storageType::IMMEDIATE;
-										var->immediateValue = result->immediateValue;
-										//std::cout << "assigned \""<<result->immediateValue<<"\" to constexpr \""<<var->name <<"\""<< std::endl;
+										compilerBug("unimplemented: set immediate variable value");
 									}
 									else
 									{
@@ -4303,29 +3573,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							}
 							if(currentScope->t == scopeType::GLOBAL || currentScope->t == scopeType::NAMESPACE)
 							{
-								if(var->storage == storageType::SYMBOL && !isExtern)
-									MiscCode.push_back(".global " + var->symbol);
-								else if(var->storage == storageType::INVALID)
-								{
-									var->storage = storageType::SYMBOL;
-									DataCode.push_back(var->symbol+":");
-									switch(var->dataType->size)
-									{
-										case(1):
-											DataCode.push_back("\t.byte 0");
-											break;
-										case(2):
-											DataCode.push_back("\t.word 0");
-											break;
-										case(4):
-											DataCode.push_back("\t.int 0");
-											break;
-										case(8):
-											DataCode.push_back("\t.quad 0");
-											break;
-									}
-									//MiscCode.push_back(".global " + var->symbol);
-								}
+								compilerBug("unimplemented: create global variable");
 							}
 						}
 						break;

@@ -2,7 +2,7 @@
  * Created Date: Sunday August 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -31,6 +31,9 @@
 #include <miscout.h>
 #include <util.h>
 #include <error.h>
+
+#include <issues.hxx>
+using namespace issues;
 
 #define constructor __attribute__ ((constructor))
 
@@ -104,7 +107,8 @@ static void format_addClass(uint64_t fID, type* t)
         content+="class "+t->name+"\n{\n";
         for(variable& m : t->members)
         {
-            if(cop < m.offset)
+			compilerBug("unimplemented: c++ export member padding");
+            if(false)
             {
                 if(!getFile(fID)->includesStdInt)
                 {
@@ -113,7 +117,9 @@ static void format_addClass(uint64_t fID, type* t)
                 }
                 content+="private:\n";
                 access = 2;
-                uint64_t diff = m.offset-cop;
+                //uint64_t diff = m.offset-cop;
+				compilerBug("unimplemented: ");
+				uint64_t diff;
                 while(diff != 0)
                 {
                     if(diff >= 8){
@@ -130,24 +136,10 @@ static void format_addClass(uint64_t fID, type* t)
                         diff--;}
                 }
             }
-            if(m.access != access)
-            {
-                switch(m.access)
-                {
-                    case(0):
-                        content+="public:\n";
-                        break;
-                    case(1):
-                        content+="protected:\n";
-                        break;
-                    case(2):
-                        content+="private:\n";
-                        break;
-                }
-                access = m.access;
-            }
+            content+="public:\n";
             content+="    "+getExportTypeName(m.dataType)+" "+m.name+";\n";
-            cop = m.offset + m.dataType->size;
+            //cop = m.offset + m.dataType->size;
+			compilerBug("unimplemented");
         }
         content+="};\n";
     }

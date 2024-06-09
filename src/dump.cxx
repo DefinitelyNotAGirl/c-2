@@ -2,7 +2,7 @@
  * Created Date: Saturday May 11th 2024
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
+ * Last Modified: Monday June 3rd 2024 11:44:37 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -57,86 +57,6 @@ class dummy;
 //, ███████ ██   ████  ██████  ██      ██                ██       ███████    ██    ██   ██ ██ ██   ████  ██████
 //,####################################################################################################################
 //,####################################################################################################################
-const char* stringify(__register__ reg) {
-    switch (reg) {
-        case __register__::invalid: return "invalid";
-        case __register__::rax: return "rax";
-        case __register__::rbx: return "rbx";
-        case __register__::rcx: return "rcx";
-        case __register__::rdx: return "rdx";
-        case __register__::rsi: return "rsi";
-        case __register__::rdi: return "rdi";
-        case __register__::rbp: return "rbp";
-        case __register__::rsp: return "rsp";
-        case __register__::r0: return "r0";
-        case __register__::r1: return "r1";
-        case __register__::r2: return "r2";
-        case __register__::r3: return "r3";
-        case __register__::r4: return "r4";
-        case __register__::r5: return "r5";
-        case __register__::r6: return "r6";
-        case __register__::r7: return "r7";
-        case __register__::r8: return "r8";
-        case __register__::r9: return "r9";
-        case __register__::r10: return "r10";
-        case __register__::r11: return "r11";
-        case __register__::r12: return "r12";
-        case __register__::r13: return "r13";
-        case __register__::r14: return "r14";
-        case __register__::r15: return "r15";
-        case __register__::rip: return "rip";
-        case __register__::cr0: return "cr0";
-        case __register__::cr1: return "cr1";
-        case __register__::cr2: return "cr2";
-        case __register__::cr3: return "cr3";
-        case __register__::cr4: return "cr4";
-        case __register__::cr5: return "cr5";
-        case __register__::cr6: return "cr6";
-        case __register__::cr7: return "cr7";
-        case __register__::cr8: return "cr8";
-        case __register__::cr9: return "cr9";
-        case __register__::cr10: return "cr10";
-        case __register__::cr11: return "cr11";
-        case __register__::cr12: return "cr12";
-        case __register__::cr13: return "cr13";
-        case __register__::cr14: return "cr14";
-        case __register__::cr15: return "cr15";
-        case __register__::EFER: return "EFER";
-        case __register__::DR0: return "DR0";
-        case __register__::DR1: return "DR1";
-        case __register__::DR2: return "DR2";
-        case __register__::DR3: return "DR3";
-        case __register__::DR6: return "DR6";
-        case __register__::DR7: return "DR7";
-        case __register__::GDTR: return "GDTR";
-        case __register__::IDTR: return "IDTR";
-        case __register__::LDTR: return "LDTR";
-        case __register__::TR: return "TR";
-        case __register__::CS: return "CS";
-        case __register__::DS: return "DS";
-        case __register__::SS: return "SS";
-        case __register__::ES: return "ES";
-        case __register__::FS: return "FS";
-        case __register__::GS: return "GS";
-        case __register__::xmm0: return "xmm0";
-        case __register__::xmm1: return "xmm1";
-        case __register__::xmm2: return "xmm2";
-        case __register__::xmm3: return "xmm3";
-        case __register__::xmm4: return "xmm4";
-        case __register__::xmm5: return "xmm5";
-        case __register__::xmm6: return "xmm6";
-        case __register__::xmm7: return "xmm7";
-        case __register__::xmm8: return "xmm8";
-        case __register__::xmm9: return "xmm9";
-        case __register__::xmm10: return "xmm10";
-        case __register__::xmm11: return "xmm11";
-        case __register__::xmm12: return "xmm12";
-        case __register__::xmm13: return "xmm13";
-        case __register__::xmm14: return "xmm14";
-        case __register__::xmm15: return "xmm15";
-    }
-    return "unknown";
-}
 const char* stringify(primitiveOP op) {
     switch (op) {
         case primitiveOP::invalid: return "invalid";
@@ -164,18 +84,6 @@ const char* stringify(primitiveOP op) {
         case primitiveOP::PRINTCHAR: return "PRINTCHAR";
         case primitiveOP::PRINTSTR: return "PRINTSTR";
         case primitiveOP::SYSCALL: return "SYSCALL";
-    }
-    return "unknown";
-}
-const char* stringify(storageType type) {
-    switch (type) {
-        case storageType::INVALID: return "INVALID";
-        case storageType::REGISTER: return "REGISTER";
-        case storageType::MEMORY: return "MEMORY";
-        case storageType::MEMORY_ABSOLUTE: return "MEMORY_ABSOLUTE";
-        case storageType::IMMEDIATE: return "IMMEDIATE";
-        case storageType::SYMBOL: return "SYMBOL";
-        case storageType::SYMBOL_ADDR: return "SYMBOL_ADDR";
     }
     return "unknown";
 }
@@ -242,17 +150,7 @@ void dump(std::string name, bool* obj, std::string indent)
 //, ███████ ██   ████  ██████  ██      ██ ███████
 //,####################################################################################################################
 //,####################################################################################################################
-void dump(std::string name, __register__* obj, std::string indent)
-{
-	GENERIC_NULLPTR
-	std::cout << indent << name << " : "<< COLOR_ENUM << stringify(*obj) << COLOR_RESET << std::endl;
-}
 void dump(std::string name, primitiveOP* obj, std::string indent)
-{
-	GENERIC_NULLPTR
-	std::cout << indent << name << " : "<< COLOR_ENUM << stringify(*obj) << COLOR_RESET << std::endl;
-}
-void dump(std::string name, storageType* obj, std::string indent)
 {
 	GENERIC_NULLPTR
 	std::cout << indent << name << " : "<< COLOR_ENUM << stringify(*obj) << COLOR_RESET << std::endl;
@@ -288,24 +186,7 @@ void dump(std::string name, scope* obj, std::string indent)
 	dump("lparent", obj->lparent, INDENT);
 	dump("cl", obj->cl, INDENT);
 	dump("func", obj->func, INDENT);
-	dump("fstore", obj->fstore, INDENT);
 	vlistdump<token>("attributes", &obj->attribs, INDENT);
-	//,
-	//, dump extra code blocks
-	//,
-	std::string ogin = indent;
-	{
-		indent = INDENT;
-		name = "extraCodeBlocks";
-		GENERIC_OBJ_START
-		uint64_t I = 0;
-		for(std::vector<std::string>* block : obj->extraCodeBlocks)
-		{
-			vlistdump("["+std::to_string(I++)+"]",block,INDENT);
-		}
-		GENERIC_OBJ_END
-	}
-	indent = ogin;
 	dump("lastReentrySym", &obj->lastReentrySym, INDENT);
 	dump("ifCounter", &obj->ifCounter, INDENT);
 	dump("elseIfCounter", &obj->elseIfCounter, INDENT);
@@ -343,18 +224,11 @@ void dump(std::string name, variable* obj, std::string indent, bool shallow)
 	dump("isParameter", &obj->isParameter, INDENT);
 	dump("__declared_file", &obj->__declared_file, INDENT);
 	dump("__declared_line", &obj->__declared_line, INDENT);
-	dump("access", &obj->access, INDENT);
 	dump("isStatic", &obj->isStatic, INDENT);
 	dump("usedAutoStorage", &obj->usedAutoStorage, INDENT);
-	dump("immediateValue", &obj->immediateValue, INDENT);
 	if(!shallow)
 		listdump<variable*>("children", &obj->children, INDENT);
 	dump("parent", obj->parent, INDENT, true);
-	dump("storage", &obj->storage, INDENT);
-	dump("offsetType", &obj->offsetType, INDENT);
-	dump("offsetReg", &obj->offsetReg, INDENT);
-	dump("reg", &obj->reg, INDENT);
-	dump("offset", &obj->offset, INDENT);
 	GENERIC_OBJ_END
 }
 //,####################################################################################################################
@@ -378,9 +252,7 @@ void dump(std::string name, function* obj, std::string indent)
 	dump("miscData", &obj->miscData, INDENT);
 	listdump<type*>("parameters", &obj->parameters, INDENT);
 	listdump<variable*>("vparams", &obj->vparams, INDENT);
-	vlistdump("code", &obj->code, INDENT);
 	dump("abi", obj->abi, INDENT);
-	dump("fstore", obj->fstore, INDENT);
 	dump("__declared_file", &obj->__declared_file, INDENT);
 	dump("__declared_line", &obj->__declared_line, INDENT);
 	dump("miscData1", (dummy*)obj->miscData1, INDENT);
@@ -454,85 +326,6 @@ void dump(std::string name, castFunction* obj, std::string indent)
 }
 //,####################################################################################################################
 //,####################################################################################################################
-//,  █████  ██████   ██████ ██   ██
-//, ██   ██ ██   ██ ██      ██   ██
-//, ███████ ██████  ██      ███████
-//, ██   ██ ██   ██ ██      ██   ██
-//, ██   ██ ██   ██  ██████ ██   ██
-//,####################################################################################################################
-//,####################################################################################################################
-void dump(std::string name, arch* obj, std::string indent)
-{
-	GENERIC_NULLPTR
-	GENERIC_OBJ_START
-	dump("name", &obj->name, INDENT);
-	dump("primitiveCall", (dummy*)obj->primitiveCall, INDENT);
-	dump("CodePlaceSymbol", (dummy*)obj->CodePlaceSymbol, INDENT);
-	dump("putComment", (dummy*)obj->putComment, INDENT);
-	dump("activate", (dummy*)obj->activate, INDENT);
-	dump("cmp", (dummy*)obj->cmp, INDENT);
-	dump("jmp", (dummy*)obj->jmp, INDENT);
-	dump("jmpPtr", (dummy*)obj->jmpPtr, INDENT);
-	dump("jnz", (dummy*)obj->jnz, INDENT);
-	dump("jne", (dummy*)obj->jne, INDENT);
-	dump("jno", (dummy*)obj->jno, INDENT);
-	dump("jns", (dummy*)obj->jns, INDENT);
-	dump("js", (dummy*)obj->js, INDENT);
-	dump("jz", (dummy*)obj->jz, INDENT);
-	dump("je", (dummy*)obj->je, INDENT);
-	dump("jo", (dummy*)obj->jo, INDENT);
-	dump("jb", (dummy*)obj->jb, INDENT);
-	dump("jnae", (dummy*)obj->jnae, INDENT);
-	dump("jc", (dummy*)obj->jc, INDENT);
-	dump("jnb", (dummy*)obj->jnb, INDENT);
-	dump("jae", (dummy*)obj->jae, INDENT);
-	dump("jnc", (dummy*)obj->jnc, INDENT);
-	dump("jbe", (dummy*)obj->jbe, INDENT);
-	dump("jna", (dummy*)obj->jna, INDENT);
-	dump("jnbe", (dummy*)obj->jnbe, INDENT);
-	dump("ja", (dummy*)obj->ja, INDENT);
-	dump("jnge", (dummy*)obj->jnge, INDENT);
-	dump("jl", (dummy*)obj->jl, INDENT);
-	dump("jge", (dummy*)obj->jge, INDENT);
-	dump("jnl", (dummy*)obj->jnl, INDENT);
-	dump("jle", (dummy*)obj->jle, INDENT);
-	dump("jng", (dummy*)obj->jng, INDENT);
-	dump("jnle", (dummy*)obj->jnle, INDENT);
-	dump("jg", (dummy*)obj->jg, INDENT);
-	dump("jp", (dummy*)obj->jp, INDENT);
-	dump("jpe", (dummy*)obj->jpe, INDENT);
-	dump("jnp", (dummy*)obj->jnp, INDENT);
-	dump("jpo", (dummy*)obj->jpo, INDENT);
-	dump("jcxz", (dummy*)obj->jcxz, INDENT);
-	dump("jecxz", (dummy*)obj->jecxz, INDENT);
-	dump("movRR", (dummy*)obj->movRR, INDENT);
-	dump("movUR", (dummy*)obj->movUR, INDENT);
-	dump("movUL", (dummy*)obj->movUL, INDENT);
-	dump("movLL", (dummy*)obj->movLL, INDENT);
-	dump("movLR", (dummy*)obj->movLR, INDENT);
-	dump("movRL", (dummy*)obj->movRL, INDENT);
-	dump("movVR", (dummy*)obj->movVR, INDENT);
-	dump("movRV", (dummy*)obj->movRV, INDENT);
-	dump("movVV", (dummy*)obj->movVV, INDENT);
-	dump("movLV", (dummy*)obj->movLV, INDENT);
-	dump("movVL", (dummy*)obj->movVL, INDENT);
-	dump("inc", (dummy*)obj->inc, INDENT);
-	dump("dec", (dummy*)obj->dec, INDENT);
-	dump("addRR", (dummy*)obj->addRR, INDENT);
-	dump("addUR", (dummy*)obj->addUR, INDENT);
-	dump("addVVV", (dummy*)obj->addVVV, INDENT);
-	dump("mulVVV", (dummy*)obj->mulVVV, INDENT);
-	dump("divVVV", (dummy*)obj->divVVV, INDENT);
-	dump("modVVV", (dummy*)obj->modVVV, INDENT);
-	dump("subRR", (dummy*)obj->subRR, INDENT);
-	dump("subUR", (dummy*)obj->subUR, INDENT);
-	dump("subVVV", (dummy*)obj->subVVV, INDENT);
-	dump("enter", (dummy*)obj->enter, INDENT);
-	dump("leave", (dummy*)obj->leave, INDENT);
-	GENERIC_OBJ_END
-}
-//,####################################################################################################################
-//,####################################################################################################################
 //,  █████  ██████  ██
 //, ██   ██ ██   ██ ██
 //, ███████ ██████  ██
@@ -545,9 +338,6 @@ void dump(std::string name, ABI* obj, std::string indent)
 	GENERIC_NULLPTR
 	GENERIC_OBJ_START
 	dump("name", &obj->name, INDENT);
-	vlistdump<__register__>("VolatileRegisters", &obj->VolatileRegisters, INDENT);
-	vlistdump<__register__>("nonVolatile", &obj->nonVolatile, INDENT);
-	dump("setArgStorages", (dummy*)obj->setArgStorages, INDENT);
 	dump("moveArguments", (dummy*)obj->moveArguments, INDENT);
 	dump("genProlouge", (dummy*)obj->genProlouge, INDENT);
 	dump("genEpilouge", (dummy*)obj->genEpilouge, INDENT);
@@ -555,31 +345,6 @@ void dump(std::string name, ABI* obj, std::string indent)
 	dump("postCall", (dummy*)obj->postCall, INDENT);
 	dump("instrCall", (dummy*)obj->instrCall, INDENT);
 	dump("call", (dummy*)obj->call, INDENT);
-	dump("integerReturn", &obj->integerReturn, INDENT);
-	dump("floatReturn", &obj->floatReturn, INDENT);
-	dump("ctorThisRegister", &obj->ctorThisRegister, INDENT);
-	GENERIC_OBJ_END
-}
-//,####################################################################################################################
-//,####################################################################################################################
-//, ███████ ██    ██ ███    ██  ██████ ████████ ██  ██████  ███    ██     ███████ ████████  ██████  ██████   █████   ██████  ███████
-//, ██      ██    ██ ████   ██ ██         ██    ██ ██    ██ ████   ██     ██         ██    ██    ██ ██   ██ ██   ██ ██       ██
-//, █████   ██    ██ ██ ██  ██ ██         ██    ██ ██    ██ ██ ██  ██     ███████    ██    ██    ██ ██████  ███████ ██   ███ █████
-//, ██      ██    ██ ██  ██ ██ ██         ██    ██ ██    ██ ██  ██ ██          ██    ██    ██    ██ ██   ██ ██   ██ ██    ██ ██
-//, ██       ██████  ██   ████  ██████    ██    ██  ██████  ██   ████     ███████    ██     ██████  ██   ██ ██   ██  ██████  ███████
-//,####################################################################################################################
-//,####################################################################################################################
-void dump(std::string name, functionStorage* obj, std::string indent)
-{
-	GENERIC_NULLPTR
-	GENERIC_OBJ_START
-	dump("stackOffset",&obj->stackOffset,INDENT);
-	dump("stackSize",&obj->stackSize,INDENT);
-	for(__register__ I : registers)
-	{
-		uint64_t status = obj->registerStatus(I);
-		dump("register: "+registerNAME(I),&status,INDENT);
-	}
 	GENERIC_OBJ_END
 }
 //,####################################################################################################################

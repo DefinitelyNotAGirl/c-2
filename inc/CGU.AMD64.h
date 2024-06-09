@@ -28,13 +28,3 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-
-namespace runtime::amd64
-{
-	void copy(variable* src, variable* dst);
-	void clear(variable* target);
-	void thread(std::string& symbol);
-	void call(function* func);
-	void enter(uint64_t frameSize);
-	void leave();
-}

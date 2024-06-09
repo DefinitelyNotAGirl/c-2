@@ -2,7 +2,7 @@
  * Created Date: Tuesday June 4th 2024
  * Author: Lilith
  * -----
- * Last Modified: Thursday June 6th 2024 10:09:55 am
+ * Last Modified: Tuesday June 4th 2024 3:25:05 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -30,7 +30,7 @@
 /** @file */
 
 #include <compiler.h>
-#include <CGU.AMD64.h>
+#include <amd64.cgu.hxx>
 
 namespace runtime
 {

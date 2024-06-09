@@ -30,6 +30,16 @@
 
 #include <compiler.h>
 
+namespace runtime::amd64
+{
+	void copy(variable* src, variable* dst);
+	inline void clear(variable* target){}
+	inline void thread(std::string& symbol){}
+	inline void call(function* func){}
+	inline void enter(uint64_t frameSize){}
+	inline void leave(){}
+}
+
 namespace amd64
 {
 	/**
@@ -125,6 +135,9 @@ namespace amd64
 		vm_hsave_pa = 0xC001011700000010
 	};
 
+	constexpr uint64_t operator<<(Register r,uint64_t i){return ((uint64_t)r)<<i;}
+	constexpr uint64_t operator&(Register r,uint64_t i){return ((uint64_t)r)&i;}
+
 	enum class StorageMode {
 		IndirectImmediate,
 		IndirectRegister,
@@ -154,10 +167,11 @@ namespace amd64
 		RegisterIndirect_disp8  = 0b01,
 		RegisterIndirect_disp32 = 0b10
 	};
+	constexpr uint8_t operator<<(AddressingMode am,uint8_t i){return ((uint8_t)am)<<i;}
 	
 	uint64_t imm64(uint64_t value);
-	uint64_t imm32(uint32_t value);
-	uint64_t imm16(uint16_t value);
+	uint32_t imm32(uint32_t value);
+	uint16_t imm16(uint16_t value);
 	/**
 	* @brief this is short hand for modRM(reg,AddressingMode::RegisterDirect,rm)
 	* 
@@ -199,15 +213,15 @@ namespace amd64
 		/**
 		* @brief initiates a 2 byte VEX escape sequence
 		*/
-		byte VEX_2byte = 0xC5;
+		constexpr byte VEX_2byte = 0xC5;
 		/**
 		* @brief initiates a 3 byte VEX escape sequence
 		*/
-		byte VEX_3byte = 0xC4;
+		constexpr byte VEX_3byte = 0xC4;
 		/**
 		* @brief initiates a 3 byte XOP escape sequence
 		*/
-		byte XOP = 0x8F;
+		constexpr byte XOP = 0x8F;
 		namespace legacy
 		{
 			/**
@@ -234,12 +248,12 @@ namespace amd64
 			extensions to extend the instruction encoding space in the 0Fh, 0F_38h, and 0F_3Ah opcode maps.
 			`
 			*/
-			byte OperandSizeOverride = 0x66;
+			constexpr byte OperandSizeOverride = 0x66;
 			/**
 			* @brief 
 			* 
 			*/
-			byte AddressSizeOverride = 0x67;
+			constexpr byte AddressSizeOverride = 0x67;
 			/**
 			* @brief AMD64 specification:
 			`
@@ -254,12 +268,12 @@ namespace amd64
 			*/
 			namespace SegmentOverride
 			{
-				byte cs = 0x2E;
-				byte ds = 0x3E;
-				byte es = 0x26;
-				byte fs = 0x64;
-				byte gs = 0x65;
-				byte ss = 0x36;
+				constexpr byte cs = 0x2E;
+				constexpr byte ds = 0x3E;
+				constexpr byte es = 0x26;
+				constexpr byte fs = 0x64;
+				constexpr byte gs = 0x65;
+				constexpr byte ss = 0x36;
 			}
 			/**
 			* @brief AMD64 specification:
@@ -278,7 +292,7 @@ namespace amd64
 			the LOCK prefix is used with any other instruction. 
 			`
 			*/
-			byte LOCK = 0xF0;
+			constexpr byte LOCK = 0xF0;
 			/**
 			* @brief AMD64 specification:
 			`
@@ -295,7 +309,7 @@ namespace amd64
 			used with the INS, LODS, MOVS, OUTS, and STOS instructions.
 			`
 			*/
-			byte REP  = 0xF3;
+			constexpr byte REP  = 0xF3;
 			/**
 			* @brief AMD64 specification:
 			`
@@ -314,7 +328,7 @@ namespace amd64
 			SCASD, and SCASW instructions.
 			`
 			*/
-			byte REPE = 0xF3;
+			constexpr byte REPE = 0xF3;
 			/**
 			* @brief AMD64 specification:
 			`
@@ -333,7 +347,7 @@ namespace amd64
 			SCASD, and SCASW instructions.
 			`
 			*/
-			byte REPZ = 0xF3;
+			constexpr byte REPZ = 0xF3;
 			/**
 			* @brief AMD64 specification:
 			`
@@ -352,7 +366,7 @@ namespace amd64
 			SCASB, SCASD, and SCASW instructions.
 			`
 			*/
-			byte REPNE= 0xF2;
+			constexpr byte REPNE= 0xF2;
 			/**
 			* @brief AMD64 specification:
 			`
@@ -371,7 +385,7 @@ namespace amd64
 			SCASB, SCASD, and SCASW instructions.
 			`
 			*/
-			byte REPNZ= 0xF2;
+			constexpr byte REPNZ= 0xF2;
 		}
 	}
 	
@@ -388,7 +402,7 @@ namespace amd64
 			constexpr byte rm16_32_64__imm16_32 = 0x81;
 			constexpr byte rm16_32_64__imm8 = 0x83;
 		}
-		namespace or{
+		namespace _or{
 			constexpr byte rm8__r8 = 0x08;
 			constexpr byte rm16_32_64__r16_32_64 = 0x09;
 			constexpr byte r8__rm8 = 0x0A;
@@ -421,7 +435,7 @@ namespace amd64
 			constexpr byte rm16_32_64__imm16_32 = 0x81;
 			constexpr byte rm16_32_64__imm8 = 0x83;
 		}
-		namespace and{
+		namespace _and{
 			constexpr byte rm8__r8 = 0x20;
 			constexpr byte rm16_32_64__r16_32_64 = 0x21;
 			constexpr byte r8__rm8 = 0x22;
@@ -443,7 +457,7 @@ namespace amd64
 			constexpr byte rm16_32_64__imm16_32 = 0x81;
 			constexpr byte rm16_32_64__imm8 = 0x83;
 		}
-		namespace xor{
+		namespace _xor{
 			constexpr byte rm8__r8 = 0x30;
 			constexpr byte rm16_32_64__r16_32_64 = 0x31;
 			constexpr byte r8__rm8 = 0x32;
@@ -544,8 +558,6 @@ namespace amd64
 			constexpr byte AL__imm8 = 0xA8;
 			constexpr byte rAX__imm16_32 = 0xA9;
 			constexpr byte rm8__imm8 = 0xF6;
-			constexpr byte rm8__imm8 = 0xF6;
-			constexpr byte rm16_32_64__imm16_32 = 0xF7;
 			constexpr byte rm16_32_64__imm16_32 = 0xF7;
 		}
 		namespace xchg{
@@ -574,8 +586,8 @@ namespace amd64
 			constexpr byte rm64_16 = 0x8F;
 		}
 		namespace r16_32_64{
-			constexpr byte rAX = 0x90+r;
-			constexpr byte imm16_32_64 = 0xB8+r;
+			constexpr byte rAX = 0x90;
+			constexpr byte imm16_32_64 = 0xB8;
 		}
 		namespace nop{
 			constexpr byte _ = 0x90;
@@ -702,8 +714,8 @@ namespace amd64
 			constexpr byte imm16 = 0xCA;
 			constexpr byte _ = 0xCB;
 		}
-		namespace int{
-			constexpr byte 3__eFlags = 0xCC;
+		namespace _int{
+			constexpr byte _3__eFlags = 0xCC;
 			constexpr byte imm8__eFlags = 0xCD;
 		}
 		namespace into{
@@ -1120,7 +1132,7 @@ namespace amd64
 		namespace cmc{
 			constexpr byte _ = 0xF5;
 		}
-		namespace not{
+		namespace _not{
 			constexpr byte rm8 = 0xF6;
 			constexpr byte rm16_32_64 = 0xF7;
 		}

@@ -58,7 +58,6 @@ public:
     scope* lparent = nullptr;//logical parent
     type* cl = nullptr;//only filled if t==scopeType::CLASS, to be treated as std::vector<std::pair<uint64_t,__register__>>* if t==scopeType::TRY_CATCH
     function* func = nullptr;
-    functionStorage* fstore = nullptr;//this should only be filled if t==scopeType::FUNCTION
     std::vector<token> attribs;//should only be present for namespaces
     std::vector<section*> extraCodeBlocks;
     std::string lastReentrySym = "";

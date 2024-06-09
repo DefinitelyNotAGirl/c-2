@@ -31,6 +31,11 @@
 
 #include <compiler.h>
 
+namespace smu {
+	class section;
+}
+using smu::section;
+
 enum class primitiveOP : uint64_t
 {
     invalid = 0,
@@ -81,7 +86,6 @@ public:
     std::vector<variable*> vparams;
     section* code;
     ABI* abi = nullptr;
-    functionStorage* fstore;
     std::string __declared_file;
     uint64_t __declared_line;
 	void* miscData1;

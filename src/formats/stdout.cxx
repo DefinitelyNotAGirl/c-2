@@ -32,6 +32,8 @@
 
 #define constructor __attribute__ ((constructor))
 
+#include <dump.hxx>
+
 static uint64_t fID = 0;
 struct formatFile
 {
@@ -50,74 +52,17 @@ static formatFile* getFile(uint64_t fID)
 
 static void format_addClass(uint64_t fID, type* t)
 {
-    std::cout << "##############" << std::endl;
-    std::cout << "class: " << t->name << std::endl;
-    std::cout << "mangled name: " << t->mangledName << std::endl;
-    std::cout << "size: " << t->size << std::endl;
-    if(t->members.size() > 0)
-    {
-        std::cout << "members: " << std::endl;
-        for(variable& m : t->members)
-            std::cout << "    " << m.dataType->name << " " << m.name << std::endl;
-    }
-    std::cout << std::endl;
+    dump("class",t,"");
 }
 
 static void format_addFunction(uint64_t fID, function* func)
 {
-    std::cout << "##############" << std::endl;
-    std::cout << "function: " << func->name << std::endl;
-    std::cout << "symbol: " << func->symbol << std::endl;
-    std::cout << "ABI: " << func->abi->name << std::endl;
-    std::cout << "return type: " << func->returnType->name << std::endl;
-    if(func->parameters.size() > 0)
-    {
-        std::cout << "parameters: " << std::endl;
-        for(type* p : func->parameters)
-            std::cout << "        " << p->name << std::endl;
-    }
-    std::cout << std::endl;
+    dump("function",func,"");
 }
 
 static void format_addVariable(uint64_t fID, variable* var)
 {
-    std::cout << "##############" << std::endl;
-    std::cout << "variable: " << var->name << std::endl;
-    std::cout << "symbol: " << var->symbol << std::endl;
-    std::cout << "type: " << var->dataType->name << std::endl;
-    std::cout << "storage: ";
-    if(currentScope->t == scopeType::FUNCTION)
-    {
-        if(var->storage == storageType::MEMORY)
-        {
-            if(var->offset < 0)
-                std::cout << "SP";
-            else
-                std::cout << "SP+";
-            std::cout <<std::dec<< (int64_t)var->offset;
-        }
-        else if(var->storage == storageType::REGISTER)
-        {
-            std::cout << registerNAME(var->reg);
-        }
-        else if(var->storage == storageType::MEMORY_ABSOLUTE)
-        {
-            std::cout << "0x" << std::hex << var->offset;
-        }
-    }
-    else
-    {
-        if(var->storage == storageType::REGISTER)
-        {
-            std::cout << registerNAME(var->reg);
-        }
-        else if(var->storage == storageType::MEMORY_ABSOLUTE)
-        {
-            std::cout << "0x" << std::hex << var->offset;
-        }
-    }
-    std::cout << std::endl;
-    std::cout << std::endl;
+    dump("variable",var,"");
 }
 
 static void format_addScope(uint64_t fID, scope* sc)

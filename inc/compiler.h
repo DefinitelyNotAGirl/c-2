@@ -36,42 +36,28 @@ class ABI;
 typedef uint8_t byte;
 
 #include <options.h>
+#include <SMU.h>
+#include <arch.h>
 #include <class_variable.h>
 #include <class_token.h>
 #include <class_line.h>
 #include <class_type.h>
 #include <class_litop.h>
-#include <storage.h>
 #include <function.h>
 #include <class_scope.h>
 #include <stack>
 #include <warning.h>
-#include <section.h>
 #include <template.h>
-#include <arch.h>
 #include <ABI.h>
 #include <sstream>
 #include <system.h>
 
-extern std::vector<std::string> DataCode;
-extern std::vector<std::string> RoDataCode;
-extern std::vector<std::string> TextCode;
-extern std::vector<std::string> BssCode;
-extern std::vector<std::string> MiscCode;
-extern std::vector<std::string> DebugCode;
-extern std::vector<std::string> DebugAbbrevCode;
-extern uint64_t debugInfoSize;
-
 extern std::vector<castFunction*> castFunctions;
-
 extern std::string currentFile;
-
 extern std::vector<std::string> startObjFiles;
-
 extern std::vector<std::string> dependencies;
 
 variable* resolve(token& ft);
-
 std::string getIndent();
 
 void printStacktrace(uint64_t len);
@@ -85,9 +71,6 @@ function* getFunction(type* returnType, std::string& name, std::vector<variable*
 uint64_t tokenType(std::string& s);
 std::string manglePseudoName(std::string& s);
 std::string mangleTypeName(std::string& s);
-void createMemoryHandle(__register__ reg, uint64_t offset, variable* handle);
-void createSymbolHandle(std::string symbol, variable* handle);
-variable* getRegisterHandle(__register__ reg);
 
 std::string getPrintFunctionExpression(function* f, bool showVariableNames = false);
 

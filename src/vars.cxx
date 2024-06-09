@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -31,7 +31,6 @@
 #include <common.h>
 #include <compiler.h>
 #include <miscout.h>
-#include <codegen.h>
 #include <mangling.h>
 #include <stack>
 #include <error.h>
@@ -43,9 +42,6 @@ uint64_t moScopeID = 0;
 
 std::vector<mangler*> manglers;
 mangler* defaultMangler = nullptr;
-
-arch* currentArch = nullptr;
-std::vector<arch*> architectures;
 
 _system* csys = nullptr;
 std::vector<_system*> systems;
@@ -79,24 +75,6 @@ uint64_t defaultNumberBase = 10;
 uint64_t tabLength = 4;
 ABI* defaultABI = nullptr;//default to SystemV amd64 ABI
 
-using enum __register__;
-std::vector<__register__> registers = {
-                rax,rbx,rcx,rdx,
-                rsi,rdi,
-                rbp,rsp,
-                r0,r1,r2,r3,r4,r5,r6,r7,r8,r9,r10,r11,r12,r13,r14,r15,
-                rip,
-                cr0,cr1,cr2,cr3,cr4,cr5,cr6,cr7,cr8,cr9,cr10,cr11,cr12,cr13,cr14,cr15,
-                EFER,
-                DR0,DR1,DR2,DR3,DR6,DR7,
-                GDTR,IDTR,LDTR,
-                TR,CS,DS,SS,ES,FS,GS,
-                xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7,xmm8,xmm9,xmm10,xmm11,xmm12,xmm13,xmm14,xmm15
-                };
-__register__ StackPointer = rsp;
-__register__ StackFramePointer = rbp;
-__register__ ExceptionHandlerStack = r15;
-
 void (*jumplastcondition)(std::string symbol);
 
 char c_alert                = 0x07;
@@ -107,8 +85,6 @@ char c_newline              = 0x0A;
 char c_cariagereturn        = 0x0D;
 char c_horizontaltab        = 0x09;
 char c_verticaltab          = 0x0B;
-
-uint64_t syntax = SYNTAX_INVALID;
 
 std::string objOut = "";
 std::string resOut = "";

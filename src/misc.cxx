@@ -2,7 +2,7 @@
  * Created Date: Monday July 31st 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
+ * Last Modified: Monday June 3rd 2024 11:44:37 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -60,13 +60,3 @@ std::string getNewVariableName()
 {
     return "__c2_anonymous"+std::to_string(NewNameCount++);
 }
-
-uint64_t getx86MSR(__register__ reg)
-{
-    using enum __register__;
-    switch(reg)
-    {
-        case(EFER): return 0xc0000080;
-    }
-    return 0;
-};
