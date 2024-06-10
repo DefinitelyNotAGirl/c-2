@@ -104,6 +104,8 @@ namespace amd64
 
 namespace runtime::amd64
 {
+	#pragma GCC diagnostic push
+	#pragma GCC diagnostic ignored "-Wnarrowing"
 	void copy(variable* src, variable* dst)
 	{
 		if(src->storageArch != Architecture::AMD64)
@@ -196,7 +198,10 @@ namespace runtime::amd64
 		{
 			uint64_t bytes = src->dataType->size <= dst->dataType->size ? src->dataType->size : dst->dataType->size;
 			uint64_t disp = 0;
-			::amd64::AddressingMode addrMode = bytes <= 0xFF ? ::amd64::AddressingMode::RegisterIndirect_disp8 : ::amd64::AddressingMode::RegisterIndirect_disp32;
+			uint64_t mbdisp = srcStore->displacement.imm64 >= dstStore->displacement.imm64 ? srcStore->displacement.imm64 : dstStore->displacement.imm64;
+			if(srcStore->displacement.isSymbol || dstStore->displacement.isSymbol)
+				compilerBug("unimplemented");
+			::amd64::AddressingMode addrMode = (bytes+mbdisp) <= (0b01111111) ? ::amd64::AddressingMode::RegisterIndirect_disp8 : ::amd64::AddressingMode::RegisterIndirect_disp32;
 			while(bytes >= 8)
 			{
 				//,
@@ -211,14 +216,13 @@ namespace runtime::amd64
 					switch(addrMode)
 					{
 						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp});
+							code->push({(byte)disp+srcStore->displacement.imm64});
 							break;
 						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp));
+							code->push(::amd64::imm32(disp+srcStore->displacement.imm64));
 							break;
 						default:
-							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
-				
+							compilerBug("this code is supposed to be unreachable.");
 						}	
 				}
 				//,
@@ -233,13 +237,13 @@ namespace runtime::amd64
 					switch(addrMode)
 					{
 						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp});
+							code->push({(byte)disp+dstStore->displacement.imm64});
 							break;
 						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp));
+							code->push(::amd64::imm32(disp+dstStore->displacement.imm64));
 							break;
 						default:
-							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
+							compilerBug("this code is supposed to be unreachable.");
 					}	
 				}
 				disp+=8;
@@ -259,10 +263,10 @@ namespace runtime::amd64
 					switch(addrMode)
 					{
 						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp});
+							code->push({(byte)disp+srcStore->displacement.imm64});
 							break;
 						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp));
+							code->push(::amd64::imm32(disp+srcStore->displacement.imm64));
 							break;
 						default:
 							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
@@ -281,10 +285,10 @@ namespace runtime::amd64
 					switch(addrMode)
 					{
 						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp});
+							code->push({(byte)disp+dstStore->displacement.imm64});
 							break;
 						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp));
+							code->push(::amd64::imm32(disp+dstStore->displacement.imm64));
 							break;
 						default:
 							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
@@ -308,10 +312,10 @@ namespace runtime::amd64
 					switch(addrMode)
 					{
 						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp});
+							code->push({(byte)disp+srcStore->displacement.imm64});
 							break;
 						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp));
+							code->push(::amd64::imm32(disp+srcStore->displacement.imm64));
 							break;
 						default:
 							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
@@ -331,10 +335,10 @@ namespace runtime::amd64
 					switch(addrMode)
 					{
 						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp});
+							code->push({(byte)disp+dstStore->displacement.imm64});
 							break;
 						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp));
+							code->push(::amd64::imm32(disp+dstStore->displacement.imm64));
 							break;
 						default:
 							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
@@ -358,10 +362,10 @@ namespace runtime::amd64
 					switch(addrMode)
 					{
 						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp});
+							code->push({(byte)disp+srcStore->displacement.imm64});
 							break;
 						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp));
+							code->push(::amd64::imm32(disp+srcStore->displacement.imm64));
 							break;
 						default:
 							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
@@ -380,10 +384,10 @@ namespace runtime::amd64
 					switch(addrMode)
 					{
 						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp});
+							code->push({(byte)disp+dstStore->displacement.imm64});
 							break;
 						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp));
+							code->push(::amd64::imm32(disp+dstStore->displacement.imm64));
 							break;
 						default:
 							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
@@ -394,6 +398,7 @@ namespace runtime::amd64
 			}
 		}
 	}
+	#pragma GCC diagnostic pop
 	void clear(variable* target);
 	void thread(std::string& symbol);
 	void call(function* func);
