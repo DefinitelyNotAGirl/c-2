@@ -30,6 +30,7 @@
 
 namespace elf64
 {
+	#pragma pack(1)
 	constexpr uint32_t Magic = 0x464c457f;
 	struct SectionHeader
 	{
@@ -80,4 +81,23 @@ namespace elf64
     	uint16_t SectionHeaderCount;
     	uint16_t SectionNameEntry;
 	};
+
+	namespace shf
+	{
+		constexpr uint64_t write 			= (1<< 0);
+		constexpr uint64_t alloc 			= (1<< 1);
+		constexpr uint64_t execinstr 		= (1<< 2);
+		constexpr uint64_t merge			= (1<< 4);
+		constexpr uint64_t strings			= (1<< 5);
+		constexpr uint64_t info_link		= (1<< 6);
+		constexpr uint64_t link_order		= (1<< 7);
+		constexpr uint64_t os_nonconforming	= (1<< 8);
+		constexpr uint64_t group			= (1<< 9);
+		constexpr uint64_t tls				= (1<<10);
+		constexpr uint64_t ordered 			= 0x4000000;
+		constexpr uint64_t exclude 			= 0x8000000;
+		constexpr uint64_t mask_os			= 0x0FF00000;
+		constexpr uint64_t mask_proc		= 0xF0000000;
+	}
+	#pragma pack()
 }
