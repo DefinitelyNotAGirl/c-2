@@ -65,10 +65,12 @@ namespace smu
 		 * @brief stores the sections size when loaded to memory
 		 */
 		uint64_t sizeInMemory = 0;
+	public:
 		/**
 		 * @brief stores the data
 		 */
 		byte* data = nullptr;
+	protected:
 		bool readable;
 		bool writeable;
 		bool executable;

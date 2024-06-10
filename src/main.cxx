@@ -81,10 +81,6 @@ namespace testing {
 }
 int main(int argc, char** argv)
 {
-#ifdef CPE2_BUILD_TEST
-	testing::main();
-	return 0;
-#endif
     signal(SIGSEGV, HANDLER_SIGSEGV);   // install our handler
     signal(SIGABRT, HANDLER_SIGSEGV);   // install our handler
     signal(SIGILL, HANDLER_SIGSEGV);   // install our handler
@@ -110,6 +106,10 @@ int main(int argc, char** argv)
             }
         }
     }
+	#ifdef CPE2_BUILD_TEST
+		testing::main();
+		return 0;
+	#endif
     //get working directory
     char* workingDir = getcwd(nullptr,0);//only works for GNU libc, must find alternative soloution for other systems
     std::string cwd = workingDir;
