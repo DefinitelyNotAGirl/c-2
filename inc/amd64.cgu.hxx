@@ -577,6 +577,8 @@ namespace amd64
 			constexpr byte moffs16_32_64__rAX = 0xA3;
 			constexpr byte rm8__imm8 = 0xC6;
 			constexpr byte rm16_32_64__imm16_32 = 0xC7;
+			constexpr byte r8__imm8 = 0xB0;
+			constexpr byte r16_32_64__imm16_32_64 = 0xB8;
 		}
 		namespace lea{
 			constexpr byte r16_32_64__m = 0x8D;
