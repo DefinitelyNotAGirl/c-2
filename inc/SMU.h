@@ -59,6 +59,9 @@ namespace smu
 		uint8_t size;
 		RelocationType type;
 		std::string symbol;
+		RelocationEntry(){}
+		RelocationEntry(uint64_t offset, uint8_t size, RelocationType type, std::string symbol)
+			:offset(offset),size(size),type(type),symbol(symbol){}
 	};
 
 	class section {
