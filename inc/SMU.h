@@ -58,8 +58,7 @@ namespace smu
 		uint64_t offset;
 		uint8_t size;
 		RelocationType type;
-	private:
-		byte _pad0[6];
+		std::string symbol;
 	};
 
 	class section {
