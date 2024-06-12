@@ -47,6 +47,21 @@ namespace smu
 		readWriteExecute=0b00000111
 	};
 
+	enum class RelocationType : uint8_t {
+		Invalid 	= 0x00,
+		Absolute 	= 0x01,
+		Relative	= 0x02,
+	};
+
+	class RelocationEntry {
+	public:
+		uint64_t offset;
+		uint8_t size;
+		RelocationType type;
+	private:
+		byte _pad0[6];
+	};
+
 	class section {
 	protected: 
 		/**
@@ -66,6 +81,7 @@ namespace smu
 		 */
 		uint64_t sizeInMemory = 0;
 	public:
+		std::vector<RelocationEntry> Relocations;
 		/**
 		 * @brief stores the data
 		 */
@@ -190,4 +206,3 @@ namespace smu
 using smu::section;
 
 extern section* code;
-extern section* reloc_code;
