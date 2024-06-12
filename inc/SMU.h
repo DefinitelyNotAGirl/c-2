@@ -171,9 +171,23 @@ namespace smu
 		 * @param data
 		 */
 		void push(uint16_t data){*this << data;}
+
+		/**
+		 * @brief adds data to the current data
+		 * 
+		 */
+		template<typename T>
+		void push(T data)
+		{
+			uint64_t newSize = this->sizeInFile+sizeof(data);
+			this->data = (byte*)realloc(this->data,newSize);
+			memcpy(this->data+this->sizeInFile,&data,sizeof(data));
+			this->sizeInFile = newSize;
+		}
 	};
 }
 
 using smu::section;
 
 extern section* code;
+extern section* reloc_code;
