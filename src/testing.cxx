@@ -65,36 +65,73 @@ namespace testing
 		b69.mangledName = "b69";
 		b69.name = "b69";
 		//.
-		//. variables
-		//.
-		//- b69_a
-		variable b69_a;
-		b69_a.dataType = &b69;
-		b69_a.storageArch = Architecture::AMD64;
-		amd64::VariableStorage b69_a_store;
-		b69_a.storage = &b69_a_store;
-		b69_a_store.mode = amd64::StorageMode::IndirectRegister;
-		ImmediateValue b69_a_disp;
-		b69_a_disp.isSymbol = false;
-		b69_a_disp.imm64 = 0x40;
-		b69_a_store.displacement = b69_a_disp;
-		b69_a_store.reg = amd64::Register::rcx;
-		//- b69_b
-		variable b69_b;
-		b69_b.dataType = &b69;
-		b69_b.storageArch = Architecture::AMD64;
-		amd64::VariableStorage b69_b_store;
-		b69_b.storage = &b69_b_store;
-		b69_b_store.mode = amd64::StorageMode::IndirectRegister;
-		ImmediateValue b69_b_disp;
-		b69_b_disp.isSymbol = false;
-		b69_b_disp.imm64 = 0x90;
-		b69_b_store.displacement = b69_b_disp;
-		b69_b_store.reg = amd64::Register::r14;
-		//.
 		//. runtime code
 		//.
-		runtime::amd64::copy(&b69_a,&b69_b);
+		{
+			//+
+			//+ IR --> IR
+			//+
+			if(false){
+				//- b69_a
+				variable b69_a;
+				b69_a.dataType = &b69;
+				b69_a.storageArch = Architecture::AMD64;
+				amd64::VariableStorage b69_a_store;
+				b69_a.storage = &b69_a_store;
+				b69_a_store.mode = amd64::StorageMode::IndirectRegister;
+				ImmediateValue b69_a_disp;
+				b69_a_disp.isSymbol = false;
+				b69_a_disp.imm64 = 0x40;
+				b69_a_store.displacement = b69_a_disp;
+				b69_a_store.reg = amd64::Register::rsp;
+				//- b69_b
+				variable b69_b;
+				b69_b.dataType = &b69;
+				b69_b.storageArch = Architecture::AMD64;
+				amd64::VariableStorage b69_b_store;
+				b69_b.storage = &b69_b_store;
+				b69_b_store.mode = amd64::StorageMode::IndirectRegister;
+				ImmediateValue b69_b_disp;
+				b69_b_disp.isSymbol = false;
+				b69_b_disp.imm64 = 0x90;
+				b69_b_store.displacement = b69_b_disp;
+				b69_b_store.reg = amd64::Register::r14;
+				runtime::amd64::copy(&b69_a,&b69_b);
+			}
+			//+
+			//+ IR --> IDM
+			//+
+			{
+				//- b69_a
+				variable b69_a;
+				b69_a.dataType = &b69;
+				b69_a.storageArch = Architecture::AMD64;
+				amd64::VariableStorage b69_a_store;
+				b69_a.storage = &b69_a_store;
+				b69_a_store.mode = amd64::StorageMode::IndirectRegister;
+				ImmediateValue b69_a_disp;
+				b69_a_disp.isSymbol = false;
+				b69_a_disp.imm64 = 0x40;
+				b69_a_store.displacement = b69_a_disp;
+				b69_a_store.reg = amd64::Register::rsp;
+				//- b69_b
+				variable b69_b;
+				b69_b.dataType = &b69;
+				b69_b.storageArch = Architecture::AMD64;
+				amd64::VariableStorage b69_b_store;
+				b69_b.storage = &b69_b_store;
+				b69_b_store.mode = amd64::StorageMode::IndirectImmediate;
+				ImmediateValue b69_b_disp;
+				b69_b_disp.isSymbol = false;
+				b69_b_disp.imm64 = 0x00;
+				b69_b_store.displacement = b69_b_disp;
+				ImmediateValue b69_b_imm;
+				b69_b_imm.isSymbol = false;
+				b69_b_imm.imm64 = 0x600000;
+				b69_b_store.immediate = b69_b_imm;
+				runtime::amd64::copy(&b69_a,&b69_b);
+			}
+		}
 		//.
 		//. generate ELF64
 		//.

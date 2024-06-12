@@ -202,200 +202,118 @@ namespace runtime::amd64
 			if(srcStore->displacement.isSymbol || dstStore->displacement.isSymbol)
 				compilerBug("unimplemented");
 			::amd64::AddressingMode addrMode = (bytes+mbdisp) <= (0b01111111) ? ::amd64::AddressingMode::RegisterIndirect_disp8 : ::amd64::AddressingMode::RegisterIndirect_disp32;
-			while(bytes >= 8)
+			uint64_t opsize = 8;
+			while(opsize > 0)
 			{
-				//,
-				//, copy data to rax
-				//,
+				while(bytes >= opsize)
 				{
-					code->push({
-						::amd64::prefix::REX(1,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
-						::amd64::opcode::mov::r16_32_64__rm16_32_64,
-						::amd64::modRM(::amd64::Register::rax,addrMode,srcStore->reg)
-					});
-					switch(addrMode)
+					//,
+					//, copy data to rax
+					//,
 					{
-						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp+srcStore->displacement.imm64});
-							break;
-						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp+srcStore->displacement.imm64));
-							break;
-						default:
-							compilerBug("this code is supposed to be unreachable.");
+						if(opsize == 2)code->push({::amd64::prefix::legacy::OperandSizeOverride});
+						code->push({
+							::amd64::prefix::REX((opsize == 8),((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
+							(opsize > 1 ? ::amd64::opcode::mov::r16_32_64__rm16_32_64 : ::amd64::opcode::mov::r8__rm8),
+							::amd64::modRM(::amd64::Register::rax,addrMode,srcStore->reg)
+						});
+						//+
+						//+	base == rsp
+						//+
+						if(srcStore->reg == ::amd64::Register::rsp || srcStore->reg == ::amd64::Register::r12)
+						{
+							code->push({
+								::amd64::SIB(0,::amd64::Register::rsp,::amd64::Register::rsp)
+							});
+						}
+						switch(addrMode)
+						{
+							case(::amd64::AddressingMode::RegisterIndirect_disp8):
+								code->push({(byte)disp+srcStore->displacement.imm64});
+								break;
+							case(::amd64::AddressingMode::RegisterIndirect_disp32):
+								code->push(::amd64::imm32(disp+srcStore->displacement.imm64));
+								break;
+							default:
+								compilerBug("this code is supposed to be unreachable.");
 						}	
-				}
-				//,
-				//, copy data from rax to dst
-				//,
-				{
-					code->push({
-						::amd64::prefix::REX(1,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
-						::amd64::opcode::mov::rm16_32_64__r16_32_64,
-						::amd64::modRM(::amd64::Register::rax,addrMode,dstStore->reg)
-					});
-					switch(addrMode)
+					}
+					//,
+					//, copy data from rax to dst
+					//,
 					{
-						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp+dstStore->displacement.imm64});
-							break;
-						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp+dstStore->displacement.imm64));
-							break;
-						default:
-							compilerBug("this code is supposed to be unreachable.");
-					}	
+						if(opsize == 2)code->push({::amd64::prefix::legacy::OperandSizeOverride});
+						code->push({
+							::amd64::prefix::REX((opsize == 8),((dstStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
+							(opsize > 1 ? ::amd64::opcode::mov::rm16_32_64__r16_32_64 : ::amd64::opcode::mov::rm8__r8),
+							::amd64::modRM(::amd64::Register::rax,addrMode,dstStore->reg)
+						});
+						//+
+						//+	base == rsp
+						//+
+						if(dstStore->reg == ::amd64::Register::rsp || dstStore->reg == ::amd64::Register::r12)
+						{
+							code->push({
+								::amd64::SIB(0,::amd64::Register::rsp,::amd64::Register::rsp)
+							});
+						}
+						switch(addrMode)
+						{
+							case(::amd64::AddressingMode::RegisterIndirect_disp8):
+								code->push({(byte)disp+dstStore->displacement.imm64});
+								break;
+							case(::amd64::AddressingMode::RegisterIndirect_disp32):
+								code->push(::amd64::imm32(disp+dstStore->displacement.imm64));
+								break;
+							default:
+								compilerBug("this code is supposed to be unreachable.");
+						}
+					}
+					disp+=opsize;
+					bytes-=opsize;
 				}
-				disp+=8;
-				bytes-=8;
+				opsize/=2;
 			}
-			while(bytes >= 4)
+		}
+//,####################################################################################################################
+//,####################################################################################################################
+//, ██ ██████                       ██       ██ ██████  ███    ███
+//, ██ ██   ██                       ██      ██ ██   ██ ████  ████
+//, ██ ██████      █████ █████ █████  ██     ██ ██   ██ ██ ████ ██
+//, ██ ██   ██                       ██      ██ ██   ██ ██  ██  ██
+//, ██ ██   ██                      ██       ██ ██████  ██      ██
+//,####################################################################################################################
+//,####################################################################################################################
+		if(
+			(srcStore->mode == ::amd64::StorageMode::IndirectRegister)
+			&&
+			(dstStore->mode == ::amd64::StorageMode::IndirectImmediate)
+		)
+		{
+			//,
+			//, load base address to rcx
+			//,
+			::amd64::Register Base = ::amd64::Register::rcx;
 			{
-				//,
-				//, copy data to rax
-				//,
-				{
-					code->push({
-						::amd64::prefix::REX(0,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
-						::amd64::opcode::mov::r16_32_64__rm16_32_64,
-						::amd64::modRM(::amd64::Register::rax,addrMode,srcStore->reg)
-					});
-					switch(addrMode)
-					{
-						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp+srcStore->displacement.imm64});
-							break;
-						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp+srcStore->displacement.imm64));
-							break;
-						default:
-							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
-				
-						}	
-				}
-				//,
-				//, copy data from rax to dst
-				//,
-				{
-					code->push({
-						::amd64::prefix::REX(0,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
-						::amd64::opcode::mov::rm16_32_64__r16_32_64,
-						::amd64::modRM(::amd64::Register::rax,addrMode,dstStore->reg)
-					});
-					switch(addrMode)
-					{
-						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp+dstStore->displacement.imm64});
-							break;
-						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp+dstStore->displacement.imm64));
-							break;
-						default:
-							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
-					}	
-				}
-				disp+=4;
-				bytes-=4;
+				code->push({
+					::amd64::prefix::REX(1,0,0,0),
+					::amd64::opcode::mov::r16_32_64__imm16_32_64 + ((byte)Base)
+				});
+				code->push(::amd64::imm64(dstStore->immediate.imm64));
+				if(dstStore->immediate.isSymbol)
+					compilerBug("symbol resolution not implemented.");
 			}
-			while(bytes >= 2)
+			//,
+			//, create copy of dst variable
+			//,
+			variable __dst = *dst;
 			{
-				//,
-				//, copy data to rax
-				//,
-				{
-					code->push({
-						::amd64::prefix::legacy::OperandSizeOverride,
-						::amd64::prefix::REX(0,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
-						::amd64::opcode::mov::r16_32_64__rm16_32_64,
-						::amd64::modRM(::amd64::Register::rax,addrMode,srcStore->reg)
-					});
-					switch(addrMode)
-					{
-						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp+srcStore->displacement.imm64});
-							break;
-						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp+srcStore->displacement.imm64));
-							break;
-						default:
-							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
-				
-						}	
-				}
-				//,
-				//, copy data from rax to dst
-				//,
-				{
-					code->push({
-						::amd64::prefix::legacy::OperandSizeOverride,
-						::amd64::prefix::REX(0,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
-						::amd64::opcode::mov::rm16_32_64__r16_32_64,
-						::amd64::modRM(::amd64::Register::rax,addrMode,dstStore->reg)
-					});
-					switch(addrMode)
-					{
-						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp+dstStore->displacement.imm64});
-							break;
-						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp+dstStore->displacement.imm64));
-							break;
-						default:
-							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
-					}	
-				}
-				disp+=2;
-				bytes-=2;
+				::amd64::VariableStorage __dst_store = *dstStore;
+				__dst_store.mode = ::amd64::StorageMode::IndirectRegister;
+				__dst_store.reg = Base;
+				__dst.storage = &__dst_store;
 			}
-			while(bytes >= 1)
-			{
-				//,
-				//, copy data to rax
-				//,
-				{
-					code->push({
-						::amd64::prefix::legacy::OperandSizeOverride,
-						::amd64::prefix::REX(0,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
-						::amd64::opcode::mov::r8__rm8,
-						::amd64::modRM(::amd64::Register::rax,addrMode,srcStore->reg)
-					});
-					switch(addrMode)
-					{
-						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp+srcStore->displacement.imm64});
-							break;
-						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp+srcStore->displacement.imm64));
-							break;
-						default:
-							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
-				
-						}	
-				}
-				//,
-				//, copy data from rax to dst
-				//,
-				{
-					code->push({
-						::amd64::prefix::REX(0,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
-						::amd64::opcode::mov::rm8__r8,
-						::amd64::modRM(::amd64::Register::rax,addrMode,dstStore->reg)
-					});
-					switch(addrMode)
-					{
-						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp+dstStore->displacement.imm64});
-							break;
-						case(::amd64::AddressingMode::RegisterIndirect_disp32):
-							code->push(::amd64::imm32(disp+dstStore->displacement.imm64));
-							break;
-						default:
-							compilerBug("this code is supposed to be unreachable.",originCoreHere,source(),"");
-					}	
-				}
-				disp+=1;
-				bytes-=1;
-			}
+			copy(src,&__dst);
 		}
 	}
 	#pragma GCC diagnostic pop
