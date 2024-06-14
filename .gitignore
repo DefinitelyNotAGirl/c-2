@@ -39,3 +39,4 @@ documentation/
 tools/
 src/amd64.cgu.cxx
 test.elf64
+stdout.txt

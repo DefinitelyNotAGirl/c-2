@@ -300,8 +300,16 @@ namespace runtime::amd64
 					::amd64::opcode::mov::r16_32_64__imm16_32_64 + ((byte)Base)
 				});
 				code->push(::amd64::imm64(dstStore->immediate.imm64));
-				if(dstStore->immediate.isSymbol)
-					compilerBug("symbol resolution not implemented.");
+				if(dstStore->immediate.isSymbol){
+					code->Relocations.push_back(
+						smu::RelocationEntry(
+							code->size()-8,
+							8,
+							smu::RelocationType::Absolute,
+							dstStore->immediate.symbol
+						)
+					);
+				}
 			}
 			//,
 			//, create copy of dst variable

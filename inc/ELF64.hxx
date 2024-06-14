@@ -223,7 +223,21 @@ namespace elf64
 		uint64_t info;
 		int64_t addend;
 		RelocationEntry(uint64_t offset, uint32_t symbol, RelocationType rtype, int64_t addend)
-			:offset(offset),info(symbol<<32 | rtype),addend(addend){}
+			:offset(offset),info((((uint64_t)symbol)<<32) | ((uint32_t)rtype)),addend(addend){}
+	};
+
+	struct SymbolTableEntry {
+		uint32_t name;
+		uint8_t info;
+		uint8_t other;
+		uint16_t SectionTableIndex;
+		uint64_t SymbolValue;
+		uint64_t SymbolSize;
+		SymbolTableEntry(){}
+		SymbolTableEntry(SymbolTableEntry& e)
+			:name(e.name),info(e.info),other(e.other),SectionTableIndex(e.SectionTableIndex),SymbolValue(e.SymbolValue),SymbolSize(e.SymbolSize){}
+		SymbolTableEntry(uint32_t name,uint8_t info, uint8_t other, uint16_t SectionTableIndex, uint64_t SymbolValue, uint64_t SymbolSize)
+			:name(name),info(info),other(other),SectionTableIndex(SectionTableIndex),SymbolValue(SymbolValue),SymbolSize(SymbolSize){}
 	};
 	#pragma pack()
 }

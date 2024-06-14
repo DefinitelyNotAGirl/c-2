@@ -172,25 +172,6 @@ namespace smu
 		 */
 		void push(std::initializer_list<byte> data){*this << data;}
 		/**
-		 * @brief adds all the bytes from uint64_t data to current data in the order in which they currently appear in memory
-		 * 
-		 * @param data
-		 */
-		void push(uint64_t data){*this << data;}
-		/**
-		 * @brief adds all the bytes from uint32_t data to current data in the order in which they currently appear in memory
-		 * 
-		 * @param data
-		 */
-		void push(uint32_t data){*this << data;}
-		/**
-		 * @brief adds all the bytes from uint16_t data to current data in the order in which they currently appear in memory
-		 * 
-		 * @param data
-		 */
-		void push(uint16_t data){*this << data;}
-
-		/**
 		 * @brief adds data to the current data
 		 * 
 		 */
