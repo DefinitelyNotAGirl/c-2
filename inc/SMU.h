@@ -172,6 +172,18 @@ namespace smu
 		 */
 		void push(std::initializer_list<byte> data){*this << data;}
 		/**
+		 * @brief adds data[0 through (n-1)] to the current data
+		 * 
+		 */
+		template<typename T>
+		void push(T* data, uint64_t n)
+		{
+			uint64_t newSize = this->sizeInFile+(n*sizeof(T));
+			this->data = (byte*)realloc(this->data,newSize);
+			memcpy(this->data+this->sizeInFile,&data,(n*sizeof(T)));
+			this->sizeInFile = newSize;
+		}
+		/**
 		 * @brief adds data to the current data
 		 * 
 		 */
