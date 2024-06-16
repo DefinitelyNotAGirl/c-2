@@ -84,6 +84,7 @@ namespace smu
 		uint64_t sizeInMemory = 0;
 	public:
 		std::vector<RelocationEntry> Relocations;
+		std::vector<RelocationEntry> ExternalRelocations;
 		/**
 		 * @brief stores the data
 		 */

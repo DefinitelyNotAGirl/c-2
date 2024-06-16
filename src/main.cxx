@@ -76,9 +76,8 @@ line defLine(std::string text)
 
 std::string __reqFileVSTC = "";
 extern std::stack<bool> isTemplateInstance;
-namespace testing {
-	void main();
-}
+void test_main();
+void output_init();
 int main(int argc, char** argv)
 {
     signal(SIGSEGV, HANDLER_SIGSEGV);   // install our handler
@@ -106,8 +105,9 @@ int main(int argc, char** argv)
             }
         }
     }
+	output_init();
 	#ifdef CPE2_BUILD_TEST
-		testing::main();
+		test_main();
 		return 0;
 	#endif
     //get working directory

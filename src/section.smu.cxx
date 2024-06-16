@@ -77,6 +77,29 @@ namespace smu
 		uint64_t I = this->sizeInFile;
 		for(uint64_t II = 0;II<data->sizeInFile;II++)
 			this->data[I++] = data->data[II];
+		//,
+		//, add and adjust relocations
+		//,
+		for(smu::RelocationEntry& re : data->Relocations){
+			this->Relocations.push_back(
+				smu::RelocationEntry(
+					re.offset+this->sizeInFile,
+					re.size,
+					re.type,
+					re.symbol
+				)
+			);
+		}
+		for(smu::RelocationEntry& re : data->ExternalRelocations){
+			this->ExternalRelocations.push_back(
+				smu::RelocationEntry(
+					re.offset+this->sizeInFile,
+					re.size,
+					re.type,
+					re.symbol
+				)
+			);
+		}
 		this->sizeInFile = newSize;
 	}
 

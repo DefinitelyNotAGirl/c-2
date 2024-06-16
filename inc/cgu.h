@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -15,5 +16,5 @@ namespace cgu
 			:text(text),size(size),offset(offset),defined(defined),SectionIndex(SectionIndex){}
 	};
 
-	std::vector<Symbol> symbols;
+	extern std::vector<Symbol> symbols;
 }

@@ -239,5 +239,22 @@ namespace elf64
 		SymbolTableEntry(uint32_t name,uint8_t info, uint8_t other, uint16_t SectionTableIndex, uint64_t SymbolValue, uint64_t SymbolSize)
 			:name(name),info(info),other(other),SectionTableIndex(SectionTableIndex),SymbolValue(SymbolValue),SymbolSize(SymbolSize){}
 	};
+
+	enum class SectionTableIndex : uint16_t {
+		UNDEF		= 0x0000,
+		LORESERVE	= 0xff00,
+		LOPROC		= 0xff00,
+		HIPROC		= 0xff1f,
+		LOOS		= 0xff20,
+		HIOS		= 0xff3f,
+		ABS			= 0xfff1,
+		COMMON		= 0xfff2,
+		XINDEX		= 0xffff,
+		HIRESERVE	= 0xffff
+	};
+	inline uint16_t to_uint16(SectionTableIndex index)
+	{
+		return static_cast<uint16_t>(index);
+	}
 	#pragma pack()
 }
