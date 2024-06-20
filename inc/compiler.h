@@ -33,8 +33,6 @@ class ABI;
 
 #include <common.h>
 
-typedef uint8_t byte;
-
 #include <options.h>
 #include <SMU.h>
 #include <arch.h>

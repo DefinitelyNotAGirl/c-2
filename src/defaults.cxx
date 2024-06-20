@@ -30,6 +30,7 @@
 
 #include <compiler.h>
 #include <mangling.h>
+#include <environment.hxx>
 
 void setDefaults()
 {
@@ -46,10 +47,6 @@ void setDefaults()
         std::cout << "ERROR: could not find default ABI, aborting!" << std::endl;
         exit(-1);
     }
-    csys = getSystem("gnu-linux");
-    if(csys == nullptr)
-    {
-        std::cout << "ERROR: could not find default system (gnu-linux), aborting!" << std::endl;
-        exit(-1);
-    }
+	currentArchitecture = Architecture::AMD64;
+	currentSystem = System::Linux;
 }

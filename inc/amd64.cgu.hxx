@@ -47,8 +47,12 @@ namespace amd64
 	*	bits 0-2: register encoding
 	*	bit 3: REX register extension
 	*	bit 4: indicates that this is a model specific register, in which case the ECX value is held in bits 32-63
-	*	bit 5: indicates that this is a floating point register
+	*	bit 5: indicates that this is an x86 mmx register
 	*	bit 6: indicates that this is an x86-64 control register
+	*	bit 7: misc special register
+	*	bit 8: indicates that this is an x86 xmm register
+	*	bit 9: indicates that this is an x86 ymm register
+	*	bit 10: indicates that this is an x86 high byte register
 	*/
 	enum class Register : uint64_t {
 		/* original integer registers */
@@ -61,10 +65,10 @@ namespace amd64
 		rsi = 0x06,
 		rdi = 0x07,
 		/* high byte registers */
-		ah = 0x04,
-		ch = 0x05,
-		dh = 0x06,
-		bh = 0x07,
+		ah = 0x404,
+		ch = 0x405,
+		dh = 0x406,
+		bh = 0x407,
 		/* r8-r15 */
 		r8 = 0x08,
 		r9 = 0x09,
@@ -75,32 +79,44 @@ namespace amd64
 		r14 = 0x0E,
 		r15 = 0x0F,
 		/* mmx */
-		mmx0 = 0x00,
-		mmx1 = 0x01,
-		mmx2 = 0x02,
-		mmx3 = 0x03,
-		mmx4 = 0x04,
-		mmx5 = 0x05,
-		mmx6 = 0x06,
-		mmx7 = 0x07,
+		mmx0 = 0x20,
+		mmx1 = 0x21,
+		mmx2 = 0x22,
+		mmx3 = 0x23,
+		mmx4 = 0x24,
+		mmx5 = 0x25,
+		mmx6 = 0x26,
+		mmx7 = 0x27,
 		/* xmm */
-		xmm0 = 0x00,
-		xmm1 = 0x01,
-		xmm2 = 0x02,
-		xmm3 = 0x03,
-		xmm4 = 0x04,
-		xmm5 = 0x05,
-		xmm6 = 0x06,
-		xmm7 = 0x07,
+		xmm0 = 0x100,
+		xmm1 = 0x101,
+		xmm2 = 0x102,
+		xmm3 = 0x103,
+		xmm4 = 0x104,
+		xmm5 = 0x105,
+		xmm6 = 0x106,
+		xmm7 = 0x107,
 		/* ymm */
-		ymm0 = 0x00,
-		ymm1 = 0x01,
-		ymm2 = 0x02,
-		ymm3 = 0x03,
-		ymm4 = 0x04,
-		ymm5 = 0x05,
-		ymm6 = 0x06,
-		ymm7 = 0x07,
+		ymm0 = 0x200,
+		ymm1 = 0x201,
+		ymm2 = 0x202,
+		ymm3 = 0x203,
+		ymm4 = 0x204,
+		ymm5 = 0x205,
+		ymm6 = 0x206,
+		ymm7 = 0x207,
+		/* cr0-15 */
+		//TODO: correct values on these registers, first digit is bogus to avoid compiler errors
+		cr0 = 0xA40,
+		cr2 = 0xB40,
+		cr3 = 0xC40,
+		cr4 = 0xD40,
+		cr8 = 0xE48,
+		/* descriptor table registers */
+		//TODO: correct values on these registers, first digit is bogus to avoid compiler errors
+		gdtr = 0xA80,
+		idtr = 0xB80,
+		ldtr = 0xC80,
 		/* model specific registers */
 		efer = 0xC000008000000010,
 		star = 0xC000008100000010,
@@ -116,7 +132,6 @@ namespace amd64
 		iorrmask0 = 0xC001001700000010,
 		iorr_base1 = 0xC001001800000010,
 		iorrmask1 = 0xC001001900000010,
-		tom2 = 0xC001001D00000010,
 		ls_cfg = 0xC001102000000010,
 		ic_cfg = 0xC001102100000010,
 		dc_cfg = 0xC001102200000010,

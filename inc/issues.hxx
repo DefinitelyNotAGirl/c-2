@@ -33,6 +33,7 @@
 #include <compiler.h>
 #include <colors.h>
 #include <stacktrace.hxx>
+#include <stack>
 
 namespace issues {
 	#define originCoreHere origin("core",__FILE__,__LINE__)
@@ -54,7 +55,7 @@ namespace issues {
 			}
 			case(action::warning):
 			{
-				e.warn();
+				issueType::handle.top()(e);
 				break;
 			}
 		}
@@ -133,10 +134,21 @@ namespace issues {
 		}
 	};
 
+//+####################################################################################################################
+//+####################################################################################################################
+//+ ███████  █████  ████████  █████  ██          ███████ ██████  ██████   ██████  ██████  ███████
+//+ ██      ██   ██    ██    ██   ██ ██          ██      ██   ██ ██   ██ ██    ██ ██   ██ ██
+//+ █████   ███████    ██    ███████ ██          █████   ██████  ██████  ██    ██ ██████  ███████
+//+ ██      ██   ██    ██    ██   ██ ██          ██      ██   ██ ██   ██ ██    ██ ██   ██      ██
+//+ ██      ██   ██    ██    ██   ██ ███████     ███████ ██   ██ ██   ██  ██████  ██   ██ ███████
+//+####################################################################################################################
+//+####################################################################################################################
+/*
+ + Fatal errors are errors that cannot be downgraded to warnings
+*/
 	class fatal : public issue {
 	public:
 		const static action Action = action::error;
-		void warn(){}
 	};
 
 	#define ISSUES_CTOR_ARGS std::string msg, origin orig, source src
@@ -145,6 +157,7 @@ namespace issues {
 	class compilerBug : public fatal {
 	public:
 		std::string github; //link to issue, empty string if no issue exists
+		static std::stack<void(*)(compilerBug e)> handle;
 		compilerBug(ISSUES_CTOR_ARGS, std::string github)
 			:github(github){ISSUES_CTOR_INIT;invoke(*this);}
 		compilerBug(std::string msg)
@@ -154,6 +167,7 @@ namespace issues {
 	class unexpectedTokenType : public fatal {
 	public:
 		std::list<uint64_t> expectedTokenTypes;
+		static std::stack<void(*)(unexpectedTokenType e)> handle;
 		unexpectedTokenType(ISSUES_CTOR_ARGS, std::list<uint64_t> expectedTokenTypes)
 			:expectedTokenTypes(expectedTokenTypes){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -164,6 +178,7 @@ namespace issues {
 						 //		"blub.h2"
 						 //		<blub.h2>
 		std::list<std::string> checkedPaths;
+		static std::stack<void(*)(noSuchFile e)> handle;
 		noSuchFile(ISSUES_CTOR_ARGS, std::string file, std::list<std::string> checkedPaths)
 			:file(file),checkedPaths(checkedPaths){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -171,6 +186,7 @@ namespace issues {
 	class noSuchType : public fatal {
 	public:
 		std::string name;
+		static std::stack<void(*)(noSuchType e)> handle;
 		noSuchType(ISSUES_CTOR_ARGS, std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -178,6 +194,7 @@ namespace issues {
 	class noSuchIdentifier : public fatal {
 	public:
 		std::string name;
+		static std::stack<void(*)(noSuchIdentifier e)> handle;
 		noSuchIdentifier(ISSUES_CTOR_ARGS, std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -185,6 +202,7 @@ namespace issues {
 	class invalidUseOfKeywordInScope : public fatal {
 	public:
 		scope* Scope;
+		static std::stack<void(*)(invalidUseOfKeywordInScope e)> handle;
 		invalidUseOfKeywordInScope(ISSUES_CTOR_ARGS, scope* Scope)
 			:Scope(Scope){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -192,6 +210,7 @@ namespace issues {
 	class noSuchABI : public fatal {
 	public:
 		std::string name;
+		static std::stack<void(*)(noSuchABI e)> handle;
 		noSuchABI(ISSUES_CTOR_ARGS, std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -199,12 +218,14 @@ namespace issues {
 	class nonImmediateArraySize : public fatal {
 	public:
 		type* valueType;
+		static std::stack<void(*)(nonImmediateArraySize e)> handle;
 		nonImmediateArraySize(ISSUES_CTOR_ARGS, type* valueType)
 			:valueType(valueType){ISSUES_CTOR_INIT;invoke(*this);}
 	};
 
 	class nonImmediateIntegerTemplateArgument : public fatal {
 	public:
+		static std::stack<void(*)(nonImmediateIntegerTemplateArgument e)> handle;
 		nonImmediateIntegerTemplateArgument(ISSUES_CTOR_ARGS)
 			{ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -212,6 +233,7 @@ namespace issues {
 	class noSuchLitop : public fatal {
 	public:
 		std::string name;
+		static std::stack<void(*)(noSuchLitop e)> handle;
 		noSuchLitop(ISSUES_CTOR_ARGS, std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -221,6 +243,7 @@ namespace issues {
 		std::string entityName;
 		std::string attribute;
 		std::list<std::string> validAttributes;
+		static std::stack<void(*)(invalidAttribute e)> handle;
 		invalidAttribute(ISSUES_CTOR_ARGS, std::string entityName,std::string attribute,std::list<std::string> validAttributes)
 			:entityName(entityName),attribute(attribute),validAttributes(validAttributes){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -229,6 +252,7 @@ namespace issues {
 	public:
 		function* neededFunction;
 		std::vector<function*> candidates;
+		static std::stack<void(*)(noSuchFunction e)> handle;
 		noSuchFunction(ISSUES_CTOR_ARGS,function* neededFunction, std::vector<function*> candidates)
 			:neededFunction(neededFunction),candidates(candidates){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -236,6 +260,7 @@ namespace issues {
 	class noSuchVariable : public fatal {
 	public:
 		std::string name;
+		static std::stack<void(*)(noSuchVariable e)> handle;
 		noSuchVariable(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -243,6 +268,7 @@ namespace issues {
 	class noSuchMangler : public fatal {
 	public:
 		std::string name;
+		static std::stack<void(*)(noSuchMangler e)> handle;
 		noSuchMangler(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -250,6 +276,7 @@ namespace issues {
 	class noSuchSystem : public fatal {
 	public:
 		std::string name;
+		static std::stack<void(*)(noSuchSystem e)> handle;
 		noSuchSystem(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -257,6 +284,7 @@ namespace issues {
 	class noSuchArchitecture : public fatal {
 	public:
 		std::string name;
+		static std::stack<void(*)(noSuchArchitecture e)> handle;
 		noSuchArchitecture(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -264,6 +292,7 @@ namespace issues {
 	class noSuchNumberSystem : public fatal {
 	public:
 		std::string name;
+		static std::stack<void(*)(noSuchNumberSystem e)> handle;
 		noSuchNumberSystem(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
@@ -272,13 +301,47 @@ namespace issues {
 	public:
 		std::list<type*> validTypes;
 		type* receivedType;
+		static std::stack<void(*)(invalidType e)> handle;
 		invalidType(ISSUES_CTOR_ARGS,std::list<type*> validTypes,type* receivedType)
 			:validTypes(validTypes),receivedType(receivedType){ISSUES_CTOR_INIT;invoke(*this);}
 	};
 
 	class unexpectedBufferTermination : public fatal {
 	public:
+		static std::stack<void(*)(unexpectedBufferTermination e)> handle;
 		unexpectedBufferTermination(ISSUES_CTOR_ARGS)
 			{ISSUES_CTOR_INIT;invoke(*this);}
+	};
+//!####################################################################################################################
+//!####################################################################################################################
+//! ███    ██  ██████  ███    ██     ███████  █████  ████████  █████  ██          ███████ ██████  ██████   ██████  ██████  ███████
+//! ████   ██ ██    ██ ████   ██     ██      ██   ██    ██    ██   ██ ██          ██      ██   ██ ██   ██ ██    ██ ██   ██ ██
+//! ██ ██  ██ ██    ██ ██ ██  ██     █████   ███████    ██    ███████ ██          █████   ██████  ██████  ██    ██ ██████  ███████
+//! ██  ██ ██ ██    ██ ██  ██ ██     ██      ██   ██    ██    ██   ██ ██          ██      ██   ██ ██   ██ ██    ██ ██   ██      ██
+//! ██   ████  ██████  ██   ████     ██      ██   ██    ██    ██   ██ ███████     ███████ ██   ██ ██   ██  ██████  ██   ██ ███████
+//!####################################################################################################################
+//!####################################################################################################################
+/*
+ ! Non Fatal errors are issues that are errors by default but can be downgraded to warnings or outright disabled
+*/
+
+//,####################################################################################################################
+//,####################################################################################################################
+//, ██     ██  █████  ██████  ███    ██ ██ ███    ██  ██████  ███████
+//, ██     ██ ██   ██ ██   ██ ████   ██ ██ ████   ██ ██       ██
+//, ██  █  ██ ███████ ██████  ██ ██  ██ ██ ██ ██  ██ ██   ███ ███████
+//, ██ ███ ██ ██   ██ ██   ██ ██  ██ ██ ██ ██  ██ ██ ██    ██      ██
+//,  ███ ███  ██   ██ ██   ██ ██   ████ ██ ██   ████  ██████  ███████
+//,####################################################################################################################
+//,####################################################################################################################
+/*
+ , Warnings are issues that are warnings by default but can be disabled or upgraded to errors
+*/
+	class unimplementedDebugInfo : public issue {
+	public:
+		static action Action;
+		static std::stack<void(*)(unimplementedDebugInfo e)> handle;
+		unimplementedDebugInfo(std::string msg)
+			{this->msg = msg;invoke(*this);}
 	};
 }

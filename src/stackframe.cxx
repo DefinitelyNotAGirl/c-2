@@ -7,33 +7,35 @@ stackframe::stackframe()
 }
 
 stackframe::stackframe(uint64_t size)
-	:size(size)
+	:m_size(size)
 {
 }
 
 uint64_t stackframe::size()
 {
-	return this->size();
+	return this->m_size;
 }
 
 uint64_t stackframe::size(uint64_t bytes)
 {
-	this->size = bytes;
-	if(this->workingOffset > this->size)
+	this->m_size = bytes;
+	if(this->m_workingOffset > this->m_size)
 		compilerBug("stack overflow");
-	return this->workingOffset;
+	return this->m_workingOffset;
 }
 
 uint64_t stackframe::push(uint64_t bytes)
 {
-	this->workingOffset += bytes;
-	if((this->workingOffset+bytes) > (this->size))
-		this->size = this->workingOffset+bytes;
+	this->m_workingOffset += bytes;
+	if((this->m_workingOffset+bytes) > (this->m_size))
+		this->m_size = this->m_workingOffset+bytes;
+	return this->m_size;
 }
 
 uint64_t stackframe::pop(uint64_t bytes)
 {
-	if(this->workingOffset < bytes)
+	if(this->m_workingOffset < bytes)
 		compilerBug("stack underflow");
-	this->workingOffset -= bytes;
+	this->m_workingOffset -= bytes;
+	return this->m_workingOffset;
 }

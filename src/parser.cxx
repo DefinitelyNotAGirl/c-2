@@ -428,7 +428,7 @@ variable* getVariable(std::string name) {
  */
 void declareDwarfType(type* t)
 {
-	compilerBug("unimplemented: declare dwarf debug type");
+	unimplementedDebugInfo("dwarf debug type");
 }
 
 struct targtype 
@@ -1070,7 +1070,7 @@ class dummy_endline{uint64_t __dummycontent;};
 class dummy_endparse{uint64_t __dummycontent;};
 #define endparse ((dummy_endparse*)0)
 void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>& lines, uint64_t& i);
-void parse(std::vector<line> lines) 
+void parse(std::vector<line> lines)
 {
 	if(lines.size() == 0)
 		return;
@@ -1079,7 +1079,7 @@ void parse(std::vector<line> lines)
 	//, DWARF debug info
 	//,
 	{
-		compilerBug("unimplemented: debug file information");
+		unimplementedDebugInfo("debug file information");
 	}
 	//,
 	//, VSTC
@@ -1216,7 +1216,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 					compilerBug("parser default.",originCoreHere,source(),"");
 			}
 		}
-		compilerBug("unimplemented: debug line information");
+		unimplementedDebugInfo("debug line information");
 		switch (t.type) {
 			case(14): //description directive
 			{
@@ -1332,7 +1332,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							}
 							noSuchFile("",originCoreHere,source(currentFile,L,t),inc,includePathsChecked);
 							sysIncludeSuccess:;
-							compilerBug("unimplemented: debug file information");
+							unimplementedDebugInfo("debug file information");
 							if(options::ddebug)
 								std::cout << "included file: " << inc << std::endl;
 							break;
@@ -3333,7 +3333,10 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									std::cout << "body started" << std::endl;
 							} else if (t.type == 41) {
 								// function declaration
-								compilerBug("unimplemented: function argument storage");
+								if(!func->isPrimitive)
+								{
+									compilerBug("unimplemented: function argument storage");
+								}
 								mOUT(1, func);
 							} else
 								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{40});

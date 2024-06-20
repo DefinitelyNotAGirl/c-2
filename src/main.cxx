@@ -72,12 +72,13 @@ line defLine(std::string text)
 
 #include <resources.hxx>
 
-#define CPE2_BUILD_TEST
+//#define CPE2_BUILD_TEST
 
 std::string __reqFileVSTC = "";
 extern std::stack<bool> isTemplateInstance;
 void test_main();
 void output_init();
+void warn_init();
 int main(int argc, char** argv)
 {
     signal(SIGSEGV, HANDLER_SIGSEGV);   // install our handler
@@ -106,6 +107,7 @@ int main(int argc, char** argv)
         }
     }
 	output_init();
+	warn_init();
 	#ifdef CPE2_BUILD_TEST
 		test_main();
 		return 0;

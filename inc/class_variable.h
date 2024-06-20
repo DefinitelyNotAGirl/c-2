@@ -30,6 +30,7 @@
 #pragma once
 
 #include <common.h>
+#include <environment.hxx>
 
 class type;
 
