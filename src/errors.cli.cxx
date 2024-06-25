@@ -117,4 +117,14 @@ void error_init()
 			return 1;
 		}
 	);
+	noSuchABI::error.push(
+		[](noSuchABI e) -> int {
+			std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": \"" << e.name << "\" does not name an ABI.\n";
+			e.printStackTrace();
+			e.src.print();
+			std::cerr << "\n\n\r";
+			ErrorCount++;
+			return 1;
+		}
+	);
 }
