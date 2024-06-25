@@ -17,7 +17,7 @@ class RegisterState {
 public:
 	RegisterStatus status = RegisterStatus::preserve;
 	bool valueKnown = false;
-	T value = zero();
+	T value;
 };
 
 enum class FlagState
@@ -133,6 +133,7 @@ public:
 	RegisterStatus registerStatus(amd64::Register reg) const;
 	#include <cpustate.templates.hxx>
 	bool registerValueKnown(amd64::Register reg) const;
+	amd64::Register getFreeRegister();
 	/*
 		. Flags
 	*/

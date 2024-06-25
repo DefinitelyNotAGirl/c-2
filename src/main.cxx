@@ -2,8 +2,8 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday June 3rd 2024 11:44:37 pm
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Mon Jun 24 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
@@ -79,6 +79,7 @@ extern std::stack<bool> isTemplateInstance;
 void test_main();
 void output_init();
 void warn_init();
+void error_init();
 int main(int argc, char** argv)
 {
     signal(SIGSEGV, HANDLER_SIGSEGV);   // install our handler
@@ -108,6 +109,7 @@ int main(int argc, char** argv)
     }
 	output_init();
 	warn_init();
+	error_init();
 	#ifdef CPE2_BUILD_TEST
 		test_main();
 		return 0;
@@ -287,7 +289,7 @@ int main(int argc, char** argv)
         //reset compiler
         resetScope();
     }
-	if(ErrorCount != 0)
+	if(issues::ErrorCount != 0)
 		return -1;
     return 0;
 }

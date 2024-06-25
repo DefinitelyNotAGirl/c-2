@@ -40,8 +40,7 @@ void setDefaults()
         std::cout << "ERROR: could not find default mangler, aborting!" << std::endl;
         exit(-1);
     }
-    //defaultABI = getABI("cpe2x64");
-    defaultABI = getABI("SystemVamd64");
+    defaultABI = getABI("cpe2x64");
     if(defaultABI == nullptr)
     {
         std::cout << "ERROR: could not find default ABI, aborting!" << std::endl;

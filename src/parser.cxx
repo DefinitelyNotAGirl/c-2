@@ -2,8 +2,8 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday June 3rd 2024 11:44:37 pm
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Tue Jun 25 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  *
@@ -49,6 +49,8 @@
 #include <dump.hxx>
 #include <SYS_LINUX.h>
 #include <issues.hxx>
+#include <output.hxx>
+#include <ELF64.hxx>
 
 #define IM_NOT_STUCK nullptr
 
@@ -620,22 +622,7 @@ type* getType(std::string name) {
 		SETBIT_00(t->miscData);//mark as pointer type
 		t->dwarfID = DWARF_TYPE_ID++;
 		std::string vtn = name.substr(0,name.length()-1);
-		if(vtn == "__defuint")
-			t->valueType = defaultUnsignedIntegerType;
-		else if(vtn == "__defint")
-			t->valueType = defaultSignedIntegerType;
-		else if(vtn == "__defbool")
-			t->valueType = defaultBooleanType;
-		else if(vtn == "__defchar")
-			t->valueType = defaultCharType;
-		else if(vtn == "__defwchar")
-			t->valueType = defaultWcharType;
-		else if(vtn == "__deffloat")
-			t->valueType = defaultFloatType;
-		else if(vtn == "__defptr")
-			t->valueType = defaultPointerType;
-		else
-			t->valueType = getType(vtn);
+		t->valueType = getType(vtn);
 		t->__declared_file = t->valueType->__declared_file;
 		t->__declared_line = t->valueType->__declared_line;
 		t->size = POINTER_SIZE;
@@ -1356,10 +1343,13 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						t = L.nextToken();
 						if (t.text == "enable") {
 							t = L.nextToken();
-							enableWarningSet(t.text);
+							issues::changeGroupAction(t.text,issues::action::warning);
 						} else if (t.text == "disable") {
 							t = L.nextToken();
-							disableWarningSet(t.text);
+							issues::changeGroupAction(t.text,issues::action::ignore);
+						} else if (t.text == "error") {
+							t = L.nextToken();
+							issues::changeGroupAction(t.text,issues::action::error);
 						}
 					} else if (t.text == "cpl") {
 						t			  = L.nextToken();
@@ -1704,8 +1694,6 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 //,####################################################################################################################
 						t = L.nextToken();
 						switch (t.type) {
-							case(9):
-								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{9});
 							case (1): {
 								type* ntype		  = new type;
 								ntype->regMode = 0;
@@ -3203,6 +3191,9 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							func->parameters	   = paramTypes;
 							func->vparams		   = arguments;
 							func->returnType	   = returnType;
+							func->returnValue = new variable;
+							func->returnValue->dataType = returnType;
+							func->returnValue->name = "cpe2 return value";
 							if(isTypeCast)
 							{
 								SETBIT_00(func->miscData);//set cast bit
@@ -3273,7 +3264,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								sc->t			  = scopeType::FUNCTION;
 								sc->func		  = func;
 								// declare variables for arguments
-								func->abi->setArgStorages(func,arguments);
+								func->abi->setFunctionStorages(func);
 								for (variable* arg : arguments) {
 									sc->variables.push_back(arg);
 									if(options::ddebug)
@@ -3335,7 +3326,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								// function declaration
 								if(!func->isPrimitive)
 								{
-									compilerBug("unimplemented: function argument storage");
+									func->abi->setFunctionStorages(func);
 								}
 								mOUT(1, func);
 							} else
@@ -3412,14 +3403,117 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								}
 							}
 							var->name	= name;
-							compilerBug("unimplemented: variable access specifier");
+							var->Access = (vaccess)access;
 							if(var->symbol.empty())
 								mangling->mangle(var);
 							if(isExtern)
 							{
-								compilerBug("unimplemented: external variable");
+								if(!(currentScope->t == scopeType::GLOBAL || currentScope->t == scopeType::NAMESPACE))
+									nonGlobalExternal("",originCoreHere,source(currentFile,L,t));
+								if(currentArchitecture == Architecture::AMD64)
+								{
+									amd64::VariableStorage* storage = new amd64::VariableStorage;
+									var->storage = storage;
+									storage->mode = amd64::StorageMode::IndirectImmediate;
+									storage->immediate = ImmediateValue(var->symbol);
+									//+
+									//+ elf64 symbol
+									//+
+									{
+										SymbolMap.insert(std::pair<std::string,uint64_t>(
+											var->symbol,
+											elf64::symtab.size()/sizeof(elf64::SymbolTableEntry)
+										));
+										elf64::symtab.push(
+											elf64::SymbolTableEntry(
+												elf64::strtab.size(),
+												0x00,
+												0x00,
+												(uint16_t)elf64::SectionTableIndex::DATA,
+												data.size(),
+												var->dataType->size
+											)
+										);
+										elf64::strtab.push(
+											var->symbol.data(),
+											var->symbol.length()+1
+										);
+									}
+								}
+								else
+								{
+									compilerBug("unimplemented: external variable");
+								}
 							}
-							compilerBug("unimplemented: auto storage");
+							if(var->storage == nullptr)
+							{
+								var->usedAutoStorage = true;
+								var->storageArch = currentArchitecture;
+								//+
+								//+ AMD64 local variable
+								//+
+								if(currentArchitecture == Architecture::AMD64 && (currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH))
+								{
+									var->storage = new amd64::VariableStorage;
+									amd64::VariableStorage* storage = (amd64::VariableStorage*)var->storage;
+									amd64::Register ireg = currentScope->func->cpu.amd64.getFreeRegister();
+									amd64::Register freg = amd64::Register::xmm0;
+									if(var->dataType->regMode == 1 && var->dataType->size <= 8 && ireg != amd64::Register::invalid)
+									{
+										//+ integer register storage
+										storage->mode = amd64::StorageMode::DirectRegister;
+										storage->reg = ireg;
+									}
+									else if(var->dataType->regMode == 2 && var->dataType->size <= 32 && freg != amd64::Register::invalid)
+									{
+										//+ floating point register storage
+										compilerBug("unimplemented: floating point register storage");
+									}
+									else
+									{
+										//+ stack storage
+										storage->mode = amd64::StorageMode::IndirectRegister;
+										storage->reg = amd64::Register::rbp;
+										uint64_t offset = currentScope->func->stack.push(var->dataType->size);
+										storage->displacement = ImmediateValue(negative(offset));
+									}
+								}
+								else if(currentArchitecture == Architecture::AMD64 && (currentScope->t == scopeType::GLOBAL || currentScope->t == scopeType::NAMESPACE))
+								{
+									var->storage = new amd64::VariableStorage;
+									amd64::VariableStorage* storage = (amd64::VariableStorage*)var->storage;
+									//+ global memory storage
+									storage->mode = amd64::StorageMode::IndirectImmediate;
+									storage->immediate = ImmediateValue(var->symbol);
+									//+
+									//+ elf64 symbol
+									//+
+									{
+										SymbolMap.insert(std::pair<std::string,uint64_t>(
+											var->symbol,
+											elf64::symtab.size()/sizeof(elf64::SymbolTableEntry)
+										));
+										elf64::symtab.push(
+											elf64::SymbolTableEntry(
+												elf64::strtab.size(),
+												0x00,
+												0x00,
+												(uint16_t)elf64::SectionTableIndex::DATA,
+												data.size(),
+												var->dataType->size
+											)
+										);
+										elf64::strtab.push(
+											var->symbol.data(),
+											var->symbol.length()+1
+										);
+									}
+								}
+								else
+								{
+									compilerBug("unimplemented architecture-scope combination.");
+								}
+							}
 							if(isArray)
 							{
 								if(currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH)
@@ -3432,27 +3526,29 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									currentScope->cl->size+=(var->dataType->valueType->size*arraySizeCount);
 								}
 							}
-							if (currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH) {
-								compilerBug("unimplemented: register status");
-							}
-							compilerBug("unimplemented: register storage checks");
-							if (false) {
-								//(uint64_t)var->reg & 0x504C532043554D20494E53494445204D45 /* UwU */
-								compilerBug("unimplemented: storage cpl check");
-								if (false) {
+							if((var->storage != nullptr)&&(currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH)) {
+								if(var->storageArch == Architecture::AMD64)
+								{
+									amd64::VariableStorage* storage = (amd64::VariableStorage*)var->storage;
+									if(storage->mode == amd64::StorageMode::DirectRegister)
+									{
+
+									}
 								}
 							}
-								compilerBug("unimplemented: stack-pointer storage check");
-							compilerBug("unimplemented: absolute memory storage check");
-							if(false) {
-								if(is_vsls_send)std::cout << "5003-" << lspecToken.lineNum <<'-'<< lspecToken.col+L.leadingSpaces <<'-'<< lspecToken.text.length() <<'-'<<"memory-absolute"<< '\n';
-								else if (warn(getWarning("memory-absolute"), &L,
-										 "saving variable at an absolute "
-										 "memory address may be "
-										 "unintentional"))
-									note("use an explicit sign (+ or -) to "
-										 "specifiy a stack-pointer-relative "
-										 "address");
+							if (var->storageArch == Architecture::AMD64) {
+								//0x504C532043554D20494E53494445204D45 /* UwU */
+								amd64::VariableStorage* storage = var->storage;
+								if(options::fcpl > amd64::register_decode_cpl(storage->reg) && storage->mode == amd64::StorageMode::DirectRegister)
+									insufficientPrivilegeLevel("access register "+std::string(amd64::register_name(storage->reg)),originCoreHere,source(currentFile,L,t));
+								if(storage->reg == amd64::Register::rsp && storage->mode == amd64::StorageMode::DirectRegister)
+									stackPointerStorage(var->name,originCoreHere,source(currentFile,L,t));
+								if(storage->mode == amd64::StorageMode::IndirectImmediate && !storage->immediate.isSymbol)
+									absoluteMemoryStorage("",originCoreHere,source(currentFile,L,t),storage->immediate.imm64);
+							}
+							else
+							{
+								compilerBug("unimplemented: non-amd64 storage check");
 							}
 							if (currentScope->t == scopeType::CLASS) {
 								compilerBug("unimplemented: storage validity check");
@@ -3552,7 +3648,20 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									function* func = getFunction("operator=", args);
 									if(isConstExpr)
 									{
-										compilerBug("unimplemented: set immediate variable value");
+										if(!func->isPrimitive)
+											nonPrimitiveOperationOnConstexpr("",originCoreHere,source(currentFile,L,t));
+										switch(currentArchitecture)
+										{
+											case(Architecture::AMD64):
+											{
+												amd64::VariableStorage* storage = (amd64::VariableStorage*)result->storage;
+												if(storage->mode != amd64::StorageMode::DirectImmediate)
+													dynamicAssignmentToConstexpr("",originCoreHere,source(currentFile,L,t));
+												break;
+											}
+											default:
+												compilerBug("unsupporte architecture.");
+										}
 									}
 									else
 									{
@@ -3573,10 +3682,6 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									}
 									break;
 								}
-							}
-							if(currentScope->t == scopeType::GLOBAL || currentScope->t == scopeType::NAMESPACE)
-							{
-								compilerBug("unimplemented: create global variable");
 							}
 						}
 						break;

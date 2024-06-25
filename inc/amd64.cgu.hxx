@@ -1,34 +1,7 @@
-/*
-* Created Date: Thursday June 6th 2024
-* Author: Lilith
-* -----
-* Last Modified: Thursday June 6th 2024 5:58:25 pm
-* Modified By: Lilith (definitelynotagirl115169@gmail.com)
-* -----
-* Copyright (c) 2023-2024 DefinitelyNotAGirl@github
-* 
-* Permission is hereby granted, free of charge, to any person
-* obtaining a copy of this software and associated documentation
-* files (the "Software"), to deal in the Software without
-* restriction, including without limitation the rights to use, copy,
-* modify, merge, publish, distribute, sublicense, and/or sell copies
-* of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-* 
-* The above copyright notice and this permission notice shall be
-* included in all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-* NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-* HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-* WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-* DEALINGS IN THE SOFTWARE.
-*/
-
-#include <compiler.h>
+#pragma once
+#include <class_variable.h>
+class function;
+#include <extint.hxx>
 
 namespace runtime::amd64
 {
@@ -42,6 +15,16 @@ namespace runtime::amd64
 
 namespace amd64
 {
+	inline constexpr uint64_t register_encode_cpl( uint8_t pl ){return ((uint64_t)pl)<<11;}
+	inline constexpr uint64_t register_encode_msr(uint32_t ecx){return (((uint64_t)ecx)<<32) | (1<<4);}
+	inline constexpr uint64_t register_encode_float8 (){return (1<<5);}
+	inline constexpr uint64_t register_encode_float16(){return (1<<8);}
+	inline constexpr uint64_t register_encode_float32(){return (1<<9);}
+	inline constexpr uint64_t register_encode_highbyte(){return (1<<10);}
+	inline constexpr uint64_t register_encode_rex(){return (1<<3);}
+	inline constexpr uint64_t register_encode_base(uint8_t encoding){return encoding & 0b111;}
+	inline constexpr uint64_t register_encode_control(){return (1<<6);}
+	inline constexpr uint64_t register_encode_special(){return (1<<7);}
 	/**
 	* @brief
 	*	bits 0-2: register encoding
@@ -53,102 +36,108 @@ namespace amd64
 	*	bit 8: indicates that this is an x86 xmm register
 	*	bit 9: indicates that this is an x86 ymm register
 	*	bit 10: indicates that this is an x86 high byte register
+	*	bit 11-12: max cpl, software with privelege higher than this value can't access this register
 	*/
 	enum class Register : uint64_t {
+		invalid = 0xFFFFFFFFFFFFFFFF,
 		/* original integer registers */
-		rax = 0x00,
-		rcx = 0x01,
-		rdx = 0x02,
-		rbx = 0x03,
-		rsp = 0x04,
-		rbp = 0x05,
-		rsi = 0x06,
-		rdi = 0x07,
+		rax = register_encode_cpl(3) | register_encode_base(0x00),
+		rcx = register_encode_cpl(3) | register_encode_base(0x01),
+		rdx = register_encode_cpl(3) | register_encode_base(0x02),
+		rbx = register_encode_cpl(3) | register_encode_base(0x03),
+		rsp = register_encode_cpl(3) | register_encode_base(0x04),
+		rbp = register_encode_cpl(3) | register_encode_base(0x05),
+		rsi = register_encode_cpl(3) | register_encode_base(0x06),
+		rdi = register_encode_cpl(3) | register_encode_base(0x07),
 		/* high byte registers */
-		ah = 0x404,
-		ch = 0x405,
-		dh = 0x406,
-		bh = 0x407,
+		ah = register_encode_cpl(3) | register_encode_highbyte() | register_encode_base(0x04),
+		ch = register_encode_cpl(3) | register_encode_highbyte() | register_encode_base(0x05),
+		dh = register_encode_cpl(3) | register_encode_highbyte() | register_encode_base(0x06),
+		bh = register_encode_cpl(3) | register_encode_highbyte() | register_encode_base(0x07),
 		/* r8-r15 */
-		r8 = 0x08,
-		r9 = 0x09,
-		r10 = 0x0A,
-		r11 = 0x0B,
-		r12 = 0x0C,
-		r13 = 0x0D,
-		r14 = 0x0E,
-		r15 = 0x0F,
+		r8  = register_encode_cpl(3) | register_encode_rex() | register_encode_base(0x00),
+		r9  = register_encode_cpl(3) | register_encode_rex() | register_encode_base(0x01),
+		r10 = register_encode_cpl(3) | register_encode_rex() | register_encode_base(0x02),
+		r11 = register_encode_cpl(3) | register_encode_rex() | register_encode_base(0x03),
+		r12 = register_encode_cpl(3) | register_encode_rex() | register_encode_base(0x04),
+		r13 = register_encode_cpl(3) | register_encode_rex() | register_encode_base(0x05),
+		r14 = register_encode_cpl(3) | register_encode_rex() | register_encode_base(0x06),
+		r15 = register_encode_cpl(3) | register_encode_rex() | register_encode_base(0x07),
 		/* mmx */
-		mmx0 = 0x20,
-		mmx1 = 0x21,
-		mmx2 = 0x22,
-		mmx3 = 0x23,
-		mmx4 = 0x24,
-		mmx5 = 0x25,
-		mmx6 = 0x26,
-		mmx7 = 0x27,
+		mmx0 = register_encode_cpl(3) | register_encode_float8() | register_encode_base(0x00),
+		mmx1 = register_encode_cpl(3) | register_encode_float8() | register_encode_base(0x01),
+		mmx2 = register_encode_cpl(3) | register_encode_float8() | register_encode_base(0x02),
+		mmx3 = register_encode_cpl(3) | register_encode_float8() | register_encode_base(0x03),
+		mmx4 = register_encode_cpl(3) | register_encode_float8() | register_encode_base(0x04),
+		mmx5 = register_encode_cpl(3) | register_encode_float8() | register_encode_base(0x05),
+		mmx6 = register_encode_cpl(3) | register_encode_float8() | register_encode_base(0x06),
+		mmx7 = register_encode_cpl(3) | register_encode_float8() | register_encode_base(0x07),
 		/* xmm */
-		xmm0 = 0x100,
-		xmm1 = 0x101,
-		xmm2 = 0x102,
-		xmm3 = 0x103,
-		xmm4 = 0x104,
-		xmm5 = 0x105,
-		xmm6 = 0x106,
-		xmm7 = 0x107,
+		xmm0 = register_encode_cpl(3) | register_encode_float16() | register_encode_base(0x00),
+		xmm1 = register_encode_cpl(3) | register_encode_float16() | register_encode_base(0x01),
+		xmm2 = register_encode_cpl(3) | register_encode_float16() | register_encode_base(0x02),
+		xmm3 = register_encode_cpl(3) | register_encode_float16() | register_encode_base(0x03),
+		xmm4 = register_encode_cpl(3) | register_encode_float16() | register_encode_base(0x04),
+		xmm5 = register_encode_cpl(3) | register_encode_float16() | register_encode_base(0x05),
+		xmm6 = register_encode_cpl(3) | register_encode_float16() | register_encode_base(0x06),
+		xmm7 = register_encode_cpl(3) | register_encode_float16() | register_encode_base(0x07),
 		/* ymm */
-		ymm0 = 0x200,
-		ymm1 = 0x201,
-		ymm2 = 0x202,
-		ymm3 = 0x203,
-		ymm4 = 0x204,
-		ymm5 = 0x205,
-		ymm6 = 0x206,
-		ymm7 = 0x207,
+		ymm0 = register_encode_cpl(3) | register_encode_float32() | register_encode_base(0x00),
+		ymm1 = register_encode_cpl(3) | register_encode_float32() | register_encode_base(0x01),
+		ymm2 = register_encode_cpl(3) | register_encode_float32() | register_encode_base(0x02),
+		ymm3 = register_encode_cpl(3) | register_encode_float32() | register_encode_base(0x03),
+		ymm4 = register_encode_cpl(3) | register_encode_float32() | register_encode_base(0x04),
+		ymm5 = register_encode_cpl(3) | register_encode_float32() | register_encode_base(0x05),
+		ymm6 = register_encode_cpl(3) | register_encode_float32() | register_encode_base(0x06),
+		ymm7 = register_encode_cpl(3) | register_encode_float32() | register_encode_base(0x07),
 		/* cr0-15 */
-		//TODO: correct values on these registers, first digit is bogus to avoid compiler errors
-		cr0 = 0xA40,
-		cr2 = 0xB40,
-		cr3 = 0xC40,
-		cr4 = 0xD40,
-		cr8 = 0xE48,
+		//TODO: correct values on these registers, base is bogus to avoid compiler errors
+		cr0 = register_encode_cpl(0) | register_encode_control() |register_encode_base(0),
+		cr2 = register_encode_cpl(0) | register_encode_control() |register_encode_base(1),
+		cr3 = register_encode_cpl(0) | register_encode_control() |register_encode_base(2),
+		cr4 = register_encode_cpl(0) | register_encode_control() |register_encode_base(3),
+		cr8 = register_encode_cpl(0) | register_encode_rex() | register_encode_control() |register_encode_base(4),
 		/* descriptor table registers */
-		//TODO: correct values on these registers, first digit is bogus to avoid compiler errors
-		gdtr = 0xA80,
-		idtr = 0xB80,
-		ldtr = 0xC80,
+		//TODO: correct values on these registers, base is bogus to avoid compiler errors
+		gdtr = register_encode_cpl(3) | register_encode_special() | register_encode_base(0),
+		idtr = register_encode_cpl(3) | register_encode_special() | register_encode_base(1),
+		ldtr = register_encode_cpl(3) | register_encode_special() | register_encode_base(2),
 		/* model specific registers */
-		efer = 0xC000008000000010,
-		star = 0xC000008100000010,
-		lstar = 0xC000008200000010,
-		cstar = 0xC000008300000010,
-		sfmask = 0xC000008400000010,
-		fs_base = 0xC000010000000010,
-		gs_base = 0xC000010100000010,
-		kernel_gs_base = 0xC000010200000010,
-		tsc_aux = 0xC000010300000010,
-		syscfg = 0xC001001000000010,
-		iorr_base0 = 0xC001001600000010,
-		iorrmask0 = 0xC001001700000010,
-		iorr_base1 = 0xC001001800000010,
-		iorrmask1 = 0xC001001900000010,
-		ls_cfg = 0xC001102000000010,
-		ic_cfg = 0xC001102100000010,
-		dc_cfg = 0xC001102200000010,
-		bu_cfg = 0xC001102300000010,
-		mc0_ctl = 0xC001004000000010,
-		mc0_status = 0xC001004100000010,
-		mc0_addr = 0xC001004200000010,
-		mc0_misc = 0xC001004300000010,
-		perf_ctl0 = 0xC001000000000010,
-		perf_ctr0 = 0xC001000400000010,
-		perf_ctl1 = 0xC001000100000010,
-		perf_ctr1 = 0xC001000500000010,
-		top_mem = 0xC001001A00000010,
-		top_mem2 = 0xC001001D00000010,
-		vm_cr = 0xC001011400000010,
-		vm_hsave_pa = 0xC001011700000010
+		efer 			= register_encode_cpl(0) | register_encode_msr(0xC0000080),
+		star 			= register_encode_cpl(0) | register_encode_msr(0xC0000081),
+		lstar 			= register_encode_cpl(0) | register_encode_msr(0xC0000082),
+		cstar 			= register_encode_cpl(0) | register_encode_msr(0xC0000083),
+		sfmask 			= register_encode_cpl(0) | register_encode_msr(0xC0000084),
+		fs_base 		= register_encode_cpl(0) | register_encode_msr(0xC0000100),
+		gs_base 		= register_encode_cpl(0) | register_encode_msr(0xC0000101),
+		kernel_gs_base 	= register_encode_cpl(0) | register_encode_msr(0xC0000102),
+		tsc_aux 		= register_encode_cpl(0) | register_encode_msr(0xC0000103),
+		syscfg 			= register_encode_cpl(0) | register_encode_msr(0xC0010010),
+		iorr_base0 		= register_encode_cpl(0) | register_encode_msr(0xC0010016),
+		iorrmask0 		= register_encode_cpl(0) | register_encode_msr(0xC0010017),
+		iorr_base1 		= register_encode_cpl(0) | register_encode_msr(0xC0010018),
+		iorrmask1 		= register_encode_cpl(0) | register_encode_msr(0xC0010019),
+		ls_cfg 			= register_encode_cpl(0) | register_encode_msr(0xC0011020),
+		ic_cfg 			= register_encode_cpl(0) | register_encode_msr(0xC0011021),
+		dc_cfg 			= register_encode_cpl(0) | register_encode_msr(0xC0011022),
+		bu_cfg 			= register_encode_cpl(0) | register_encode_msr(0xC0011023),
+		mc0_ctl 		= register_encode_cpl(0) | register_encode_msr(0xC0010040),
+		mc0_status 		= register_encode_cpl(0) | register_encode_msr(0xC0010041),
+		mc0_addr 		= register_encode_cpl(0) | register_encode_msr(0xC0010042),
+		mc0_misc 		= register_encode_cpl(0) | register_encode_msr(0xC0010043),
+		perf_ctl0 		= register_encode_cpl(0) | register_encode_msr(0xC0010000),
+		perf_ctr0 		= register_encode_cpl(0) | register_encode_msr(0xC0010004),
+		perf_ctl1 		= register_encode_cpl(0) | register_encode_msr(0xC0010001),
+		perf_ctr1 		= register_encode_cpl(0) | register_encode_msr(0xC0010005),
+		top_mem 		= register_encode_cpl(0) | register_encode_msr(0xC001001A),
+		top_mem2 		= register_encode_cpl(0) | register_encode_msr(0xC001001D),
+		vm_cr 			= register_encode_cpl(0) | register_encode_msr(0xC0010114),
+		vm_hsave_pa 	= register_encode_cpl(0) | register_encode_msr(0xC0010117)
 	};
+	inline constexpr uint64_t register_decode_cpl(Register reg){return (((uint64_t)reg)&(0b11<<11))>>11;};
+
+	Register string_to_register(const std::string& reg_str);
+	const char* register_name(Register reg);
 
 	constexpr uint64_t operator<<(Register r,uint64_t i){return ((uint64_t)r)<<i;}
 	constexpr uint64_t operator&(Register r,uint64_t i){return ((uint64_t)r)&i;}

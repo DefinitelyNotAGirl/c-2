@@ -29,12 +29,14 @@
  */
 #pragma once
 
-#include <common.h>
+#include <extint.hxx>
 #include <environment.hxx>
+#include <string>
+#include <vector>
 
 class type;
 
-enum class access {
+enum class vaccess {
 	_public,
 	_protected,
 	_private
@@ -45,6 +47,11 @@ public:
 	bool isSymbol;
 	uint64_t imm64;
 	std::string symbol;
+	ImmediateValue(){}
+	ImmediateValue(std::string sym)
+		:isSymbol(true),symbol(sym){}
+	ImmediateValue(uint64_t val)
+		:isSymbol(false),imm64(val){}
 };
 
 class variable
@@ -62,7 +69,7 @@ public:
     bool doExport = false;
     bool isParameter = false;//only tracked for vstc features
 	bool isStatic = false;
-	access Access = access::_public;
+	vaccess Access = vaccess::_public;
 	bool usedAutoStorage = false;
 	//. class properties
     std::vector<variable*> children;//stores members of this variable (ex. gdt.size or var->name)

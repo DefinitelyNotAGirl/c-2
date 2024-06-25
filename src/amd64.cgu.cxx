@@ -2,8 +2,8 @@
  * Created Date: Thursday June 6th 2024
  * Author: Lilith
  * -----
- * Last Modified: Thursday June 6th 2024 10:09:55 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Sun Jun 23 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
@@ -31,6 +31,7 @@
 #include <issues.hxx>
 #include <SMU.h>
 #include <amd64.cgu.hxx>
+#include <extint.hxx>
 
 using namespace issues;
 
@@ -100,6 +101,182 @@ namespace amd64
 
 	namespace opcode {
 	}
+
+	const char* register_name(Register reg) {
+		switch (reg) {
+			case Register::invalid: return "invalid";
+			case Register::rax: return "rax";
+			case Register::rcx: return "rcx";
+			case Register::rdx: return "rdx";
+			case Register::rbx: return "rbx";
+			case Register::rsp: return "rsp";
+			case Register::rbp: return "rbp";
+			case Register::rsi: return "rsi";
+			case Register::rdi: return "rdi";
+			case Register::ah: return "ah";
+			case Register::ch: return "ch";
+			case Register::dh: return "dh";
+			case Register::bh: return "bh";
+			case Register::r8: return "r8";
+			case Register::r9: return "r9";
+			case Register::r10: return "r10";
+			case Register::r11: return "r11";
+			case Register::r12: return "r12";
+			case Register::r13: return "r13";
+			case Register::r14: return "r14";
+			case Register::r15: return "r15";
+			case Register::mmx0: return "mmx0";
+			case Register::mmx1: return "mmx1";
+			case Register::mmx2: return "mmx2";
+			case Register::mmx3: return "mmx3";
+			case Register::mmx4: return "mmx4";
+			case Register::mmx5: return "mmx5";
+			case Register::mmx6: return "mmx6";
+			case Register::mmx7: return "mmx7";
+			case Register::xmm0: return "xmm0";
+			case Register::xmm1: return "xmm1";
+			case Register::xmm2: return "xmm2";
+			case Register::xmm3: return "xmm3";
+			case Register::xmm4: return "xmm4";
+			case Register::xmm5: return "xmm5";
+			case Register::xmm6: return "xmm6";
+			case Register::xmm7: return "xmm7";
+			case Register::ymm0: return "ymm0";
+			case Register::ymm1: return "ymm1";
+			case Register::ymm2: return "ymm2";
+			case Register::ymm3: return "ymm3";
+			case Register::ymm4: return "ymm4";
+			case Register::ymm5: return "ymm5";
+			case Register::ymm6: return "ymm6";
+			case Register::ymm7: return "ymm7";
+			case Register::cr0: return "cr0";
+			case Register::cr2: return "cr2";
+			case Register::cr3: return "cr3";
+			case Register::cr4: return "cr4";
+			case Register::cr8: return "cr8";
+			case Register::gdtr: return "gdtr";
+			case Register::idtr: return "idtr";
+			case Register::ldtr: return "ldtr";
+			case Register::efer: return "efer";
+			case Register::star: return "star";
+			case Register::lstar: return "lstar";
+			case Register::cstar: return "cstar";
+			case Register::sfmask: return "sfmask";
+			case Register::fs_base: return "fs_base";
+			case Register::gs_base: return "gs_base";
+			case Register::kernel_gs_base: return "kernel_gs_base";
+			case Register::tsc_aux: return "tsc_aux";
+			case Register::syscfg: return "syscfg";
+			case Register::iorr_base0: return "iorr_base0";
+			case Register::iorrmask0: return "iorrmask0";
+			case Register::iorr_base1: return "iorr_base1";
+			case Register::iorrmask1: return "iorrmask1";
+			case Register::ls_cfg: return "ls_cfg";
+			case Register::ic_cfg: return "ic_cfg";
+			case Register::dc_cfg: return "dc_cfg";
+			case Register::bu_cfg: return "bu_cfg";
+			case Register::mc0_ctl: return "mc0_ctl";
+			case Register::mc0_status: return "mc0_status";
+			case Register::mc0_addr: return "mc0_addr";
+			case Register::mc0_misc: return "mc0_misc";
+			case Register::perf_ctl0: return "perf_ctl0";
+			case Register::perf_ctr0: return "perf_ctr0";
+			case Register::perf_ctl1: return "perf_ctl1";
+			case Register::perf_ctr1: return "perf_ctr1";
+			case Register::top_mem: return "top_mem";
+			case Register::top_mem2: return "top_mem2";
+			case Register::vm_cr: return "vm_cr";
+			case Register::vm_hsave_pa: return "vm_hsave_pa";
+			default: return "invalid amd64 register";
+		}
+	}
+
+	Register string_to_register(const std::string& reg_str) {
+		if (reg_str == "invalid") return Register::invalid;
+		if (reg_str == "rax") return Register::rax;
+		if (reg_str == "rcx") return Register::rcx;
+		if (reg_str == "rdx") return Register::rdx;
+		if (reg_str == "rbx") return Register::rbx;
+		if (reg_str == "rsp") return Register::rsp;
+		if (reg_str == "rbp") return Register::rbp;
+		if (reg_str == "rsi") return Register::rsi;
+		if (reg_str == "rdi") return Register::rdi;
+		if (reg_str == "ah") return Register::ah;
+		if (reg_str == "ch") return Register::ch;
+		if (reg_str == "dh") return Register::dh;
+		if (reg_str == "bh") return Register::bh;
+		if (reg_str == "r8") return Register::r8;
+		if (reg_str == "r9") return Register::r9;
+		if (reg_str == "r10") return Register::r10;
+		if (reg_str == "r11") return Register::r11;
+		if (reg_str == "r12") return Register::r12;
+		if (reg_str == "r13") return Register::r13;
+		if (reg_str == "r14") return Register::r14;
+		if (reg_str == "r15") return Register::r15;
+		if (reg_str == "mmx0") return Register::mmx0;
+		if (reg_str == "mmx1") return Register::mmx1;
+		if (reg_str == "mmx2") return Register::mmx2;
+		if (reg_str == "mmx3") return Register::mmx3;
+		if (reg_str == "mmx4") return Register::mmx4;
+		if (reg_str == "mmx5") return Register::mmx5;
+		if (reg_str == "mmx6") return Register::mmx6;
+		if (reg_str == "mmx7") return Register::mmx7;
+		if (reg_str == "xmm0") return Register::xmm0;
+		if (reg_str == "xmm1") return Register::xmm1;
+		if (reg_str == "xmm2") return Register::xmm2;
+		if (reg_str == "xmm3") return Register::xmm3;
+		if (reg_str == "xmm4") return Register::xmm4;
+		if (reg_str == "xmm5") return Register::xmm5;
+		if (reg_str == "xmm6") return Register::xmm6;
+		if (reg_str == "xmm7") return Register::xmm7;
+		if (reg_str == "ymm0") return Register::ymm0;
+		if (reg_str == "ymm1") return Register::ymm1;
+		if (reg_str == "ymm2") return Register::ymm2;
+		if (reg_str == "ymm3") return Register::ymm3;
+		if (reg_str == "ymm4") return Register::ymm4;
+		if (reg_str == "ymm5") return Register::ymm5;
+		if (reg_str == "ymm6") return Register::ymm6;
+		if (reg_str == "ymm7") return Register::ymm7;
+		if (reg_str == "cr0") return Register::cr0;
+		if (reg_str == "cr2") return Register::cr2;
+		if (reg_str == "cr3") return Register::cr3;
+		if (reg_str == "cr4") return Register::cr4;
+		if (reg_str == "cr8") return Register::cr8;
+		if (reg_str == "gdtr") return Register::gdtr;
+		if (reg_str == "idtr") return Register::idtr;
+		if (reg_str == "ldtr") return Register::ldtr;
+		if (reg_str == "efer") return Register::efer;
+		if (reg_str == "star") return Register::star;
+		if (reg_str == "lstar") return Register::lstar;
+		if (reg_str == "cstar") return Register::cstar;
+		if (reg_str == "sfmask") return Register::sfmask;
+		if (reg_str == "fs_base") return Register::fs_base;
+		if (reg_str == "gs_base") return Register::gs_base;
+		if (reg_str == "kernel_gs_base") return Register::kernel_gs_base;
+		if (reg_str == "tsc_aux") return Register::tsc_aux;
+		if (reg_str == "syscfg") return Register::syscfg;
+		if (reg_str == "iorr_base0") return Register::iorr_base0;
+		if (reg_str == "iorrmask0") return Register::iorrmask0;
+		if (reg_str == "iorr_base1") return Register::iorr_base1;
+		if (reg_str == "iorrmask1") return Register::iorrmask1;
+		if (reg_str == "ls_cfg") return Register::ls_cfg;
+		if (reg_str == "ic_cfg") return Register::ic_cfg;
+		if (reg_str == "dc_cfg") return Register::dc_cfg;
+		if (reg_str == "bu_cfg") return Register::bu_cfg;
+		if (reg_str == "mc0_ctl") return Register::mc0_ctl;
+		if (reg_str == "mc0_status") return Register::mc0_status;
+		if (reg_str == "mc0_addr") return Register::mc0_addr;
+		if (reg_str == "mc0_misc") return Register::mc0_misc;
+		if (reg_str == "perf_ctl0") return Register::perf_ctl0;
+		if (reg_str == "perf_ctr0") return Register::perf_ctr0;
+		if (reg_str == "perf_ctl1") return Register::perf_ctl1;
+		if (reg_str == "perf_ctr1") return Register::perf_ctr1;
+		if (reg_str == "top_mem") return Register::top_mem;
+		if (reg_str == "top_mem2") return Register::top_mem2;
+		if (reg_str == "vm_cr") return Register::vm_cr;
+		if (reg_str == "vm_hsave_pa") return Register::vm_hsave_pa;
+		return Register::invalid;
+	}
 }
 
 namespace runtime::amd64
@@ -158,27 +335,31 @@ namespace runtime::amd64
 					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect,dstStore->reg)
 				});
 			}
-			else if(dstStore->displacement.imm64 <= 0xFF)
+			else if(positive(dstStore->displacement.imm64) <= 0xFF)
 			{
 				code->push({
 					::amd64::prefix::REX(1,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
 					::amd64::opcode::mov::r16_32_64__rm16_32_64,
 					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect_disp8,dstStore->reg),
-					(byte)srcStore->displacement.imm64
+					(byte)copySignBit<uint64_t,uint8_t>(dstStore->displacement.imm64)
 				});
 				if(srcStore->displacement.isSymbol)
 					compilerBug("linker information not implemented, cant use symbol",originCoreHere,source(),"");
 			}
-			else if(dstStore->displacement.imm64 <= 0xFFFFFFFF)
+			else if(positive(dstStore->displacement.imm64) <= 0xFFFFFFFF)
 			{
 				code->push({
 					::amd64::prefix::REX(1,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
 					::amd64::opcode::mov::r16_32_64__rm16_32_64,
 					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect_disp32,dstStore->reg)
 				});
-				code->push(::amd64::imm32(dstStore->displacement.imm64));
+				code->push(::amd64::imm32(copySignBit<uint64_t,uint32_t>(dstStore->displacement.imm64)));
 				if(srcStore->displacement.isSymbol)
 					compilerBug("linker information not implemented, cant use symbol",originCoreHere,source(),"");
+			}
+			else
+			{
+				compilerBug("diplacement exceeds 32 bits.");
 			}
 		}
 //,####################################################################################################################

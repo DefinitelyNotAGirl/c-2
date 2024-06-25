@@ -1,41 +1,9 @@
-/*
- * Created Date: Wednesday September 13th 2023
- * Author: Lilith
- * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
- * -----
- * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
- * 
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use, copy,
- * modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
-
 #include <compiler.h>
 #include <mangling.h>
 
 #define constructor __attribute__ ((constructor))
 
-namespace __ABI__{
-
-static ABI* abi = nullptr;
+static ABI* extension_abi = nullptr;
 
 static void genProlouge(section* code, scope* sc)
 {
@@ -45,45 +13,114 @@ static void genEpilouge(section* code, scope* sc)
 {
 }
 
-static void preCall(function* func)
-{
-}
+static void preArgTransfer(function* func){}
 
-static void postCall(function* func)
-{
-}
+static void postReturn(function* func){}
 
-static void setArgStorages(function* func,std::vector<variable*>& args)
-{
-}
+static const std::vector<amd64::Register> integerRegisters = {
+	amd64::Register::r8,
+	amd64::Register::r9,
+	amd64::Register::r10,
+	amd64::Register::r11,
+	amd64::Register::r12,
+	amd64::Register::r13,
+	amd64::Register::r14,
+};
 
-static void moveArguments(function* func,std::vector<variable*>& args)
-{
-}
+static const std::vector<amd64::Register> floatRegisters = {
+	amd64::Register::xmm1,
+	amd64::Register::xmm2,
+	amd64::Register::xmm3,
+	amd64::Register::xmm4,
+	amd64::Register::xmm5,
+	amd64::Register::xmm6,
+	amd64::Register::xmm7
+};
 
-static variable* call(function* func,std::vector<variable*>& args)
+static void setFunctionStorages(function* func)
 {
-    return nullptr;
-}
-
-static void instrCall(function* func)
-{
+	uint64_t ireg = 0;
+	uint64_t freg = 0;
+	//+
+	//+ this
+	//+
+	{
+		if(func->isMember)
+			ireg++;
+	}
+	//+
+	//+ return
+	//+
+	{
+		func->returnValue->storageArch = Architecture::AMD64;
+		func->returnValue->storage = new amd64::VariableStorage;
+		amd64::VariableStorage* storage = func->returnValue->storage;
+		if(func->returnValue->dataType->regMode == 1)
+		{
+			// return in rax
+			storage->mode = amd64::StorageMode::DirectRegister;
+			storage->reg = amd64::Register::rax;
+		}
+		else if(func->returnValue->dataType->regMode == 2)
+		{
+			// return in xmm0
+			storage->mode = amd64::StorageMode::DirectRegister;
+			storage->reg = amd64::Register::xmm0;
+		}
+		else
+		{
+			// pass reference in rdi or rsi, return nothing
+			storage->mode = amd64::StorageMode::DirectRegister;
+			storage->reg = integerRegisters[ireg];
+			ireg++;
+			func->returnType = getType(func->returnType->name+"&");
+			func->returnValue->dataType = func->returnType;
+		}
+	}
+	//+
+	//+ parameters
+	//+
+	{
+		for(variable* arg : func->vparams)
+		{
+			arg->storageArch = Architecture::AMD64;
+			arg->storage = new amd64::VariableStorage;
+			amd64::VariableStorage* storage = arg->storage;
+			if(arg->dataType->regMode == 1 && (ireg < integerRegisters.size()))
+			{
+				// pass via register
+				storage->mode = amd64::StorageMode::DirectRegister;
+				storage->reg = integerRegisters[ireg];
+				ireg++;
+			}
+			else if(arg->dataType->regMode == 2 && (freg < floatRegisters.size()))
+			{
+				// pass via register
+				storage->mode = amd64::StorageMode::DirectRegister;
+				storage->reg = floatRegisters[freg];
+				freg++;
+			}
+			else
+			{
+				// pass via stack
+				uint64_t offset = func->stack.push(arg->dataType->size);
+				storage->mode = amd64::StorageMode::IndirectRegister;
+				storage->displacement = offset;
+				storage->reg = amd64::Register::rbp;
+			}
+		}	
+	}
 }
 
 constructor static void init()
 {
-    abi = new ABI;
-    abi->name = "cpe2x64";
-    abi->moveArguments = &moveArguments;
-    abi->setArgStorages = &setArgStorages;
-    abi->genProlouge = &genProlouge;
-    abi->genEpilouge = &genEpilouge;
-    abi->call = &__ABI__::call;
-    abi->preCall = &preCall;
-    abi->postCall = &postCall;
-    abi->instrCall = &instrCall;
+    extension_abi = new ABI;
+    extension_abi->name = "cpe2x64";
+    extension_abi->setFunctionStorages = &setFunctionStorages;
+    extension_abi->genProlouge = &genProlouge;
+    extension_abi->genEpilouge = &genEpilouge;
+    extension_abi->preArgTransfer = &preArgTransfer;
+    extension_abi->postReturn = &postReturn;
 
-    ABIs.push_back(abi);//add our ABI to the global ABI list
+    ABIs.push_back(extension_abi);//add our ABI to the global ABI list
 }
-
-}//namespace __ABI__

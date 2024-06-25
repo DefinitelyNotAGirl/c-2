@@ -2,8 +2,8 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Tue Jun 25 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
@@ -33,6 +33,7 @@
 #include <common.h>
 #include <compiler.h>
 #include <issues.hxx>
+#include <dump.hxx>
 
 using namespace issues;
 
@@ -283,26 +284,32 @@ uint64_t tokenType(std::string& s)
 	//
 	//some identifier
 	//
+	noSuchType::error.push([](noSuchType e) -> int {return 1;});
 	try {
 		type* gt = getType(s);
+		noSuchType::error.pop();
 		ltobj = gt;
 		return 9;//typename
-	} catch(noSuchType e){}
-	try {
-		variable* gv = getVariable(s);
+	}catch(noSuchType e){noSuchType::error.pop();}
+	noSuchVariable::error.push([](noSuchVariable e) -> int {return 0;});
+	variable* gv = getVariable(s);
+	noSuchVariable::error.pop();
+	if(gv != nullptr){
 		ltobj = gv;
 		if(gv->isParameter)
-			return 60;
+		return 60;
 		return 10;//variable
-	} catch(noSuchVariable e){}
-	try {
-		function* gf = getFunction(s);
+	}
+	noSuchFunction::error.push([](noSuchFunction e) -> int {return 0;});
+	function* gf = getFunction(s);
+	noSuchFunction::error.pop();
+	if(gf != nullptr) {
 		if(gf != nullptr)
 		{
 			ltobj = gf;
 			return 11;//function
 		}
-	} catch(noSuchFunction e){}
+	}
 	//
 	//new identifier
 	//
@@ -502,10 +509,12 @@ token line::nextToken(bool saveInfo)
 					goto __default;
 				goto skipPointerTypeCheck;
 			case('*'):
+				noSuchType::error.push([](noSuchType e) -> int {return 1;});
 				try {
 					getType(t.text);
+					noSuchType::error.pop();
 					goto __default;
-				} catch(noSuchType e){}
+				}catch(noSuchType e){noSuchType::error.pop();}
 			case('%'):
 			case('!'):
 				skipPointerTypeCheck:;

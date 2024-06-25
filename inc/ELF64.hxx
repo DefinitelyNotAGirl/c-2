@@ -241,6 +241,9 @@ namespace elf64
 	};
 
 	enum class SectionTableIndex : uint16_t {
+		/*
+			. ELF64 spec
+		*/
 		UNDEF		= 0x0000,
 		LORESERVE	= 0xff00,
 		LOPROC		= 0xff00,
@@ -250,7 +253,14 @@ namespace elf64
 		ABS			= 0xfff1,
 		COMMON		= 0xfff2,
 		XINDEX		= 0xffff,
-		HIRESERVE	= 0xffff
+		HIRESERVE	= 0xffff,
+		/*
+			. specific to this compiler
+		*/
+		SYMTAB	= 0x0001,
+		TEXT 	= 0x0002,
+		DATA 	= 0x0003,
+		RODATA	= 0x0004,
 	};
 	inline uint16_t to_uint16(SectionTableIndex index)
 	{

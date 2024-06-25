@@ -2,8 +2,8 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Mon Jun 24 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
  * 
@@ -172,7 +172,7 @@ std::string intToString(uint64_t n)
     }
     else
     {
-        error::genericError(0x00001);
+		issues::compilerBug("unimplemented number system");
     }
     return stream.str();
 }

@@ -272,3 +272,25 @@ bool cpustate_amd64::registerValueKnown(amd64::Register reg) const {
 			return false; // Should never be reached
 	}
 }
+
+static amd64::Register GeneralPurposeRegisters[] = {
+	amd64::Register::rdi,
+	amd64::Register::rsi,
+	amd64::Register::r8,
+	amd64::Register::r9,
+	amd64::Register::r10,
+	amd64::Register::r11,
+	amd64::Register::r12,
+	amd64::Register::r13,
+	amd64::Register::r14,
+	amd64::Register::r15,
+};
+constexpr uint64_t GeneralPurposeRegisterCount = sizeof(GeneralPurposeRegisters)/sizeof(amd64::Register);
+
+amd64::Register cpustate_amd64::getFreeRegister()
+{
+	for(uint64_t I = 0;I<GeneralPurposeRegisterCount;I++)
+		if(this->registerStatus(GeneralPurposeRegisters[I]) == RegisterStatus::free)
+			return GeneralPurposeRegisters[I];
+	return amd64::Register::invalid;
+}

@@ -2,8 +2,8 @@
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday June 3rd 2024 11:44:37 pm
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Tue Jun 25 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
@@ -305,7 +305,14 @@ static variable* resolveInteger(token& t)
 	variable* var = new variable;
 	var->name = getNewVariableName();
 	var->dataType = defaultUnsignedIntegerType;
-	compilerBug("unimplemented: assign immediate");
+	var->storageArch = currentArchitecture;
+	if(currentArchitecture == Architecture::AMD64)
+	{
+		amd64::VariableStorage* storage = new amd64::VariableStorage;
+		var->storage = storage;
+		storage->mode = amd64::StorageMode::DirectImmediate;
+		storage->immediate = ImmediateValue(value);
+	}
 	return var;
 }
 
@@ -847,17 +854,19 @@ variable* resolve(token& ft)
 					compilerBug("builtin functions unimplemented",originCoreHere,source(),"");
 				}
 			}
-			try {
-				variable* var = getVariable(stack.back().text);
-				return var;
-			}catch(noSuchVariable e){
-				variable* var = resolveInteger(stack.back());
-				if(var == nullptr)
-					var = resolveString(stack.back());
-				if(var == nullptr)
-					noSuchIdentifier("",originCoreHere,source(),stack.back().text);
+			noSuchVariable::error.push([](noSuchVariable e) -> int {return 0;});
+			variable* var = getVariable(stack.back().text);
+			noSuchVariable::error.pop();
+			if(var != nullptr)
+			{
 				return var;
 			}
+			var = resolveInteger(stack.back());
+			if(var == nullptr)
+				var = resolveString(stack.back());
+			if(var == nullptr)
+				noSuchIdentifier("",originCoreHere,source(),stack.back().text);
+			return var;
 		}
 		//.
 		//. skipShuntingYard

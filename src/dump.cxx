@@ -338,13 +338,8 @@ void dump(std::string name, ABI* obj, std::string indent)
 	GENERIC_NULLPTR
 	GENERIC_OBJ_START
 	dump("name", &obj->name, INDENT);
-	dump("moveArguments", (dummy*)obj->moveArguments, INDENT);
 	dump("genProlouge", (dummy*)obj->genProlouge, INDENT);
 	dump("genEpilouge", (dummy*)obj->genEpilouge, INDENT);
-	dump("preCall", (dummy*)obj->preCall, INDENT);
-	dump("postCall", (dummy*)obj->postCall, INDENT);
-	dump("instrCall", (dummy*)obj->instrCall, INDENT);
-	dump("call", (dummy*)obj->call, INDENT);
 	GENERIC_OBJ_END
 }
 //,####################################################################################################################

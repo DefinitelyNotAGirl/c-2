@@ -25,6 +25,9 @@
 *.la
 *.lib
 
+# caches
+*.pyc
+
 # Executables
 *.exe
 *.out
@@ -32,10 +35,9 @@
 
 cp2
 
+build/
 anal/
-
 documentation/
-
 tools/
 src/amd64.cgu.cxx
 test.elf64

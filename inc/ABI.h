@@ -32,21 +32,16 @@
 #include <compiler.h>
 #include <util.h>
 
-void universalMoveArguments(function* func,std::vector<variable*>& args);
-
 class ABI
 {
 public:
     std::string name;
 
-    void(*setArgStorages)(function* func,std::vector<variable*>& args);
-    void(*moveArguments)(function* func,std::vector<variable*>& args);
+    void(*setFunctionStorages)(function* func);
     void(*genProlouge)(section* outcode, scope* sc);
     void(*genEpilouge)(section* outcode, scope* sc);
-    void(*preCall)(function* func);
-    void(*postCall)(function* func);
-    void(*instrCall)(function* func);
-    variable*(*call)(function* func,std::vector<variable*>& args);
+    void(*preArgTransfer)(function* func);
+    void(*postReturn)(function* func);
 };
 
 extern std::vector<ABI*> ABIs;

@@ -2,8 +2,8 @@
  * Created Date: Sunday August 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Mon Jun 24 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
@@ -50,10 +50,7 @@ static std::vector<formatFile*> files;
 static std::string getExportTypeName(type* t)
 {
     if(t == nullptr)
-    {
-		errorCompilerBug;
-		return "";
-	}
+		compilerBug("assertion failed: t != nullptr");
     //if(t->name.back() == '&')
     //{
     //    std::string nn = t->name;
