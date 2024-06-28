@@ -1195,11 +1195,11 @@ namespace amd64
 		}
 
 		namespace jns {
-			constexpr rel8off = 0x79;
+			constexpr byte rel8off = 0x79;
 		}
 
 		namespace jge {
-			constexpr rel8off = 0x7D;
+			constexpr byte rel8off = 0x7D;
 		}
 		/**
 			@brief opcodes in this namespace need to be prefixed with 0x0F
