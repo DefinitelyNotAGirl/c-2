@@ -11,6 +11,9 @@ namespace runtime::amd64
 	inline void call(function* func){}
 	inline void enter(uint64_t frameSize){}
 	inline void leave(){}
+	variable* UnsignedIntegerAddition(variable* a, variable* b);
+	void RelativeControlTransfer(ImmediateValue offset);
+	void AbsoluteControlTransfer(ImmediateValue address);
 }
 
 namespace amd64
@@ -96,7 +99,7 @@ namespace amd64
 		cr2 = register_encode_cpl(0) | register_encode_control() |register_encode_base(1),
 		cr3 = register_encode_cpl(0) | register_encode_control() |register_encode_base(2),
 		cr4 = register_encode_cpl(0) | register_encode_control() |register_encode_base(3),
-		cr8 = register_encode_cpl(0) | register_encode_rex() | register_encode_control() |register_encode_base(4),
+		cr8 = register_encode_cpl(0) | register_encode_rex() | register_encode_control() | register_encode_base(4),
 		/* descriptor table registers */
 		//TODO: correct values on these registers, base is bogus to avoid compiler errors
 		gdtr = register_encode_cpl(3) | register_encode_special() | register_encode_base(0),
@@ -134,7 +137,8 @@ namespace amd64
 		vm_cr 			= register_encode_cpl(0) | register_encode_msr(0xC0010114),
 		vm_hsave_pa 	= register_encode_cpl(0) | register_encode_msr(0xC0010117)
 	};
-	inline constexpr uint64_t register_decode_cpl(Register reg){return (((uint64_t)reg)&(0b11<<11))>>11;};
+	inline constexpr uint64_t register_decode_cpl	(Register reg){return (((uint64_t)reg)&(0b11<<11))>>11;};
+	inline constexpr uint64_t register_decode_base	(Register reg){return (((uint64_t)reg)&(0b111<<0))>>0;};
 
 	Register string_to_register(const std::string& reg_str);
 	const char* register_name(Register reg);
@@ -1126,8 +1130,7 @@ namespace amd64
 		namespace jmp{
 			constexpr byte rel16_32 = 0xE9;
 			constexpr byte rel8 = 0xEB;
-			constexpr byte rm16_32 = 0xFF;
-			constexpr byte rm64 = 0xFF;
+			constexpr byte rm16_32_64 = 0xFF;
 		}
 		namespace int1{
 			constexpr byte eFlags = 0xF1;
@@ -1189,6 +1192,13 @@ namespace amd64
 		}
 		namespace jmpf{
 			constexpr byte m16_32_64 = 0xFF;
+		}
+		/**
+			@brief opcodes in this namespace need to be prefixed with 0x0F
+		*/
+		namespace secondary
+		{
+			constexpr byte syscall = 0x05;
 		}
 	}
 }
