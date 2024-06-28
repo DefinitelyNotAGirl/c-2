@@ -1193,12 +1193,28 @@ namespace amd64
 		namespace jmpf{
 			constexpr byte m16_32_64 = 0xFF;
 		}
+
+		namespace jns {
+			constexpr rel8off = 0x79;
+		}
+
+		namespace jge {
+			constexpr rel8off = 0x7D;
+		}
 		/**
 			@brief opcodes in this namespace need to be prefixed with 0x0F
 		*/
 		namespace secondary
 		{
 			constexpr byte syscall = 0x05;
+			namespace jns {
+				constexpr rel16off = 0x89;
+				constexpr rel32off = 0x89;
+			}
+			namespace jge {
+				constexpr rel16off = 0x8D;
+				constexpr rel32off = 0x8D;
+			}
 		}
 	}
 }
