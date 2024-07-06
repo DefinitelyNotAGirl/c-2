@@ -2,8 +2,8 @@
  * Created Date: Monday July 31st 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Sat Jul 06 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
@@ -53,20 +53,12 @@ std::string getNewName()
                 mfile.push_back(i);
         }
     }
-    return "local"CPE2_SYMBOL_SCOPE_SEP+mfile+CPE2_SYMBOL_SCOPE_SEP+"anonymous"+std::to_string(NewNameCount++);
+    //return "local"CPE2_SYMBOL_SCOPE_SEP+mfile+CPE2_SYMBOL_SCOPE_SEP+"anonymous"+std::to_string(NewNameCount++);
+	return "anonymous"+std::to_string(NewNameCount++);
+	//return currentScope->name+CPE2_SYMBOL_SCOPE_SEP+"anonymous"+std::to_string(NewNameCount++);
 }
 
 std::string getNewVariableName()
 {
     return "__c2_anonymous"+std::to_string(NewNameCount++);
 }
-
-uint64_t getx86MSR(__register__ reg)
-{
-    using enum __register__;
-    switch(reg)
-    {
-        case(EFER): return 0xc0000080;
-    }
-    return 0;
-};

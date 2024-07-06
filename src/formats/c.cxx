@@ -31,6 +31,9 @@
 #include <miscout.h>
 #include <util.h>
 
+#include <issues.hxx>
+using namespace issues;
+
 #define constructor __attribute__ ((constructor))
 
 static uint64_t fID = 0;
@@ -90,7 +93,8 @@ static void format_addClass(uint64_t fID, type* t)
         content+="struct "+t->name+"\n{\n";
         for(variable& m : t->members)
         {
-            if(cop < m.offset)
+			compilerBug("unimplemented: c export padding");
+            if(false)
             {
                 if(!getFile(fID)->includesStdInt)
                 {
@@ -99,7 +103,8 @@ static void format_addClass(uint64_t fID, type* t)
                 }
 
                 content+="private:\n";
-                uint64_t diff = m.offset-cop;
+                compilerBug("unimplemented: c export member offset");
+				uint64_t diff;
                 while(diff != 0)
                 {
                     if(diff >= 8){
@@ -117,7 +122,8 @@ static void format_addClass(uint64_t fID, type* t)
                 }
             }
             content+="    "+getExportTypeName(m.dataType)+" "+m.name+";\n";
-            cop = m.offset + m.dataType->size;
+            //cop = m.offset + m.dataType->size;
+			compilerBug("unimplemented: c export member offset");
         }
         content+="};\ntypedef struct "+t->name+" "+t->name+";\n";
     }

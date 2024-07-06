@@ -2,7 +2,7 @@
  * Created Date: Wednesday January 17th 2024
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 17th 2024 6:20:12 pm
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -30,7 +30,7 @@
 
 #include <compiler.h>
 #include <mangling.h>
-#include <codegen.h>
+#include <environment.hxx>
 
 void setDefaults()
 {
@@ -40,25 +40,12 @@ void setDefaults()
         std::cout << "ERROR: could not find default mangler, aborting!" << std::endl;
         exit(-1);
     }
-    //defaultABI = getABI("cpe2x64");
-    defaultABI = getABI("SystemVamd64");
+    defaultABI = getABI("cpe2x64");
     if(defaultABI == nullptr)
     {
         std::cout << "ERROR: could not find default ABI, aborting!" << std::endl;
         exit(-1);
     }
-    currentArch = getArch("x86-64");
-    if(currentArch == nullptr)
-    {
-        std::cout << "ERROR: could not find default architecture (x86-64), aborting!" << std::endl;
-        exit(-1);
-    }
-    currentArch->activate();
-    csys = getSystem("gnu-linux");
-    if(csys == nullptr)
-    {
-        std::cout << "ERROR: could not find default system (gnu-linux), aborting!" << std::endl;
-        exit(-1);
-    }
-    syntax = SYNTAX_INTEL;
+	currentArchitecture = Architecture::AMD64;
+	currentSystem = System::Linux;
 }

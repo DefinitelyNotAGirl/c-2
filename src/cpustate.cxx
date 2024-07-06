@@ -1,0 +1,296 @@
+#include <cpustate.hxx>
+using namespace issues;
+
+// Function to get the register status
+RegisterStatus cpustate_amd64::registerStatus(amd64::Register reg) const {
+	switch (reg) {
+		case amd64::Register::rax:            	return Register_rax.status;
+		case amd64::Register::rcx:            	return Register_rcx.status;
+		case amd64::Register::rdx:            	return Register_rdx.status;
+		case amd64::Register::rbx:            	return Register_rbx.status;
+		case amd64::Register::rsp:            	return Register_rsp.status;
+		case amd64::Register::rbp:            	return Register_rbp.status;
+		case amd64::Register::rsi:            	return Register_rsi.status;
+		case amd64::Register::rdi:            	return Register_rdi.status;
+		case amd64::Register::ah:             	return Register_ah.status;
+		case amd64::Register::ch:             	return Register_ch.status;
+		case amd64::Register::dh:             	return Register_dh.status;
+		case amd64::Register::bh:             	return Register_bh.status;
+		case amd64::Register::r8:             	return Register_r8.status;
+		case amd64::Register::r9:             	return Register_r9.status;
+		case amd64::Register::r10:            	return Register_r10.status;
+		case amd64::Register::r11:            	return Register_r11.status;
+		case amd64::Register::r12:            	return Register_r12.status;
+		case amd64::Register::r13:            	return Register_r13.status;
+		case amd64::Register::r14:            	return Register_r14.status;
+		case amd64::Register::r15:            	return Register_r15.status;
+		case amd64::Register::mmx0:           	return Register_mmx0.status;
+		case amd64::Register::mmx1:           	return Register_mmx1.status;
+		case amd64::Register::mmx2:           	return Register_mmx2.status;
+		case amd64::Register::mmx3:           	return Register_mmx3.status;
+		case amd64::Register::mmx4:           	return Register_mmx4.status;
+		case amd64::Register::mmx5:           	return Register_mmx5.status;
+		case amd64::Register::mmx6:           	return Register_mmx6.status;
+		case amd64::Register::mmx7:           	return Register_mmx7.status;
+		case amd64::Register::xmm0:           	return Register_xmm0.status;
+		case amd64::Register::xmm1:           	return Register_xmm1.status;
+		case amd64::Register::xmm2:           	return Register_xmm2.status;
+		case amd64::Register::xmm3:           	return Register_xmm3.status;
+		case amd64::Register::xmm4:           	return Register_xmm4.status;
+		case amd64::Register::xmm5:           	return Register_xmm5.status;
+		case amd64::Register::xmm6:           	return Register_xmm6.status;
+		case amd64::Register::xmm7:           	return Register_xmm7.status;
+		case amd64::Register::ymm0:           	return Register_ymm0.status;
+		case amd64::Register::ymm1:           	return Register_ymm1.status;
+		case amd64::Register::ymm2:           	return Register_ymm2.status;
+		case amd64::Register::ymm3:           	return Register_ymm3.status;
+		case amd64::Register::ymm4:           	return Register_ymm4.status;
+		case amd64::Register::ymm5:           	return Register_ymm5.status;
+		case amd64::Register::ymm6:           	return Register_ymm6.status;
+		case amd64::Register::ymm7:           	return Register_ymm7.status;
+		case amd64::Register::efer:           	return Register_efer.status;
+		case amd64::Register::star:           	return Register_star.status;
+		case amd64::Register::lstar:          	return Register_lstar.status;
+		case amd64::Register::cstar:          	return Register_cstar.status;
+		case amd64::Register::sfmask:         	return Register_sfmask.status;
+		case amd64::Register::fs_base:        	return Register_fs_base.status;
+		case amd64::Register::gs_base:        	return Register_gs_base.status;
+		case amd64::Register::kernel_gs_base: 	return Register_kernel_gs_base.status;
+		case amd64::Register::tsc_aux:        	return Register_tsc_aux.status;
+		case amd64::Register::syscfg:         	return Register_syscfg.status;
+		case amd64::Register::iorr_base0:     	return Register_iorr_base0.status;
+		case amd64::Register::iorrmask0:      	return Register_iorrmask0.status;
+		case amd64::Register::iorr_base1:     	return Register_iorr_base1.status;
+		case amd64::Register::iorrmask1:      	return Register_iorrmask1.status;
+		case amd64::Register::ls_cfg:         	return Register_ls_cfg.status;
+		case amd64::Register::ic_cfg:         	return Register_ic_cfg.status;
+		case amd64::Register::dc_cfg:         	return Register_dc_cfg.status;
+		case amd64::Register::bu_cfg:         	return Register_bu_cfg.status;
+		case amd64::Register::mc0_ctl:        	return Register_mc0_ctl.status;
+		case amd64::Register::mc0_status:     	return Register_mc0_status.status;
+		case amd64::Register::mc0_addr:       	return Register_mc0_addr.status;
+		case amd64::Register::mc0_misc:       	return Register_mc0_misc.status;
+		case amd64::Register::perf_ctl0:      	return Register_perf_ctl0.status;
+		case amd64::Register::perf_ctr0:      	return Register_perf_ctr0.status;
+		case amd64::Register::perf_ctl1:      	return Register_perf_ctl1.status;
+		case amd64::Register::perf_ctr1:      	return Register_perf_ctr1.status;
+		case amd64::Register::top_mem:        	return Register_top_mem.status;
+		case amd64::Register::top_mem2:       	return Register_top_mem2.status;
+		case amd64::Register::vm_cr:          	return Register_vm_cr.status;
+		case amd64::Register::vm_hsave_pa:    	return Register_vm_hsave_pa.status;
+		case amd64::Register::cr0:				return Register_cr0.status;
+		case amd64::Register::cr2:				return Register_cr2.status;
+		case amd64::Register::cr3:				return Register_cr3.status;
+		case amd64::Register::cr4:				return Register_cr4.status;
+		case amd64::Register::cr8:				return Register_cr8.status;
+		case amd64::Register::gdtr:				return Register_gdtr.status;
+		case amd64::Register::idtr:				return Register_idtr.status;
+		case amd64::Register::ldtr:				return Register_ldtr.status;
+		default:
+			compilerBug("invalid amd64 register");
+			return RegisterStatus::invalid; // Should never be reached
+	}
+}
+
+// Function to set the register status
+void cpustate_amd64::registerStatus(amd64::Register reg, RegisterStatus status) {
+	switch (reg) {
+		case amd64::Register::rax:            	Register_rax.status = status;Register_ah.status = status; break;
+		case amd64::Register::rcx:            	Register_rcx.status = status;Register_ch.status = status; break;
+		case amd64::Register::rdx:            	Register_rdx.status = status;Register_dh.status = status; break;
+		case amd64::Register::rbx:            	Register_rbx.status = status;Register_bh.status = status; break;
+		case amd64::Register::rsp:            	Register_rsp.status = status; break;
+		case amd64::Register::rbp:            	Register_rbp.status = status; break;
+		case amd64::Register::rsi:            	Register_rsi.status = status; break;
+		case amd64::Register::rdi:            	Register_rdi.status = status; break;
+		case amd64::Register::ah:             	Register_ah.status = status;Register_rax.status = status; break;
+		case amd64::Register::ch:             	Register_ch.status = status;Register_rcx.status = status; break;
+		case amd64::Register::dh:             	Register_dh.status = status;Register_rdx.status = status; break;
+		case amd64::Register::bh:             	Register_bh.status = status;Register_rbx.status = status; break;
+		case amd64::Register::r8:             	Register_r8.status = status; break;
+		case amd64::Register::r9:             	Register_r9.status = status; break;
+		case amd64::Register::r10:            	Register_r10.status = status; break;
+		case amd64::Register::r11:            	Register_r11.status = status; break;
+		case amd64::Register::r12:            	Register_r12.status = status; break;
+		case amd64::Register::r13:            	Register_r13.status = status; break;
+		case amd64::Register::r14:            	Register_r14.status = status; break;
+		case amd64::Register::r15:            	Register_r15.status = status; break;
+		case amd64::Register::mmx0:           	Register_mmx0.status = status;Register_xmm0.status = status;Register_ymm0.status = status; break;
+		case amd64::Register::mmx1:           	Register_mmx1.status = status;Register_xmm1.status = status;Register_ymm1.status = status; break;
+		case amd64::Register::mmx2:           	Register_mmx2.status = status;Register_xmm2.status = status;Register_ymm2.status = status; break;
+		case amd64::Register::mmx3:           	Register_mmx3.status = status;Register_xmm3.status = status;Register_ymm3.status = status; break;
+		case amd64::Register::mmx4:           	Register_mmx4.status = status;Register_xmm4.status = status;Register_ymm4.status = status; break;
+		case amd64::Register::mmx5:           	Register_mmx5.status = status;Register_xmm5.status = status;Register_ymm5.status = status; break;
+		case amd64::Register::mmx6:           	Register_mmx6.status = status;Register_xmm6.status = status;Register_ymm6.status = status; break;
+		case amd64::Register::mmx7:           	Register_mmx7.status = status;Register_xmm7.status = status;Register_ymm7.status = status; break;
+		case amd64::Register::xmm0:           	Register_mmx0.status = status;Register_xmm0.status = status;Register_ymm0.status = status; break;
+		case amd64::Register::xmm1:           	Register_mmx1.status = status;Register_xmm1.status = status;Register_ymm1.status = status; break;
+		case amd64::Register::xmm2:           	Register_mmx2.status = status;Register_xmm2.status = status;Register_ymm2.status = status; break;
+		case amd64::Register::xmm3:           	Register_mmx3.status = status;Register_xmm3.status = status;Register_ymm3.status = status; break;
+		case amd64::Register::xmm4:           	Register_mmx4.status = status;Register_xmm4.status = status;Register_ymm4.status = status; break;
+		case amd64::Register::xmm5:           	Register_mmx5.status = status;Register_xmm5.status = status;Register_ymm5.status = status; break;
+		case amd64::Register::xmm6:           	Register_mmx6.status = status;Register_xmm6.status = status;Register_ymm6.status = status; break;
+		case amd64::Register::xmm7:           	Register_mmx7.status = status;Register_xmm7.status = status;Register_ymm7.status = status; break;
+		case amd64::Register::ymm0:           	Register_mmx0.status = status;Register_xmm0.status = status;Register_ymm0.status = status; break;
+		case amd64::Register::ymm1:           	Register_mmx1.status = status;Register_xmm1.status = status;Register_ymm1.status = status; break;
+		case amd64::Register::ymm2:           	Register_mmx2.status = status;Register_xmm2.status = status;Register_ymm2.status = status; break;
+		case amd64::Register::ymm3:           	Register_mmx3.status = status;Register_xmm3.status = status;Register_ymm3.status = status; break;
+		case amd64::Register::ymm4:           	Register_mmx4.status = status;Register_xmm4.status = status;Register_ymm4.status = status; break;
+		case amd64::Register::ymm5:           	Register_mmx5.status = status;Register_xmm5.status = status;Register_ymm5.status = status; break;
+		case amd64::Register::ymm6:           	Register_mmx6.status = status;Register_xmm6.status = status;Register_ymm6.status = status; break;
+		case amd64::Register::ymm7:           	Register_mmx7.status = status;Register_xmm7.status = status;Register_ymm7.status = status; break;
+		case amd64::Register::efer:           	Register_efer.status = status; break;
+		case amd64::Register::star:           	Register_star.status = status; break;
+		case amd64::Register::lstar:          	Register_lstar.status = status; break;
+		case amd64::Register::cstar:          	Register_cstar.status = status; break;
+		case amd64::Register::sfmask:         	Register_sfmask.status = status; break;
+		case amd64::Register::fs_base:        	Register_fs_base.status = status; break;
+		case amd64::Register::gs_base:        	Register_gs_base.status = status; break;
+		case amd64::Register::kernel_gs_base: 	Register_kernel_gs_base.status = status; break;
+		case amd64::Register::tsc_aux:        	Register_tsc_aux.status = status; break;
+		case amd64::Register::syscfg:         	Register_syscfg.status = status; break;
+		case amd64::Register::iorr_base0:     	Register_iorr_base0.status = status; break;
+		case amd64::Register::iorrmask0:      	Register_iorrmask0.status = status; break;
+		case amd64::Register::iorr_base1:     	Register_iorr_base1.status = status; break;
+		case amd64::Register::iorrmask1:      	Register_iorrmask1.status = status; break;
+		case amd64::Register::ls_cfg:         	Register_ls_cfg.status = status; break;
+		case amd64::Register::ic_cfg:         	Register_ic_cfg.status = status; break;
+		case amd64::Register::dc_cfg:         	Register_dc_cfg.status = status; break;
+		case amd64::Register::bu_cfg:         	Register_bu_cfg.status = status; break;
+		case amd64::Register::mc0_ctl:        	Register_mc0_ctl.status = status; break;
+		case amd64::Register::mc0_status:     	Register_mc0_status.status = status; break;
+		case amd64::Register::mc0_addr:       	Register_mc0_addr.status = status; break;
+		case amd64::Register::mc0_misc:       	Register_mc0_misc.status = status; break;
+		case amd64::Register::perf_ctl0:      	Register_perf_ctl0.status = status; break;
+		case amd64::Register::perf_ctr0:      	Register_perf_ctr0.status = status; break;
+		case amd64::Register::perf_ctl1:      	Register_perf_ctl1.status = status; break;
+		case amd64::Register::perf_ctr1:      	Register_perf_ctr1.status = status; break;
+		case amd64::Register::top_mem:        	Register_top_mem.status = status; break;
+		case amd64::Register::top_mem2:       	Register_top_mem2.status = status; break;
+		case amd64::Register::vm_cr:          	Register_vm_cr.status = status; break;
+		case amd64::Register::vm_hsave_pa:    	Register_vm_hsave_pa.status = status; break;
+		case amd64::Register::cr0:				Register_cr0.status = status; break;
+		case amd64::Register::cr2:				Register_cr2.status = status; break;
+		case amd64::Register::cr3:				Register_cr3.status = status; break;
+		case amd64::Register::cr4:				Register_cr4.status = status; break;
+		case amd64::Register::cr8:				Register_cr8.status = status; break;
+		case amd64::Register::gdtr:				Register_gdtr.status = status; break;
+		case amd64::Register::idtr:				Register_idtr.status = status; break;
+		case amd64::Register::ldtr:				Register_ldtr.status = status; break;
+		default:
+			compilerBug("invalid amd64 register");
+			break; // Should never be reached
+	}
+}
+
+bool cpustate_amd64::registerValueKnown(amd64::Register reg) const {
+	switch (reg) {
+		case amd64::Register::rax:            	return Register_rax.valueKnown;
+		case amd64::Register::rcx:            	return Register_rcx.valueKnown;
+		case amd64::Register::rdx:            	return Register_rdx.valueKnown;
+		case amd64::Register::rbx:            	return Register_rbx.valueKnown;
+		case amd64::Register::rsp:            	return Register_rsp.valueKnown;
+		case amd64::Register::rbp:            	return Register_rbp.valueKnown;
+		case amd64::Register::rsi:            	return Register_rsi.valueKnown;
+		case amd64::Register::rdi:            	return Register_rdi.valueKnown;
+		case amd64::Register::ah:             	return Register_ah.valueKnown;
+		case amd64::Register::ch:             	return Register_ch.valueKnown;
+		case amd64::Register::dh:             	return Register_dh.valueKnown;
+		case amd64::Register::bh:             	return Register_bh.valueKnown;
+		case amd64::Register::r8:             	return Register_r8.valueKnown;
+		case amd64::Register::r9:             	return Register_r9.valueKnown;
+		case amd64::Register::r10:            	return Register_r10.valueKnown;
+		case amd64::Register::r11:            	return Register_r11.valueKnown;
+		case amd64::Register::r12:            	return Register_r12.valueKnown;
+		case amd64::Register::r13:            	return Register_r13.valueKnown;
+		case amd64::Register::r14:            	return Register_r14.valueKnown;
+		case amd64::Register::r15:            	return Register_r15.valueKnown;
+		case amd64::Register::mmx0:           	return Register_mmx0.valueKnown;
+		case amd64::Register::mmx1:           	return Register_mmx1.valueKnown;
+		case amd64::Register::mmx2:           	return Register_mmx2.valueKnown;
+		case amd64::Register::mmx3:           	return Register_mmx3.valueKnown;
+		case amd64::Register::mmx4:           	return Register_mmx4.valueKnown;
+		case amd64::Register::mmx5:           	return Register_mmx5.valueKnown;
+		case amd64::Register::mmx6:           	return Register_mmx6.valueKnown;
+		case amd64::Register::mmx7:           	return Register_mmx7.valueKnown;
+		case amd64::Register::xmm0:           	return Register_xmm0.valueKnown;
+		case amd64::Register::xmm1:           	return Register_xmm1.valueKnown;
+		case amd64::Register::xmm2:           	return Register_xmm2.valueKnown;
+		case amd64::Register::xmm3:           	return Register_xmm3.valueKnown;
+		case amd64::Register::xmm4:           	return Register_xmm4.valueKnown;
+		case amd64::Register::xmm5:           	return Register_xmm5.valueKnown;
+		case amd64::Register::xmm6:           	return Register_xmm6.valueKnown;
+		case amd64::Register::xmm7:           	return Register_xmm7.valueKnown;
+		case amd64::Register::ymm0:           	return Register_ymm0.valueKnown;
+		case amd64::Register::ymm1:           	return Register_ymm1.valueKnown;
+		case amd64::Register::ymm2:           	return Register_ymm2.valueKnown;
+		case amd64::Register::ymm3:           	return Register_ymm3.valueKnown;
+		case amd64::Register::ymm4:           	return Register_ymm4.valueKnown;
+		case amd64::Register::ymm5:           	return Register_ymm5.valueKnown;
+		case amd64::Register::ymm6:           	return Register_ymm6.valueKnown;
+		case amd64::Register::ymm7:           	return Register_ymm7.valueKnown;
+		case amd64::Register::efer:           	return Register_efer.valueKnown;
+		case amd64::Register::star:           	return Register_star.valueKnown;
+		case amd64::Register::lstar:          	return Register_lstar.valueKnown;
+		case amd64::Register::cstar:          	return Register_cstar.valueKnown;
+		case amd64::Register::sfmask:         	return Register_sfmask.valueKnown;
+		case amd64::Register::fs_base:        	return Register_fs_base.valueKnown;
+		case amd64::Register::gs_base:        	return Register_gs_base.valueKnown;
+		case amd64::Register::kernel_gs_base: 	return Register_kernel_gs_base.valueKnown;
+		case amd64::Register::tsc_aux:        	return Register_tsc_aux.valueKnown;
+		case amd64::Register::syscfg:         	return Register_syscfg.valueKnown;
+		case amd64::Register::iorr_base0:     	return Register_iorr_base0.valueKnown;
+		case amd64::Register::iorrmask0:      	return Register_iorrmask0.valueKnown;
+		case amd64::Register::iorr_base1:     	return Register_iorr_base1.valueKnown;
+		case amd64::Register::iorrmask1:      	return Register_iorrmask1.valueKnown;
+		case amd64::Register::ls_cfg:         	return Register_ls_cfg.valueKnown;
+		case amd64::Register::ic_cfg:         	return Register_ic_cfg.valueKnown;
+		case amd64::Register::dc_cfg:         	return Register_dc_cfg.valueKnown;
+		case amd64::Register::bu_cfg:         	return Register_bu_cfg.valueKnown;
+		case amd64::Register::mc0_ctl:        	return Register_mc0_ctl.valueKnown;
+		case amd64::Register::mc0_status:     	return Register_mc0_status.valueKnown;
+		case amd64::Register::mc0_addr:       	return Register_mc0_addr.valueKnown;
+		case amd64::Register::mc0_misc:       	return Register_mc0_misc.valueKnown;
+		case amd64::Register::perf_ctl0:      	return Register_perf_ctl0.valueKnown;
+		case amd64::Register::perf_ctr0:      	return Register_perf_ctr0.valueKnown;
+		case amd64::Register::perf_ctl1:      	return Register_perf_ctl1.valueKnown;
+		case amd64::Register::perf_ctr1:      	return Register_perf_ctr1.valueKnown;
+		case amd64::Register::top_mem:        	return Register_top_mem.valueKnown;
+		case amd64::Register::top_mem2:       	return Register_top_mem2.valueKnown;
+		case amd64::Register::vm_cr:          	return Register_vm_cr.valueKnown;
+		case amd64::Register::vm_hsave_pa:    	return Register_vm_hsave_pa.valueKnown;
+		case amd64::Register::cr0:				return Register_cr0.valueKnown;
+		case amd64::Register::cr2:				return Register_cr2.valueKnown;
+		case amd64::Register::cr3:				return Register_cr3.valueKnown;
+		case amd64::Register::cr4:				return Register_cr4.valueKnown;
+		case amd64::Register::cr8:				return Register_cr8.valueKnown;
+		case amd64::Register::gdtr:				return Register_gdtr.valueKnown;
+		case amd64::Register::idtr:				return Register_idtr.valueKnown;
+		case amd64::Register::ldtr:				return Register_ldtr.valueKnown;
+		default:
+			compilerBug("invalid amd64 register");
+			return false; // Should never be reached
+	}
+}
+
+static amd64::Register GeneralPurposeRegisters[] = {
+	amd64::Register::rdi,
+	amd64::Register::rsi,
+	amd64::Register::r8,
+	amd64::Register::r9,
+	amd64::Register::r10,
+	amd64::Register::r11,
+	amd64::Register::r12,
+	amd64::Register::r13,
+	amd64::Register::r14,
+	amd64::Register::r15,
+};
+constexpr uint64_t GeneralPurposeRegisterCount = sizeof(GeneralPurposeRegisters)/sizeof(amd64::Register);
+
+amd64::Register cpustate_amd64::getFreeRegister()
+{
+	for(uint64_t I = 0;I<GeneralPurposeRegisterCount;I++)
+		if(this->registerStatus(GeneralPurposeRegisters[I]) == RegisterStatus::free)
+			return GeneralPurposeRegisters[I];
+	return amd64::Register::invalid;
+}

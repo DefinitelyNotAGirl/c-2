@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
+ * Last Modified: Monday June 3rd 2024 11:44:37 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -29,8 +29,9 @@
  */
 #pragma once
 
-#include <common.h>
-#include <compiler.h>
+#include <string>
+#include <extint.hxx>
+#include <class_variable.h>
 
 class line;
 
@@ -49,4 +50,57 @@ public:
 	uint64_t tcol = 0;
     uint64_t type = 0;
     uint64_t lineNum = 0;
+
+	static std::string Typename(uint64_t t)
+	{
+    	switch(t)
+    	{
+    	    case(12):
+    	    case(9):
+    	        return "typename";
+    	    case(2):
+    	        return "immediate";
+    	    case(3):
+    	        return "operator";
+    	    case(6):
+    	    case(7):
+    	        return "string literal";
+    	    case(8):
+    	        return "keyword";
+    	    case(10):
+    	        return "variable name";
+			case(11):
+    	        return "function name";
+    	    case(1):
+    	        return "new unique identifier";
+    	    case(30):
+    	        return "opening round bracket";
+    	    case(31):
+    	        return "closing round bracket";
+    	    case(32):
+    	        return "opening sqaure bracket";
+    	    case(33):
+    	        return "closing square bracket";
+    	    case(34):
+    	        return "opening angle bracket";
+    	    case(35):
+    	        return "closing angle bracket";
+    	    case(36):
+    	        return "opening curly bracket";
+    	    case(37):
+    	        return "closing curly bracket";
+    	    case(40):
+    	        return "colon";
+    	    case(41):
+    	        return "semicolon";
+    	    case(42):
+    	        return "comma";
+    	}
+    	return "INVALID TOKEN TYPE ("+std::to_string(t)+")";
+	}
+
+	std::string Typename()
+	{
+    	return token::Typename(this->type);
+	}
 };

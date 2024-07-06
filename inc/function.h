@@ -2,7 +2,7 @@
  * Created Date: Wednesday August 2nd 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -29,7 +29,18 @@
  */
 #pragma once
 
+struct castFunction;
+
+#include <class_type.h>
 #include <compiler.h>
+#include <stackframe.hxx>
+#include <cpustate.hxx>
+#include <colors.h>
+
+namespace smu {
+	class section;
+}
+using smu::section;
 
 enum class primitiveOP : uint64_t
 {
@@ -69,35 +80,76 @@ enum class primitiveOP : uint64_t
 class function
 {
 public:
-    std::string name;
-    std::string symbol;
-
-    std::string desc;
-    std::string returnDesc;
-
-    type* returnType;
-    uint64_t miscData = 0;
-    std::vector<type*> parameters;
+	/*
+		. basic
+	*/
+	std::string name;
+	type* returnType;
+	variable* returnValue;
+	std::vector<type*> parameters;
     std::vector<variable*> vparams;
-    std::vector<std::string> code;
-    ABI* abi = nullptr;
-    functionStorage* fstore;
-    std::string __declared_file;
+
+	/*
+		. description
+	*/
+	std::string desc;
+	std::string returnDesc;
+	std::string __declared_file;
     uint64_t __declared_line;
-	void* miscData1;
-		//- this stores a FUNCTION_INLINE* for inline functions
-    bool isPrimitive = false;
+	bool isDeprecated = false;
+	bool noDoc = false;
+	bool doExport = false;
+
+	/*
+		. linking information
+	*/
+	std::string symbol;
+	bool isLocal = false;//static
+
+	/*
+		. code generation
+	*/
+	section* code = nullptr;
+	ABI* abi = nullptr;
+	bool isPrimitive = false;
     primitiveOP op = primitiveOP::invalid;
     bool primitiveInPlace = false;
     bool primitiveFloat = false;
-    bool isDeprecated = false;
-    bool noReturn = false;
-    bool noDoc = false;
+	bool noReturn = false;
 	bool isInline = false;
-    bool isLocal = false;//static
-    bool doExport = false;
-
     bool ignoreCall = false;
+	bool isMember = false;
+
+	/*
+	 . machine state
+	 */
+	stackframe* stack = new stackframe;
+	cpustate cpu;
+
+	/*
+		. misc
+	*/
+    uint64_t miscData = 0;
+	void* miscData1; //- this stores a FUNCTION_INLINE* for inline functions
+
+	/**
+	 * @brief Get the Function Expression colored using ANSI escape codes
+	 * 
+	 * @callgraph
+	 * @callergraph
+	 * 
+	 * @return std::string 
+	 */
+	std::string expression_ansi() {
+		std::string res = COLOR_TYPE + this->returnType->name + " "+ COLOR_FUNCTION + this->name +COLOR_RESET+ "(";
+		for (variable* i : this->vparams)
+		{
+			res += COLOR_TYPE + i->dataType->name + " " +COLOR_VAR+ i->name +COLOR_RESET+ ",";
+		}
+		if (res.back() == ',') res.pop_back();
+		res += ")";
+		return res;
+	}
 };
 
 struct castFunction

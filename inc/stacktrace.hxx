@@ -2,7 +2,7 @@
  * Created Date: Friday April 12th 2024
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
+ * Last Modified: Monday June 3rd 2024 11:44:37 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -29,6 +29,9 @@
  */
 #pragma once
 
+#include <string>
+#include <iostream>
+#include <vector>
 #include <execinfo.h>
 #include <unistd.h>
 #include <backtrace.h>

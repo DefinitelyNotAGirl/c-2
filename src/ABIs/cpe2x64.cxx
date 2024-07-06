@@ -1,242 +1,126 @@
-/*
- * Created Date: Wednesday September 13th 2023
- * Author: Lilith
- * -----
- * Last Modified: Friday September 15th 2023 8:41:50 pm
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
- * -----
- * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
- * 
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use, copy,
- * modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
-
 #include <compiler.h>
 #include <mangling.h>
 
 #define constructor __attribute__ ((constructor))
 
-#include <codegen.h>
+static ABI* extension_abi = nullptr;
 
-namespace __ABI__{
-using enum __register__;
-
-static ABI* abi = nullptr;
-
-static std::list<__register__> integerArgPass = {rdi,rsi,r8,r9,r10,r11,r12};
-static std::list<__register__> floatArgPass = {xmm0,xmm1,xmm2,xmm3,xmm4,xmm5,xmm6,xmm7};
-
-static void genProlouge(std::vector<std::string>& lines, scope* sc)
-{
-    std::vector<std::string> tlines;
-    code = &tlines;
-    pushRegSave();
-    scope* cs = currentScope;
-    currentScope = cs->parent;
-    lines.push_back(getIndent()+sc->func->symbol+":");
-    currentScope = cs;
-    fstore->stackOffset = fstore->stackSize;
-    for(__register__ r : abi->nonVolatile)
-        if(sc->fstore->registerStatus(r) == 1)
-            saveRegister(r);
-    code = &lines;
-    sc->fstore->stackSize = roundUp(sc->fstore->stackSize, 16);
-    sub(sc->fstore->stackSize,StackPointer);
-    for(std::string& i : tlines)
-        lines.push_back(i);
-}
-
-static void genEpilouge(std::vector<std::string>& lines, scope* sc)
-{
-    code = &lines;
-    lines.push_back(getIndent()+sc->name+CPE2_SYMBOL_SCOPE_SEP+"epilogue:");
-    restoreRegisters();
-    popRegSave();
-    add(sc->fstore->stackSize,StackPointer);
-    lines.push_back(getIndent()+"ret");
-}
-
-static void preCall(function* func)
+static void genProlouge(section* code, scope* sc)
 {
 }
 
-static void postCall(function* func)
+static void genEpilouge(section* code, scope* sc)
 {
 }
 
-static void setArgStorages(function* func,std::vector<variable*>& args)
-{
-    std::list<__register__> IAP = integerArgPass;
-    std::list<__register__> FAP = floatArgPass;
-    for(variable* I : args)
-    {
-        switch(I->dataType->regMode)
-        {
-            case(1):
-                //store in integer register if avaiable
-                if(IAP.size() > 0 && I->dataType->size <= 8)
-                {
-                    I->reg = IAP.front();
-                    I->storage = storageType::REGISTER;
-                    func->fstore->registerStatus(IAP.front(),1);
-                    IAP.pop_front();
-                }
-                else
-                    goto STOREONSTACK;
-                break;
-            case(2):
-                //store in floating point register if avaiable
-                if(FAP.size() > 0 && I->dataType->size <= 8)
-                {
-                    I->reg = FAP.front();
-                    I->storage = storageType::REGISTER;
-                    func->fstore->registerStatus(FAP.front(),1);
-                    FAP.pop_front();
-                }
-                else
-                    goto STOREONSTACK;
-                break;
-            case(0):
-                //store on stack
-                STOREONSTACK:;
-                I->reg = StackPointer;
-                I->storage = storageType::MEMORY;
-                I->offset = func->fstore->stackSize;
-                func->fstore->stackSize+=I->dataType->size;
-                break;
-        }
-    }
-}
+static void preArgTransfer(function* func){}
 
-static void moveArguments(function* func,std::vector<variable*>& args)
-{
-    std::list<__register__> IAP = integerArgPass;
-    std::list<__register__> FAP = floatArgPass;
-    variable* nvar = nullptr;
-    for(variable* I : args)
-    {
-        nvar = (variable*)malloc(sizeof(variable));
-        memcpy(nvar,I,sizeof(variable));
-        switch(I->dataType->regMode)
-        {
-            case(1):
-                //store in integer register if avaiable
-                if(IAP.size() > 0 && I->dataType->size <= 8)
-                {
-                    nvar->reg = IAP.front();
-                    nvar->storage = storageType::REGISTER;
-                    IAP.pop_front();
-                }
-                else
-                    goto STOREONSTACK;
-                break;
-            case(2):
-                //store in floating point register if avaiable
-                if(FAP.size() > 0 && I->dataType->size <= 8)
-                {
-                    nvar->reg = FAP.front();
-                    nvar->storage = storageType::REGISTER;
-                    FAP.pop_front();
-                }
-                else
-                    goto STOREONSTACK;
-                break;
-            case(0):
-                //store on stack
-                STOREONSTACK:;
-                nvar->reg = StackPointer;
-                nvar->storage = storageType::MEMORY;
-                nvar->offset = func->fstore->stackSize;
-                func->fstore->stackSize+=nvar->dataType->size;
-                break;
-        }
-        mov(I,nvar);
-    }
-}
+static void postReturn(function* func){}
 
-static variable* call(function* func,std::vector<variable*>& args)
-{
-    pushRegSave();
-    if(!func->noReturn)
-        for(__register__ I : func->abi->VolatileRegisters)
-            if(fstore->registerStatus(I) == 1)
-                saveRegister(I);
-    //func->abi->moveArguments(func,args);
-    universalMoveArguments(func,args);
-    func->abi->preCall(func);
-    func->abi->instrCall(func);
-    if(!func->noReturn)
-        func->abi->postCall(func);
-    if(!func->noReturn)
-        restoreRegisters();
-    popRegSave();
+static const std::vector<amd64::Register> integerRegisters = {
+	amd64::Register::r8,
+	amd64::Register::r9,
+	amd64::Register::r10,
+	amd64::Register::r11,
+	amd64::Register::r12,
+	amd64::Register::r13,
+	amd64::Register::r14,
+};
 
-    variable* ret = new variable;
-    ret->storage = storageType::REGISTER;
-    ret->reg = func->abi->integerReturn;
-    ret->dataType = func->returnType;
-    return ret;
-}
+static const std::vector<amd64::Register> floatRegisters = {
+	amd64::Register::xmm1,
+	amd64::Register::xmm2,
+	amd64::Register::xmm3,
+	amd64::Register::xmm4,
+	amd64::Register::xmm5,
+	amd64::Register::xmm6,
+	amd64::Register::xmm7
+};
 
-static void instrCall(function* func)
+static void setFunctionStorages(function* func)
 {
-    code->push_back(getIndent()+"call "+func->symbol);
+	uint64_t ireg = 0;
+	uint64_t freg = 0;
+	//+
+	//+ this
+	//+
+	{
+		if(func->isMember)
+			ireg++;
+	}
+	//+
+	//+ return
+	//+
+	{
+		func->returnValue->storageArch = Architecture::AMD64;
+		func->returnValue->storage = new amd64::VariableStorage;
+		amd64::VariableStorage* storage = func->returnValue->storage;
+		if(func->returnValue->dataType->regMode == 1)
+		{
+			// return in rax
+			storage->mode = amd64::StorageMode::DirectRegister;
+			storage->reg = amd64::Register::rax;
+		}
+		else if(func->returnValue->dataType->regMode == 2)
+		{
+			// return in xmm0
+			storage->mode = amd64::StorageMode::DirectRegister;
+			storage->reg = amd64::Register::xmm0;
+		}
+		else
+		{
+			// pass reference in rdi or rsi, return nothing
+			storage->mode = amd64::StorageMode::DirectRegister;
+			storage->reg = integerRegisters[ireg];
+			ireg++;
+			func->returnType = getType(func->returnType->name+"&");
+			func->returnValue->dataType = func->returnType;
+		}
+	}
+	//+
+	//+ parameters
+	//+
+	{
+		for(variable* arg : func->vparams)
+		{
+			arg->storageArch = Architecture::AMD64;
+			arg->storage = new amd64::VariableStorage;
+			amd64::VariableStorage* storage = arg->storage;
+			if(arg->dataType->regMode == 1 && (ireg < integerRegisters.size()))
+			{
+				// pass via register
+				storage->mode = amd64::StorageMode::DirectRegister;
+				storage->reg = integerRegisters[ireg];
+				ireg++;
+			}
+			else if(arg->dataType->regMode == 2 && (freg < floatRegisters.size()))
+			{
+				// pass via register
+				storage->mode = amd64::StorageMode::DirectRegister;
+				storage->reg = floatRegisters[freg];
+				freg++;
+			}
+			else
+			{
+				// pass via stack
+				uint64_t offset = func->stack->push(arg->dataType->size);
+				storage->mode = amd64::StorageMode::IndirectRegister;
+				storage->displacement = offset;
+				storage->reg = amd64::Register::rbp;
+			}
+		}	
+	}
 }
 
 constructor static void init()
 {
-    abi = new ABI;
-    abi->name = "cpe2x64";
-    abi->moveArguments = &moveArguments;
-    abi->setArgStorages = &setArgStorages;
-    abi->genProlouge = &genProlouge;
-    abi->genEpilouge = &genEpilouge;
-    abi->call = &__ABI__::call;
-    abi->preCall = &preCall;
-    abi->postCall = &postCall;
-    abi->instrCall = &instrCall;
-    abi->floatReturn = xmm0;
-    abi->integerReturn = rax;
+    extension_abi = new ABI;
+    extension_abi->name = "cpe2x64";
+    extension_abi->setFunctionStorages = &setFunctionStorages;
+    extension_abi->genProlouge = &genProlouge;
+    extension_abi->genEpilouge = &genEpilouge;
+    extension_abi->preArgTransfer = &preArgTransfer;
+    extension_abi->postReturn = &postReturn;
 
-    //add volatile registers
-    for(__register__ I : registers)
-    {
-        if(EXPR_GETBIT_00((uint64_t)I) != 1)
-            goto SKIPVREG;
-        switch((uint64_t)(BITMASK_REGISTER_TYPE & (uint64_t)I))
-        {
-            case(0x0100000000):
-            case(0x0200000000):
-            case(0x0300000000):
-            case(0x0400000000):
-            case(0x0600000000):
-                goto SKIPVREG;
-        }
-        if(I == StackPointer)
-            goto SKIPVREG;
-        abi->VolatileRegisters.push_back(I);
-        SKIPVREG:;
-    }
-    //add non volatile registers
-
-    ABIs.push_back(abi);//add our ABI to the global ABI list
+    ABIs.push_back(extension_abi);//add our ABI to the global ABI list
 }
-
-}//namespace __ABI__

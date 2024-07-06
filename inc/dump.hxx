@@ -2,8 +2,8 @@
  * Created Date: Saturday May 11th 2024
  * Author: Lilith
  * -----
- * Last Modified: Saturday May 11th 2024 5:03:26 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Wed Jun 26 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
@@ -32,7 +32,9 @@
 
 #define sdump(var) dump(std::string(#var),var,"");
 
-void dump(std::string name, __register__* obj, std::string indent);
+const char* stringify(primitiveOP op);
+const char* stringify(scopeType type);
+
 void dump(std::string name, std::string* obj, std::string indent);
 void dump(std::string name, uint64_t* obj, std::string indent);
 void dump(std::string name, scope* obj, std::string indent);
@@ -40,9 +42,7 @@ void dump(std::string name, variable* obj, std::string indent, bool shallow = fa
 void dump(std::string name, function* obj, std::string indent);
 void dump(std::string name, type* obj, std::string indent);
 void dump(std::string name, castFunction* obj, std::string indent);
-void dump(std::string name, arch* obj, std::string indent);
 void dump(std::string name, ABI* obj, std::string indent);
-void dump(std::string name, functionStorage* obj, std::string indent);
 void dump(std::string name, line* obj, std::string indent);
 void dump(std::string name, token* obj, std::string indent);
 template<typename T>

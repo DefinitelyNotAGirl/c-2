@@ -2,8 +2,8 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Thu Jun 27 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
@@ -43,9 +43,10 @@
 #include <filesystem>
 #include <mangling.h>
 #include <sys/resource.h>
-#include <codegen.h>
 #include <DWARF.h>
 #include <error.h>
+
+#include <stacktrace.hxx>
 
 void cliOptions(int argc, char **argv);
 std::vector<line> getLines(std::string fname);
@@ -53,30 +54,6 @@ void parse(std::vector<line> lines);
 void genOutput(std::string& i);
 void initWarnings();
 void setDefaults();
-
-void printStacktrace(uint64_t len)
-{
-    void* array = calloc(len,8);
-    // get void*'s for all entries on the stack
-    size_t size = backtrace(array, len);
-
-    // print out all the frames to stderr
-    std::cout << "stack trace: " << std::endl;
-    backtrace_symbols_fd(array, size, STDOUT_FILENO);
-}
-
-void HANDLER_SIGSEGV(int sig) {
-    void *array[50];
-    size_t size;
-
-    // get void*'s for all entries on the stack
-    size = backtrace(array, 50);
-
-    // print out all the frames to stderr
-    fprintf(stderr, "Error: signal %d:\n", sig);
-    backtrace_symbols_fd(array, size, STDERR_FILENO);
-    exit(1);
-}
 
 line defLine(std::string text)
 {
@@ -90,13 +67,18 @@ line defLine(std::string text)
 
 #include <resources.hxx>
 
+//#define CPE2_BUILD_TEST
+
 std::string __reqFileVSTC = "";
 extern std::stack<bool> isTemplateInstance;
+void test_main();
+void output_init();
+void warn_init();
+void error_init();
+void install_crash_handlers();
 int main(int argc, char** argv)
 {
-    signal(SIGSEGV, HANDLER_SIGSEGV);   // install our handler
-    signal(SIGABRT, HANDLER_SIGSEGV);   // install our handler
-    signal(SIGILL, HANDLER_SIGSEGV);   // install our handler
+	install_crash_handlers();
     //resize stack
     const rlim_t kStackSize = 16 * 1024 * 1024;// min stack size = 16MiB
     struct rlimit rl;
@@ -119,6 +101,13 @@ int main(int argc, char** argv)
             }
         }
     }
+	output_init();
+	warn_init();
+	error_init();
+	#ifdef CPE2_BUILD_TEST
+		test_main();
+		return 0;
+	#endif
     //get working directory
     char* workingDir = getcwd(nullptr,0);//only works for GNU libc, must find alternative soloution for other systems
     std::string cwd = workingDir;
@@ -138,12 +127,9 @@ int main(int argc, char** argv)
     globalScope->name = "global";
 	globalScope->func = new function;
 	globalScope->func->abi = defaultABI;
-	globalScope->func->fstore = new functionStorage;
-	globalScope->fstore = globalScope->func->fstore;
 	globalScope->func->returnType = nullptr;
 	globalScope->func->name = "global function";
 	globalScope->func->symbol = "cpe2InitiateGlobals";
-	codeGenUpdateFuction();
     if(options::ffreestanding)
         options::fnoautoinclude = true;
     moClassID = 1;
@@ -204,15 +190,6 @@ int main(int argc, char** argv)
         if(options::buildDir != "")
         {
             objOut = options::buildDir+rname+".o";
-            switch(syntax)
-            {
-                case(SYNTAX_GAS):
-                    asmOut = options::buildDir+rname+".a86";
-                    break;
-                case(SYNTAX_INTEL):
-                    asmOut = options::buildDir+rname+".i86";
-                    break;
-            }
             mdOut = options::buildDir+rname+".d";
             execOut = options::buildDir+rname+".exe";
 			resOut = options::buildDir+rname+".c2resource";
@@ -222,15 +199,6 @@ int main(int argc, char** argv)
         {
             //no output destination specified
             objOut = rname+".o";
-            switch(syntax)
-            {
-                case(SYNTAX_GAS):
-                    asmOut = rname+".a86";
-                    break;
-                case(SYNTAX_INTEL):
-                    asmOut = rname+".i86";
-                    break;
-            }
             mdOut = rname+".d";
 			resOut = rname+".c2resource";
             execOut = rname+".exe";
@@ -302,43 +270,6 @@ int main(int argc, char** argv)
         if(options::vstc || options::vsls)
             __reqFileVSTC = currentFile;
         parse(lines);
-        //finish up debug information
-        if(true /*check for GAS (true for now)*/ && options::debugSymbols)
-        {
-            std::vector<std::string> dbgCode = DebugCode;
-            std::vector<std::string> dbgAbCode = DebugAbbrevCode;
-            DebugCode.clear();
-            DebugAbbrevCode.clear();
-            code = &DebugCode;
-            setANB(16);
-            putComment("unit header");
-            DebugCode.push_back("__debug_info_start:");
-            DebugCode.push_back("\t.int 0xffffffff");//4-byte 0xffffffff as mandated by DWARF-5
-            DebugCode.push_back("\t.quad __debug_info_end - (__debug_info_start+12)");//debug_info size
-            DebugCode.push_back("\t.word 5");//DWARF version 5
-            DebugCode.push_back("\t.byte "+intToString((uint64_t)DWARF5::UT_compile));//DW_UT_compile
-            DebugCode.push_back("\t.byte "+intToString(POINTER_SIZE));//address size in bytes
-            DebugCode.push_back("\t.quad debugAbbrev");//offset into debug_abbrev section
-            //dwaft compilation unit
-            DebugCode.push_back("\t.uleb128 "+intToString(1));
-            DebugAbbrevCode.push_back("\t.uleb128 "+intToString(1));
-            DebugAbbrevCode.push_back("\t.uleb128 "+intToString((uint64_t)DWARF5::TAG_compile_unit));
-            DebugAbbrevCode.push_back("\t.byte 1");//bool indicating the presence of child tags (0 for testing purposes)
-            DebugAbbrevCode.push_back("\t.uleb128 "+intToString((uint64_t)DWARF5::AT_name));
-            DebugAbbrevCode.push_back("\t.uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
-            DebugCode.push_back("\t.string \""+i+"\"");
-            DebugAbbrevCode.push_back("\t.uleb128 "+intToString((uint64_t)DWARF5::AT_comp_dir));
-            DebugAbbrevCode.push_back("\t.uleb128 "+intToString((uint64_t)DWARF5::FORM_string));
-            DebugCode.push_back("\t.string \""+cwd+"\"");
-            DebugAbbrevCode.push_back("\t.uleb128 0");//null, terminate
-            DebugAbbrevCode.push_back("\t.uleb128 0");
-            //re-add debug code
-            for(std::string& i : dbgCode)
-                DebugCode.push_back(i);
-            for(std::string& i : dbgAbCode)
-                DebugAbbrevCode.push_back(i);
-            DebugCode.push_back("__debug_info_end:");
-        }
         genOutput(i);
         if(options::docDir != "")
             std::filesystem::create_directories(options::docDir);
@@ -352,7 +283,7 @@ int main(int argc, char** argv)
         //reset compiler
         resetScope();
     }
-	if(ErrorCount != 0)
+	if(issues::ErrorCount != 0)
 		return -1;
     return 0;
 }

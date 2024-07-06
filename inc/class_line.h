@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
+ * Last Modified: Monday June 3rd 2024 11:44:37 pm
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -29,8 +29,9 @@
  */
 #pragma once
 
-#include <common.h>
-#include <compiler.h>
+#include <extint.hxx>
+#include <class_token.h>
+#include <string>
 
 class line
 {

@@ -1,10 +1,9 @@
-
 /*
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Sat Jul 06 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
@@ -35,12 +34,15 @@
 
 #include <common.h>
 #include <compiler.h>
-#include <codegen.h>
 #include <error.h>
 #include <bits.h>
 #include <cmath>
 #include <dump.hxx>
 #include <issues.hxx>
+#include <SMU.h>
+#include <cgu.h>
+#include <output.hxx>
+#include <ELF64.hxx>
 
 #define IM_NOT_STUCK 0
 
@@ -60,6 +62,8 @@ litop* getLitop(std::string name)
     noSuchLitop("",originCoreHere,source(),name);
 	return IM_NOT_STUCK;
 }
+
+extern variable* call(function* func,std::vector<variable*> args);
 
 /**
  * @brief 
@@ -305,8 +309,8 @@ static variable* resolveInteger(token& t)
 	variable* var = new variable;
 	var->name = getNewVariableName();
 	var->dataType = defaultUnsignedIntegerType;
-	var->storage = storageType::IMMEDIATE;
-	var->immediateValue = value;
+	var->storageArch = Architecture::storage_IntegerImmediate;
+	var->storage = (void*)value;
 	return var;
 }
 
@@ -334,8 +338,19 @@ static variable* resolveString(token& t)
 	str->dataType = charPointerType;
 	str->symbol = getNewName();
 	str->name = getNewVariableName();
-	str->storage = storageType::SYMBOL_ADDR;
-	DataCode.push_back(str->symbol+":");
+	data.placeSymbol(SymbolType::LocalVariable,0,str->symbol);
+	//+
+	//+	amd64 storage
+	//+
+	str->storageArch = currentArchitecture;
+	if(currentArchitecture == Architecture::AMD64)
+	{
+		amd64::VariableStorage* storage = new amd64::VariableStorage;
+		str->storage = (void*)storage;
+		storage->mode = amd64::StorageMode::DirectImmediate;
+		storage->immediate = ImmediateValue(str->symbol);
+	}
+	else compilerBug("unsupported architecture");
 	while(i < (text.length()-1))
 	{ 
 		char c = text[i];
@@ -351,27 +366,27 @@ static variable* resolveString(token& t)
 				switch(ec)
 				{
 					case('n'):
-						DataCode.push_back("\t.byte 10");
+						data.push({0x0A});
 						i++;
 						break;
 					case('t'):
-						DataCode.push_back("\t.byte 9");
+						data.push({0x09});
 						i++;
 						break;
 					case('v'):
-						DataCode.push_back("\t.byte 11");
+						data.push({0x0B});
 						i++;
 						break;
 					case('r'):
-						DataCode.push_back("\t.byte 13");
+						data.push({0x0D});
 						i++;
 						break;
 					case('"'):
-						DataCode.push_back("\t.byte 34");
+						data.push({0x22});
 						i++;
 						break;
 					case('`'):
-						DataCode.push_back("\t.byte 96");
+						data.push({0x60});
 						i++;
 						break;
 					default:
@@ -379,17 +394,19 @@ static variable* resolveString(token& t)
 						{
 							if((text.length()>(i+2)) && isdigit(text[i+2]))
 							{
-								DataCode.push_back("\t.byte "+std::to_string((HEXDIGTONUM(ec)<<4) | (HEXDIGTONUM(text[i+2])<<0)));
+								byte b = (HEXDIGTONUM(text[i+1])<<4)|(HEXDIGTONUM(text[i+2])<<0);
+								data.push({b});
 								i+=2;
 							}
 							else
 							{
-								DataCode.push_back("\t.byte "+std::to_string(HEXDIGTONUM(ec)));
+								byte b = (HEXDIGTONUM(text[i+1])<<0);
+								data.push({b});
 								i++;
 							}
 						}
 						else
-							compilerBug("unimplimented escape sequence",originCoreHere,source(),"");
+							compilerBug("unimplimented escape sequence");
 				}
 				break;
 			}
@@ -430,11 +447,12 @@ static variable* resolveString(token& t)
 			}
 			default:
 				resstr_default:;
-				DataCode.push_back("\t.byte "+std::to_string(((uint64_t)c)));
+				data.push({(byte)c});
 		}
 		i++;
 	}
-	DataCode.push_back("\t.byte 0");
+	data.push({(byte)0x00});
+	data.symbols.back().size = data.size() - data.symbols.back().value;
 	return str;
 }
 
@@ -453,8 +471,8 @@ static variable* resolveString(token& t)
  */
 variable* resolve(token& ft)
 {
-	//dump("resolving token",&ft,"");
 	line* L = ft.Line;
+	//dump("resolving token",&L->text,"");
 	//,
 	//, collect expression tokens
 	//,
@@ -500,6 +518,18 @@ variable* resolve(token& ft)
 				else if(t.text == ">"){
 					if(tokens[i+1].text == ">"){
 						t.text = ">>";
+						tokens[i+1].type = 100;
+					}
+				}
+				else if(t.text == "="){
+					if(tokens[i+1].text == "="){
+						t.text = "==";
+						tokens[i+1].type = 100;
+					}
+				}
+				else if(t.text == "=="){
+					if(tokens[i+1].text == "="){
+						t.text = "===";
 						tokens[i+1].type = 100;
 					}
 				}
@@ -731,6 +761,7 @@ variable* resolve(token& ft)
 						|| (t.text == ">>")
 						|| (t.text == "<")
 						|| (t.text == ">")
+						|| (t.text == "==")
 					)
 					{
 						if(stack.size() < 2)
@@ -746,12 +777,21 @@ variable* resolve(token& ft)
 						std::string funcName = "operator"+op.text;
 						std::vector<variable*> args = {op2,op1};
 						function* func = getFunction(funcName,args);
-						variable* out = call(func,args);
+						compilerBug::error.push([](compilerBug e) -> int {return 1;});
+						variable* out;
+						try {
+							out = call(func,args);
+							compilerBug::error.pop();
+						} catch(compilerBug e) {
+							compilerBug::error.pop();
+							e.src = source(currentFile,*t.Line,t);
+							throw e;
+						}
 						currentScope->variables.push_back(out);
 						stack.push_back(token(out));
 					}
 					else {
-						compilerBug("unimplimented operator",originCoreHere,source(),"");
+						compilerBug("unimplimented operator: "+t.text,originCoreHere,source(),"");
 					}
 					break;
 				}
@@ -849,17 +889,19 @@ variable* resolve(token& ft)
 					compilerBug("builtin functions unimplemented",originCoreHere,source(),"");
 				}
 			}
-			try {
-				variable* var = getVariable(stack.back().text);
-				return var;
-			}catch(noSuchVariable e){
-				variable* var = resolveInteger(stack.back());
-				if(var == nullptr)
-					var = resolveString(stack.back());
-				if(var == nullptr)
-					noSuchIdentifier("",originCoreHere,source(),stack.back().text);
+			noSuchVariable::error.push([](noSuchVariable e) -> int {return 0;});
+			variable* var = getVariable(stack.back().text);
+			noSuchVariable::error.pop();
+			if(var != nullptr)
+			{
 				return var;
 			}
+			var = resolveInteger(stack.back());
+			if(var == nullptr)
+				var = resolveString(stack.back());
+			if(var == nullptr)
+				noSuchIdentifier("",originCoreHere,source(),stack.back().text);
+			return var;
 		}
 		//.
 		//. skipShuntingYard

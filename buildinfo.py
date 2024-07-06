@@ -37,19 +37,10 @@ output = "inc/buildinfo.h"
 
 content = ""
 
-def toUTC(dt: datetime.datetime) -> datetime.datetime:
-    ndt = dt
-    ndt-=dt.utcoffset()
-    return ndt
-
 repo = git.Repo(search_parent_directories=False)
 commitID = repo.head.commit.hexsha
-commitDATE = toUTC(repo.head.commit.committed_datetime).strftime("%d.%m.%Y %H:%M:%S UTC")
-commitBRANCH = repo.active_branch
 
-content+="#define buildCOMMIT \""+str(commitID)+"\"\n"
-content+="#define buildDATE \""+str(commitDATE)+"\"\n"
-content+="#define buildBRANCH \""+str(commitBRANCH)+"\"\n"
+content+="#define build \""+str(commitID)+"\"\n"
 
 with open(output, "w") as text_file:
     text_file.write(content)

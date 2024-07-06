@@ -2,7 +2,7 @@
  * Created Date: Tuesday August 1st 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -58,9 +58,8 @@ public:
     scope* lparent = nullptr;//logical parent
     type* cl = nullptr;//only filled if t==scopeType::CLASS, to be treated as std::vector<std::pair<uint64_t,__register__>>* if t==scopeType::TRY_CATCH
     function* func = nullptr;
-    functionStorage* fstore = nullptr;//this should only be filled if t==scopeType::FUNCTION
     std::vector<token> attribs;//should only be present for namespaces
-    std::vector<std::vector<std::string>*> extraCodeBlocks;
+    std::vector<section*> extraCodeBlocks;
     std::string lastReentrySym = "";
     //name-counters
     uint64_t ifCounter = 0;

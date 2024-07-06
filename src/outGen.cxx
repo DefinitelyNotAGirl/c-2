@@ -2,8 +2,8 @@
  * Created Date: Monday December 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday December 25th 2023 12:32:29 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Thu Jul 04 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
@@ -38,9 +38,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <util.h>
-#include <codegen.h>
 
 #include <resources.hxx>
+
+#include <output.hxx>
 
 extern std::vector<std::string> resourceCode;
 extern bool emitExceptionSymbols;
@@ -56,6 +57,7 @@ void genOutput(std::string& i)
 	//, write resource file
 	//,
 	{
+		resourceCode.push_back("");
 		std::string text = "";
 		for(std::string& line : resourceCode)
 		{
@@ -80,122 +82,14 @@ void genOutput(std::string& i)
 		}
 	}
 	//,
-	//, add remaining exception data
+	//, generate binaries
 	//,
-	if(emitExceptionSymbols){
-		RoDataCode.push_back(".global __cpe2_exceptionFrameSize");
-		RoDataCode.push_back("__cpe2_exceptionFrameSize:");
-		RoDataCode.push_back("\t.quad "+std::to_string(exceptionoffset));
-	}
-	#if false
 	{
-		std::string text = "";
-		uint64_t ExceptionStructSize = 0;
-		for(std::pair<std::string,uint64_t> pair : resources::ExceptionOffsets)
-		{
-			//std::cout << "type: " << pair.first << std::endl;
-			if(getType(pair.first) == nullptr)
-			{
-				text+="//E-"+pair.first+"-"+std::to_string(pair.second)+"\n";
-				ExceptionStructSize+=8;
-			}
-		}
-		for(type* t : types)
-		{
-			if(t->ExceptionOffset != 0)^
-				text+="//E-"+t->name+"-"+std::to_string(t->ExceptionOffset)+"\n";
-		}
-		text+="//e-"+std::to_string(nextExceptionTypeOffset)+"\n";
-		//,
-		//, data
-		//,
-		{
-			text+=".global __cpe2_exceptionStackSize\n";
-			text+="__cpe2_exceptionStackSize:\n";
-			text+="\t.quad "+std::to_string(nextExceptionTypeOffset)+"\n";
-		}
-		//,
-		//, write to file
-		//,
-		{
-			f = fopen(resOut.c_str(),"w");
-    		if(f == NULL)
-    		{
-    		    std::cout << "ERROR: " << strerror(errno) << std::endl;
-    		    std::cout << "ERROR: could not open file \"" << resOut << "\"" << std::endl;
-    		}
-    		results = fwrite(text.c_str(),text.length(),1,f);
-    		if (results == EOF)
-    		{
-    		    std::cout << "ERROR: could write to file \"" << resOut << "\"" << std::endl;
-    		}
-    		fclose(f);
-		}
-		//,
-		//, invoke assembler
-		//,
-		{
-			std::string ASMcmd;
-			switch(syntax)
-			{
-				case(SYNTAX_GAS):
-					ASMcmd = "as --debug-prefix-map=..=$(readlink -f ..) --gstabs -o "+resOut+".o "+resOut;
-					break;
-				case(SYNTAX_INTEL):
-					ASMcmd = "as --debug-prefix-map=..=$(readlink -f ..) -msyntax=intel -mnaked-reg --gstabs -o "+resOut+".o "+resOut;
-					break;
-			}
-			if(!options::aso)
-        		system(ASMcmd.c_str());
-		}
+		output::generateElf64();
 	}
-	#endif
-    std::string asmCode;
-    asmCode+="// c2o\n";
-    asmCode+="// @syntax gas\n";
-    asmCode+="// @file "+i+"\n";
-    asmCode+="\n";
-    for(std::string& l : MiscCode)
-        asmCode+=l+"\n";
-    asmCode+=".data\n";
-    for(std::string& l : DataCode)
-        asmCode+=l+"\n";
-    if(options::mnorodata)
-        asmCode+=".data\n";
-    else
-        asmCode+=".section .rodata\n";
-    for(std::string& l : RoDataCode)
-        asmCode+=l+"\n";
-    asmCode+=".bss\n";
-    for(std::string& l : BssCode)
-        asmCode+=l+"\n";
-    asmCode+=".text\n";
-    for(std::string& l : TextCode)
-        asmCode+=l+"\n";
-    if(true /*check for GAS (true for now)*/ && options::debugSymbols)
-    {
-        asmCode+=".section .debug_info,\"\",@progbits\n";
-        for(std::string& l : DebugCode)
-            asmCode+=l+"\n";
-        asmCode+=".section .debug_abbrev,\"\",@progbits\n";
-        asmCode+="debugAbbrev:\n";
-        for(std::string& l : DebugAbbrevCode)
-            asmCode+=l+"\n";
-    }
-    f = fopen(asmOut.c_str(),"w");
-    if(f == NULL)
-    {
-        std::cout << "ERROR: " << strerror(errno) << std::endl;
-        std::cout << "ERROR: could not open file \"" << asmOut << "\"" << std::endl;
-        goto endAsmOutput;
-    }
-    results = fwrite(asmCode.c_str(),asmCode.length(),1,f);
-    if (results == EOF)
-    {
-        std::cout << "ERROR: could write to file \"" << asmOut << "\"" << std::endl;
-        goto endAsmOutput;
-    }
-    fclose(f);
+	//,
+	//, generate dependency file
+	//,
     if(options::MD)
     {
         f = fopen(mdOut.c_str(),"w");
@@ -226,22 +120,9 @@ void genOutput(std::string& i)
         fclose(f);
     }
     endAsmOutput:;
-    //invoke assembler
-    std::string ASMcmd;
-    switch(syntax)
-    {
-        case(SYNTAX_GAS):
-            ASMcmd = "as --gstabs -o "+objOut+" "+asmOut;
-            break;
-        case(SYNTAX_INTEL):
-            ASMcmd = "as -msyntax=intel -mnaked-reg --gstabs -o "+objOut+" "+asmOut;
-            break;
-    }
-    if(options::ddebug && !options::aso)
-        std::cout << "as: " << ASMcmd  << std::endl;
-    if(!options::aso)
-        system(ASMcmd.c_str());
-    //invoke linker (if not -c and not -s)
+	//,
+	//, invoke linker (if not -c and not -s)
+	//,
     if(!options::C && !options::aso)
     {
         //std::string LDcmd = "ld -no-pie -o a.exe "+objOut;

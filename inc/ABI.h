@@ -2,7 +2,7 @@
  * Created Date: Wednesday September 13th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday September 13th 2023 2:34:38 am
+ * Last Modified: Wednesday May 22nd 2024 11:30:22 am
  * Modified By: Lilith (definitelynotagirl115169@gmail.com)
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -32,27 +32,16 @@
 #include <compiler.h>
 #include <util.h>
 
-void universalMoveArguments(function* func,std::vector<variable*>& args);
-
 class ABI
 {
 public:
     std::string name;
-    std::vector<__register__> VolatileRegisters;
-    std::vector<__register__> nonVolatile;
 
-    void(*setArgStorages)(function* func,std::vector<variable*>& args);
-    void(*moveArguments)(function* func,std::vector<variable*>& args);
-    void(*genProlouge)(std::vector<std::string>& lines, scope* sc);
-    void(*genEpilouge)(std::vector<std::string>& lines, scope* sc);
-    void(*preCall)(function* func);
-    void(*postCall)(function* func);
-    void(*instrCall)(function* func);
-    variable*(*call)(function* func,std::vector<variable*>& args);
-
-    __register__ integerReturn = __register__::invalid;
-    __register__ floatReturn = __register__::invalid;
-    __register__ ctorThisRegister = __register__::invalid;//this register will be used to pass the "this" reference to member functions
+    void(*setFunctionStorages)(function* func);
+    void(*genProlouge)(section* outcode, scope* sc);
+    void(*genEpilouge)(section* outcode, scope* sc);
+    void(*preArgTransfer)(function* func);
+    void(*postReturn)(function* func);
 };
 
 extern std::vector<ABI*> ABIs;
