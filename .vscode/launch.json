@@ -1,16 +1,17 @@
 {
     "configurations": [
 		{
-			"name": "test compiler",
+			"preLaunchTask": "Debug Build",
+			"name": "Test example - main.c2",
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/cp2",
 			"args": [
 				"-MD",
 				"-Bbuild","-Ddocumentation",
-				"--msyntax=Intel",
 				"-Iinc","--fno-libc","-NOD",
 				"-S","-c",
+				"-Wno-unimplemented",
 				"-o","build/main.o",
 				"src/main.c2"
 			],
@@ -67,14 +68,209 @@
                 }
 			]
 		},
-    {
-        "type": "gdb",
-        "request": "launch",
-        "name": "compile stdlib",
-        "target": "./../c+=2/cp2",
-        "arguments": "-Bbuild -Ddocumentation -Iinc -S -c src/out.c2",
-        "cwd": "${workspaceRoot}/../stdcpe2/",
-        "valuesFormatting": "parseText"
-    }
+		{
+			"preLaunchTask": "Debug Build",
+			"name": "Test std - out.c2",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/cp2",
+			"args": [
+				"-MD",
+				"-Bbuild","-Ddocumentation",
+				"-Iinc","--fno-libc","-NOD",
+				"-S","-c",
+				"-Wno-unimplemented",
+				"-o","build/out.o",
+				"src/out.c2"
+			],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}/../stdcpe2/",
+			"environment": [],
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				},
+				{
+					"description": "Set Disassembly Flavor to Intel",
+					"text": "-gdb-set disassembly-flavor intel",
+					"ignoreFailures": true
+				},
+				{
+                    "description": "Skip system libraries",
+                    "text": "skip -gfi /usr/include/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C++ standard library",
+                    "text": "skip -gfi /usr/lib*/libstdc++.so*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C standard library",
+                    "text": "skip -gfi /lib*/libc.so*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C++ standard library headers",
+                    "text": "skip -gfi /usr/include/c++/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip system headers",
+                    "text": "skip -gfi /usr/include/sys/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C standard library headers",
+                    "text": "skip -gfi /usr/include/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip GCC-specific headers",
+                    "text": "skip -gfi /usr/lib/gcc/*",
+                    "ignoreFailures": true
+                }
+			]
+		},
+		{
+			"preLaunchTask": "Debug Build",
+			"name": "Test std - strlen.c2",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/cp2",
+			"args": [
+				"-MD",
+				"-Bbuild","-Ddocumentation",
+				"-Iinc","--fno-libc","-NOD",
+				"-S","-c",
+				"-Wno-unimplemented",
+				"-o","build/strlen.o",
+				"src/strlen.c2"
+			],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}/../stdcpe2/",
+			"environment": [],
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				},
+				{
+					"description": "Set Disassembly Flavor to Intel",
+					"text": "-gdb-set disassembly-flavor intel",
+					"ignoreFailures": true
+				},
+				{
+                    "description": "Skip system libraries",
+                    "text": "skip -gfi /usr/include/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C++ standard library",
+                    "text": "skip -gfi /usr/lib*/libstdc++.so*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C standard library",
+                    "text": "skip -gfi /lib*/libc.so*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C++ standard library headers",
+                    "text": "skip -gfi /usr/include/c++/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip system headers",
+                    "text": "skip -gfi /usr/include/sys/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C standard library headers",
+                    "text": "skip -gfi /usr/include/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip GCC-specific headers",
+                    "text": "skip -gfi /usr/lib/gcc/*",
+                    "ignoreFailures": true
+                }
+			]
+		},
+		{
+			"preLaunchTask": "Debug Build",
+			"name": "Test std - syscall.c2",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/cp2",
+			"args": [
+				"-MD",
+				"-Bbuild","-Ddocumentation",
+				"-Iinc","--fno-libc","-NOD",
+				"-S","-c",
+				"-Wno-unimplemented",
+				"-o","build/syscall.o",
+				"src/syscall.c2"
+			],
+			"stopAtEntry": false,
+			"cwd": "${workspaceFolder}/../stdcpe2/",
+			"environment": [],
+			"externalConsole": false,
+			"MIMode": "gdb",
+			"setupCommands": [
+				{
+					"description": "Enable pretty-printing for gdb",
+					"text": "-enable-pretty-printing",
+					"ignoreFailures": true
+				},
+				{
+					"description": "Set Disassembly Flavor to Intel",
+					"text": "-gdb-set disassembly-flavor intel",
+					"ignoreFailures": true
+				},
+				{
+                    "description": "Skip system libraries",
+                    "text": "skip -gfi /usr/include/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C++ standard library",
+                    "text": "skip -gfi /usr/lib*/libstdc++.so*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C standard library",
+                    "text": "skip -gfi /lib*/libc.so*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C++ standard library headers",
+                    "text": "skip -gfi /usr/include/c++/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip system headers",
+                    "text": "skip -gfi /usr/include/sys/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip C standard library headers",
+                    "text": "skip -gfi /usr/include/*",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Skip GCC-specific headers",
+                    "text": "skip -gfi /usr/lib/gcc/*",
+                    "ignoreFailures": true
+                }
+			]
+		},
     ]
 }

@@ -19,5 +19,9 @@ namespace issues
 		{
 			unimplementedDebugInfo::Action = Action;
 		}
+		else if(name == "deprecated")
+		{
+			deprecatedAttribute::Action = Action;
+		}
 	}
 }

@@ -2,7 +2,7 @@
  * Created Date: Thursday June 6th 2024
  * Author: Lilith
  * -----
- * Last Modified: Sun Jun 23 2024
+ * Last Modified: Sat Jul 06 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -53,6 +53,18 @@ namespace amd64
 	}
 
 	/**
+	* @brief generates a modRM byte that only specifies one reg/mem operrand
+	* 
+	* @param digit specified in the amd64 specification
+	* @param rm reg/mem opperand
+	* @return amd64 modRM byte ready for execution
+	*/
+	byte modRM(uint8_t digit,AddressingMode mod,Register rm)
+	{
+		return (digit<<3) | (mod<<6) | (rm<<0);	
+	}
+
+	/**
 	 * @brief this is short hand for modRM(reg,AddressingMode::RegisterDirect,rm)
 	 * 
 	 * @param reg reg operrand
@@ -73,7 +85,7 @@ namespace amd64
 	 */
 	byte modRM(Register reg,AddressingMode mod,Register rm)
 	{
-		return (reg<<3) | (mod<<6) | (rm<<0);
+		return register_decode_base(reg)<<3 | (mod<<6) | register_decode_base(rm)<<0;
 	}
 	/**
 	 * @brief
@@ -285,12 +297,15 @@ namespace runtime::amd64
 	#pragma GCC diagnostic ignored "-Wnarrowing"
 	void copy(variable* src, variable* dst)
 	{
+		#if false
+			code->placeSymbol(SymbolType::CodeLocation,0,".debug: copy, "+src->name+" ==> "+dst->name);
+		#endif
 		if(src->storageArch != Architecture::AMD64)
-			compilerBug("invalid architecture",originCoreHere,source(),"");
+			compilerBug("invalid source architecture: "+std::to_string((uint64_t)src->storageArch),originCoreHere,source(),"");
 		if(dst->storageArch != Architecture::AMD64)
-			compilerBug("invalid architecture",originCoreHere,source(),"");
-		::amd64::VariableStorage* srcStore = src->storage;
-		::amd64::VariableStorage* dstStore = dst->storage;
+			compilerBug("invalid destination architecture: "+std::to_string((uint64_t)dst->storageArch),originCoreHere,source(),"");
+		::amd64::VariableStorage* srcStore = (::amd64::VariableStorage*)src->storage;
+		::amd64::VariableStorage* dstStore = (::amd64::VariableStorage*)dst->storage;
 //,####################################################################################################################
 //,####################################################################################################################
 //, ██████  ██████                       ██       ██████  ██████
@@ -322,40 +337,60 @@ namespace runtime::amd64
 //,####################################################################################################################
 //,####################################################################################################################
 		if(
-			(srcStore->mode == ::amd64::StorageMode::DirectRegister)
-			&&
-			(dstStore->mode == ::amd64::StorageMode::IndirectRegister)
+			(
+				(srcStore->mode == ::amd64::StorageMode::DirectRegister)
+				&&
+				(dstStore->mode == ::amd64::StorageMode::IndirectRegister)
+			)
 		)
 		{
 			if(dstStore->displacement.imm64 == 0x00)
 			{
 				code->push({
-					::amd64::prefix::REX(1,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
-					::amd64::opcode::mov::r16_32_64__rm16_32_64,
+					::amd64::prefix::REX(1,::amd64::register_decode_rex(srcStore->reg),0,::amd64::register_decode_rex(dstStore->reg)),
+					::amd64::opcode::mov::rm16_32_64__r16_32_64,
 					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect,dstStore->reg)
 				});
 			}
 			else if(positive(dstStore->displacement.imm64) <= 0xFF)
 			{
 				code->push({
-					::amd64::prefix::REX(1,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
-					::amd64::opcode::mov::r16_32_64__rm16_32_64,
+					::amd64::prefix::REX(1,::amd64::register_decode_rex(srcStore->reg),0,::amd64::register_decode_rex(dstStore->reg)),
+					::amd64::opcode::mov::rm16_32_64__r16_32_64,
 					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect_disp8,dstStore->reg),
 					(byte)copySignBit<uint64_t,uint8_t>(dstStore->displacement.imm64)
 				});
 				if(srcStore->displacement.isSymbol)
-					compilerBug("linker information not implemented, cant use symbol",originCoreHere,source(),"");
+				{
+					code->Relocations.push_back(
+						smu::RelocationEntry(
+							code->size()-1,
+							1,
+							smu::RelocationType::Absolute,
+							dstStore->displacement.symbol
+						)
+					);
+				}
 			}
 			else if(positive(dstStore->displacement.imm64) <= 0xFFFFFFFF)
 			{
 				code->push({
-					::amd64::prefix::REX(1,((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
-					::amd64::opcode::mov::r16_32_64__rm16_32_64,
+					::amd64::prefix::REX(1,::amd64::register_decode_rex(srcStore->reg),0,::amd64::register_decode_rex(dstStore->reg)),
+					::amd64::opcode::mov::rm16_32_64__r16_32_64,
 					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect_disp32,dstStore->reg)
 				});
 				code->push(::amd64::imm32(copySignBit<uint64_t,uint32_t>(dstStore->displacement.imm64)));
 				if(srcStore->displacement.isSymbol)
-					compilerBug("linker information not implemented, cant use symbol",originCoreHere,source(),"");
+				{
+					code->Relocations.push_back(
+						smu::RelocationEntry(
+							code->size()-4,
+							4,
+							smu::RelocationType::Absolute,
+							dstStore->displacement.symbol
+						)
+					);
+				}
 			}
 			else
 			{
@@ -394,7 +429,7 @@ namespace runtime::amd64
 					{
 						if(opsize == 2)code->push({::amd64::prefix::legacy::OperandSizeOverride});
 						code->push({
-							::amd64::prefix::REX((opsize == 8),((srcStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
+							::amd64::prefix::REX((opsize == 8),0,0,::amd64::register_decode_rex(srcStore->reg)),
 							(opsize > 1 ? ::amd64::opcode::mov::r16_32_64__rm16_32_64 : ::amd64::opcode::mov::r8__rm8),
 							::amd64::modRM(::amd64::Register::rax,addrMode,srcStore->reg)
 						});
@@ -425,7 +460,7 @@ namespace runtime::amd64
 					{
 						if(opsize == 2)code->push({::amd64::prefix::legacy::OperandSizeOverride});
 						code->push({
-							::amd64::prefix::REX((opsize == 8),((dstStore->reg & (1<<4))>>4),0,((dstStore->reg & (1<<4))>>4)),
+							::amd64::prefix::REX((opsize == 8),0,0,::amd64::register_decode_rex(dstStore->reg)),
 							(opsize > 1 ? ::amd64::opcode::mov::rm16_32_64__r16_32_64 : ::amd64::opcode::mov::rm8__r8),
 							::amd64::modRM(::amd64::Register::rax,addrMode,dstStore->reg)
 						});
@@ -505,10 +540,178 @@ namespace runtime::amd64
 			copy(src,&__dst);
 		}
 	}
-	#pragma GCC diagnostic pop
 	void clear(variable* target);
 	void thread(std::string& symbol);
 	void call(function* func);
 	void enter(uint64_t frameSize);
 	void leave();
+
+	variable* UnsignedIntegerAddition(variable* a, variable* b)
+	{
+		if(a->storageArch != Architecture::AMD64)
+			compilerBug("invalid source architecture: "+std::to_string((uint64_t)a->storageArch),originCoreHere,source(),"");
+		if(b->storageArch != Architecture::AMD64)
+			compilerBug("invalid destination architecture: "+std::to_string((uint64_t)b->storageArch),originCoreHere,source(),"");
+		variable* dst = new variable(*a);
+		dst->storage = (void*)(new ::amd64::VariableStorage);
+		::amd64::VariableStorage* dstStore = (::amd64::VariableStorage*)dst->storage;
+		dstStore->mode = ::amd64::StorageMode::DirectRegister;
+		dstStore->reg = ::amd64::Register::rax;
+		runtime::amd64::copy(a,dst);
+		::amd64::VariableStorage* bStore = (::amd64::VariableStorage*)b->storage;
+		if(bStore->mode == ::amd64::StorageMode::DirectRegister)
+		{
+			code->push({
+				::amd64::prefix::REX(1,::amd64::register_decode_rex(dstStore->reg),0,::amd64::register_decode_rex(bStore->reg)),
+				::amd64::opcode::add::r16_32_64__rm16_32_64,
+				::amd64::modRM(dstStore->reg,bStore->reg)
+			});
+		}
+		else if(bStore->mode == ::amd64::StorageMode::DirectImmediate)
+		{
+			code->push({
+				::amd64::prefix::REX(1,0,0,0),
+				::amd64::opcode::add::rAX__imm16_32
+			});
+			code->push(::amd64::imm32(bStore->immediate.imm64));
+			if(bStore->immediate.isSymbol)
+			{
+				compilerBug("unimplemented: immediate symbol addition");
+			}
+		}
+		else compilerBug("unimplemented uint addition storage: "+std::to_string((uint64_t)bStore->mode));
+		return dst;
+	}
+
+	void RelativeControlTransfer(ImmediateValue offset)
+	{
+		code->push({
+			::amd64::opcode::jmp::rel16_32,
+			::amd64::imm32(offset.imm64)
+		});
+		if(offset.isSymbol) {
+			code->Relocations.push_back(
+				smu::RelocationEntry(
+					code->size()-4,
+					4,
+					smu::RelocationType::Relative,
+					offset.symbol
+				)
+			);
+		}
+	}
+
+	void AbsoluteControlTransfer(ImmediateValue address)
+	{
+		code->push({
+			::amd64::prefix::REX(1,0,0,0),
+			::amd64::opcode::mov::r16_32_64__imm16_32_64 + ::amd64::register_decode_base(::amd64::Register::rax),
+			::amd64::imm64(address.imm64)
+		});
+		if(address.isSymbol) {
+			code->Relocations.push_back(
+				smu::RelocationEntry(
+					code->size()-8,
+					8,
+					smu::RelocationType::Relative,
+					address.symbol
+				)
+			);
+		}
+		code->push({
+			::amd64::prefix::REX(1,0,0,0),
+			::amd64::opcode::jmp::rm16_32_64,
+			::amd64::modRM(4,::amd64::AddressingMode::RegisterDirect,::amd64::Register::rax)
+		});
+	}
+
+	static void util_save(uint32_t offs, ::amd64::Register reg)
+	{
+		code->push({
+			::amd64::prefix::REX(1,::amd64::register_decode_rex(reg),0,0),
+			::amd64::opcode::mov::rm16_32_64__r16_32_64,
+			::amd64::modRM(reg,::amd64::AddressingMode::RegisterIndirect_disp32,::amd64::Register::rbp)
+		});
+		code->push(::amd64::imm32(offs));
+	}
+	static void util_load(uint32_t offs, ::amd64::Register reg)
+	{
+		code->push({
+			::amd64::prefix::REX(1,::amd64::register_decode_rex(reg),0,0),
+			::amd64::opcode::mov::r16_32_64__rm16_32_64,
+			::amd64::modRM(reg,::amd64::AddressingMode::RegisterIndirect_disp32,::amd64::Register::rbp)
+		});
+		code->push(::amd64::imm32(offs));
+	}
+	/**
+	 * @brief save all user registers to the stack except the stack pointer, the frame pointer and the thread-data pointer
+	 * @return stack frame offset of saved data
+	 */
+	uint64_t SaveAll()
+	{
+		#if false
+			code->placeSymbol(SymbolType::CodeLocation,0,".debug: saveall");
+		#endif
+		stackframe* stack = currentScope->func->stack;
+		uint32_t base = stack->push(104);
+		util_save(base+0x00,::amd64::Register::rax);
+		util_save(base+0x08,::amd64::Register::rbx);
+		util_save(base+0x10,::amd64::Register::rcx);
+		util_save(base+0x18,::amd64::Register::rdx);
+		util_save(base+0x20,::amd64::Register::rdi);
+		util_save(base+0x28,::amd64::Register::rsi);
+		util_save(base+0x30,::amd64::Register::r8 );
+		util_save(base+0x38,::amd64::Register::r9 );
+		util_save(base+0x40,::amd64::Register::r10);
+		util_save(base+0x48,::amd64::Register::r11);
+		util_save(base+0x50,::amd64::Register::r12);
+		util_save(base+0x58,::amd64::Register::r13);
+		util_save(base+0x60,::amd64::Register::r14);
+		return base;
+	}
+	/**
+	 * @brief load all user registers from the stack except the stack pointer, the frame pointer and the thread-data pointer
+	 */
+	void LoadAll(uint64_t offset)
+	{
+		#if false
+			code->placeSymbol(SymbolType::CodeLocation,0,".debug: loadall");
+		#endif
+		stackframe* stack = currentScope->func->stack;
+		uint32_t base = offset;
+		util_load(base+0x00,::amd64::Register::rax);
+		util_load(base+0x08,::amd64::Register::rbx);
+		util_load(base+0x10,::amd64::Register::rcx);
+		util_load(base+0x18,::amd64::Register::rdx);
+		util_load(base+0x20,::amd64::Register::rdi);
+		util_load(base+0x28,::amd64::Register::rsi);
+		util_load(base+0x30,::amd64::Register::r8 );
+		util_load(base+0x38,::amd64::Register::r9 );
+		util_load(base+0x40,::amd64::Register::r10);
+		util_load(base+0x48,::amd64::Register::r11);
+		util_load(base+0x50,::amd64::Register::r12);
+		util_load(base+0x58,::amd64::Register::r13);
+		util_load(base+0x60,::amd64::Register::r14);
+		return base;
+	}
+
+	/**
+	 * @brief call function
+	 */
+	void call(function* func)
+	{
+		code->push({
+			::amd64::opcode::call::rel16_32,
+			0,0,0,0
+		});
+		code->Relocations.push_back(
+			smu::RelocationEntry(
+				code->size()-4,
+				4,
+				smu::RelocationType::Relative,
+				func->symbol
+			)
+		);
+	}
+	#pragma GCC diagnostic pop
 }

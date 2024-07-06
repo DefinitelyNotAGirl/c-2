@@ -2,8 +2,8 @@
  * Created Date: Tuesday June 4th 2024
  * Author: Lilith
  * -----
- * Last Modified: Tuesday June 4th 2024 4:55:46 pm
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Sat Jul 06 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
@@ -29,8 +29,10 @@
  */
 
 #include <SMU.h>
+#include <issues.hxx>
+using namespace issues;
 
-section* code;
+section* code = nullptr;
 
 namespace smu
 {
@@ -44,7 +46,8 @@ namespace smu
 	}
 	
 	section::~section() {
-		free(this->data);
+		if(this->data != nullptr)
+			free(this->data);
 	}
 
 	void section::operator<<(std::initializer_list<byte> data)
@@ -54,19 +57,6 @@ namespace smu
 		uint64_t I = this->sizeInFile;
 		for(byte II : data)
 			this->data[I++] = II;
-		this->sizeInFile = newSize;
-	}
-
-	void section::operator<<(std::initializer_list<section*> data)
-	{
-		uint64_t newSize = this->sizeInFile;
-		for(section* s : data)
-			newSize+=s->sizeInFile;
-		this->data = (byte*)realloc(this->data,newSize);
-		uint64_t I = this->sizeInFile;
-		for(section* II : data)
-			for(uint64_t III = 0;III<II->sizeInFile;III++)
-				this->data[I++] = II->data[III];
 		this->sizeInFile = newSize;
 	}
 
@@ -90,17 +80,23 @@ namespace smu
 				)
 			);
 		}
-		for(smu::RelocationEntry& re : data->ExternalRelocations){
-			this->ExternalRelocations.push_back(
-				smu::RelocationEntry(
-					re.offset+this->sizeInFile,
-					re.size,
-					re.type,
-					re.symbol
-				)
-			);
+		//,
+		//, add and adjust symbols
+		//,
+		for(cgu::Symbol& s : data->symbols)
+		{
+			this->symbols.push_back(s);
+			if((((uint64_t)s.Type) & 0x0F) != 0x03)
+				this->symbols.back().value += this->size();
 		}
 		this->sizeInFile = newSize;
+	}
+
+	void section::placeSymbol(SymbolType Type, uint64_t size,std::string name)
+	{
+		if((((uint64_t)Type) & 0x0F) == 0x03)
+			compilerBug("section::placeSymbol called with Type == (Local|Global|External)Value");
+		this->symbols.push_back(Symbol(Type,this->size(),size,name));
 	}
 
 	void section::operator<<(uint64_t data)

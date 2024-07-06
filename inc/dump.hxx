@@ -2,8 +2,8 @@
  * Created Date: Saturday May 11th 2024
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Wed Jun 26 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
@@ -31,6 +31,9 @@
 #include <compiler.h>
 
 #define sdump(var) dump(std::string(#var),var,"");
+
+const char* stringify(primitiveOP op);
+const char* stringify(scopeType type);
 
 void dump(std::string name, std::string* obj, std::string indent);
 void dump(std::string name, uint64_t* obj, std::string indent);

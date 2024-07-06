@@ -16,7 +16,7 @@
 				"$gcc"
 			],
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 				"echo": false,
 				"showReuseMessage": false,
 				"revealProblems": "onProblem",
@@ -42,7 +42,7 @@
 				"$gcc"
 			],
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 				"echo": false,
 				"showReuseMessage": false,
 				"revealProblems": "onProblem",
@@ -65,7 +65,7 @@
 				"$gcc"
 			],
 			"presentation": {
-				"reveal": "silent",
+				"reveal": "always",
 				"echo": false,
 				"showReuseMessage": false,
 				"revealProblems": "onProblem",

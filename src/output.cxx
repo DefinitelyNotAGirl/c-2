@@ -1,24 +1,60 @@
 #include <output.hxx>
 #include <ELF64.hxx>
 
-std::map<std::string,uint64_t> SymbolMap;
-std::map<std::string,uint64_t> ExternalSymbolMap;
-
 section text;
 section data;
 section rodata;
 
-namespace elf64
+std::vector<Symbol> ValueSymbols;
+void importExternalFunction(std::string name)
 {
-	section strtab;
-	section symtab;
-	section symtab_external;
+	ValueSymbols.push_back(
+		Symbol(
+			SymbolType::ExternalFunction,
+			0,
+			name
+		)
+	);
 }
-
-namespace dwarf
+void importExternalVariable(std::string name)
 {
-	section debug_info;
-	section debug_abbrev;
+	ValueSymbols.push_back(
+		Symbol(
+			SymbolType::ExternalVariable,
+			0,
+			name
+		)
+	);
+}
+void importExternalValue(std::string name)
+{
+	ValueSymbols.push_back(
+		Symbol(
+			SymbolType::ExternalValue,
+			0,
+			name
+		)
+	);
+}
+void setGlobalValue(std::string name, uint64_t value)
+{
+	ValueSymbols.push_back(
+		Symbol(
+			SymbolType::GlobalValue,
+			value,
+			name
+		)
+	);
+}
+void setLocalValue(std::string name, uint64_t value)
+{
+	ValueSymbols.push_back(
+		Symbol(
+			SymbolType::LocalValue,
+			value,
+			name
+		)
+	);
 }
 
 /**
@@ -32,18 +68,4 @@ union __emptyspace {
 void output_init()
 {
 	byte empty[sizeof(__emptyspace)] = {0x00};
-	//,
-	//, initiate elf64::strtab
-	//,
-	{
-		elf64::strtab.push(empty,1);
-	}
-	//,
-	//, initiate elf64::symtab (local and external)
-	//,
-	{
-		elf64::symtab.push(empty,sizeof(elf64::SymbolTableEntry));
-		//. external symbol table does not need a null entry as it gets appended to the local symtab
-		//. when the final binary is generated
-	}
 }

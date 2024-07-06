@@ -17,4 +17,14 @@ void warn_init()
 			e.src.print();
 		}
 	);
+
+	deprecatedAttribute::warn.push(
+		[](deprecatedAttribute e) {
+			std::cerr << COLOR_WARN << "Warning" << COLOR_RESET << ": attribute " << e.msg << " has been deprecated";
+			if(e.msg == "nodoc")std::cout << " as of Thursday the 4th of July 2024, 22:54";
+			if(e.msg == "export")std::cout << " as of Thursday the 4th of July 2024, 22:54";
+			std::cout << "\n";
+			e.src.print();
+		}
+	);
 }

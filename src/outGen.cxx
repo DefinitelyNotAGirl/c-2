@@ -2,8 +2,8 @@
  * Created Date: Monday December 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Thu Jul 04 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
@@ -41,6 +41,8 @@
 
 #include <resources.hxx>
 
+#include <output.hxx>
+
 extern std::vector<std::string> resourceCode;
 extern bool emitExceptionSymbols;
 extern uint64_t exceptionoffset;
@@ -55,6 +57,7 @@ void genOutput(std::string& i)
 	//, write resource file
 	//,
 	{
+		resourceCode.push_back("");
 		std::string text = "";
 		for(std::string& line : resourceCode)
 		{
@@ -77,6 +80,12 @@ void genOutput(std::string& i)
     		}
     		fclose(f);
 		}
+	}
+	//,
+	//, generate binaries
+	//,
+	{
+		output::generateElf64();
 	}
 	//,
 	//, generate dependency file

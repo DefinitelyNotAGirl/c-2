@@ -17,9 +17,13 @@ enum class System : uint64_t {
 };
 
 enum class Architecture : uint64_t {
+	invalid,
 	AMD64,
 	i386,
-	ARMv9
+	ARMv9,
+	storage_IntegerImmediate,
+	storage_member,
+	storage_condition,
 };
 
 extern Architecture currentArchitecture;

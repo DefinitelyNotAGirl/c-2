@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tue Jun 25 2024
+ * Last Modified: Fri Jul 05 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -408,22 +408,29 @@ token line::nextToken(bool saveInfo)
 				{
 					case('+'):
 					case('-'):
-					case('*'):
 					case('/'):
-					case('%'):
+					case('*'):
+					case('='):
+					case('&'):
 					case('<'):
 					case('>'):
-					case('&'):
-					case('±'):
-					case('|'):
+					case('%'):
 					case('!'):
 						goto __default;
 				}
-				if(t.text == "operator==")
-					goto __default;
+				if(t.text == "operator")goto __default;
+				if(t.text == "operator=")goto __default;
+				if(t.text == "operator==")goto __default;
 				skipAssignmentCheck:;
 				goto skipTemplateCheck;
 			case('<'):
+				if(this->text[I+1] == '=')
+				{
+					t.text.push_back(this->text[I]);
+					t.text.push_back(this->text[I+1]);
+					I+=2;
+					goto tokenBreak;
+				}
 				for(typeTemplate* i : typeTemplates)
 				{
 					if(t.text == i->name)
@@ -484,9 +491,32 @@ token line::nextToken(bool saveInfo)
 				}
 				isNoTemplateInstance:;
 			case('>'):
+				if(this->text[I+1] == '=')
+				{
+					t.text.push_back(this->text[I]);
+					t.text.push_back(this->text[I+1]);
+					I+=2;
+					goto tokenBreak;
+				}
 				skipTemplateCheck:;
 				goto skipManglerAndAbiCheck;
 			case('-'):
+				if(this->text[I+1] == '=')
+				{
+					t.text.push_back(this->text[I]);
+					t.text.push_back(this->text[I+1]);
+					I+=2;
+					goto tokenBreak;
+				}
+				{
+					noSuchVariable::error.push([](noSuchVariable e) -> int {return 0;});
+					if(getVariable(t.text) != nullptr && this->text[I+1] == '>')
+					{
+						t.text += "->";
+						I++;
+						break;
+					}
+				}
 				if(t.text == "ABI")
 					goto __default;
 				if(t.text == "mangling")
@@ -496,19 +526,55 @@ token line::nextToken(bool saveInfo)
 			case('±'):
 			case('+'):
 				skipManglerAndAbiCheck:;
+				if(this->text[I+1] == '=')
+				{
+					t.text.push_back(this->text[I]);
+					t.text.push_back(this->text[I+1]);
+					I+=2;
+					goto tokenBreak;
+				}
 			case('|'):
+				if(this->text[I+1] == '=')
+				{
+					t.text.push_back(this->text[I]);
+					t.text.push_back(this->text[I+1]);
+					I+=2;
+					goto tokenBreak;
+				}
 				goto skipReferenceTypeCheck;
 			case('&'):
+				if(this->text[I+1] == '=')
+				{
+					t.text.push_back(this->text[I]);
+					t.text.push_back(this->text[I+1]);
+					I+=2;
+					goto tokenBreak;
+				}
 				try {
 					getType(t.text);
 					goto __default;
 				} catch(noSuchType e){}
 			case('/'):
 				skipReferenceTypeCheck:;
+				if(t.text == "operator")goto __default;
+				if(this->text[I+1] == '=')
+				{
+					t.text.push_back(this->text[I]);
+					t.text.push_back(this->text[I+1]);
+					I+=2;
+					goto tokenBreak;
+				}
 				if(t.text.substr(0,strlen("operator")) == "operator" && t.text.back() == this->text[I])
 					goto __default;
 				goto skipPointerTypeCheck;
 			case('*'):
+				if(this->text[I+1] == '=')
+				{
+					t.text.push_back(this->text[I]);
+					t.text.push_back(this->text[I+1]);
+					I+=2;
+					goto tokenBreak;
+				}
 				noSuchType::error.push([](noSuchType e) -> int {return 1;});
 				try {
 					getType(t.text);
@@ -516,7 +582,22 @@ token line::nextToken(bool saveInfo)
 					goto __default;
 				}catch(noSuchType e){noSuchType::error.pop();}
 			case('%'):
+				if(t.text == "operator")goto __default;
+				if(this->text[I+1] == '=')
+				{
+					t.text.push_back(this->text[I]);
+					t.text.push_back(this->text[I+1]);
+					I++;
+					goto tokenBreak;
+				}
 			case('!'):
+				if(this->text[I+1] == '=')
+				{
+					t.text.push_back(this->text[I]);
+					t.text.push_back(this->text[I+1]);
+					I+=2;
+					goto tokenBreak;
+				}
 				skipPointerTypeCheck:;
 				if(t.text == "operator")
 					goto __default;
@@ -532,8 +613,7 @@ token line::nextToken(bool saveInfo)
 			case('}'):
 				goto skipIndexOperator;
 			case('['):
-				if(t.text == "operator")
-					goto __default;
+				if(t.text == "operator")goto __default;
 				goto skipIndexOperator;
 			case(']'):
 				if(t.text == "operator[")
@@ -638,12 +718,11 @@ token line::nextToken(bool saveInfo)
 	//if(t.type == 6)
 	//    t.text = "\""+t.text+"\"";
 
-	if(options::ddebug)
+	if(false)
 	{
-		std::cout << "Token: type: " << t.type << " \"" << t.text <<"\""<< std::endl;
+		std::cout << "Token: " << t.type << " \"" << t.text <<"\""<< std::endl;
 		//printStacktrace(50);
 	}
-
 	return t;
 }
 

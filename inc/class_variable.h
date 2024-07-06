@@ -44,9 +44,9 @@ enum class vaccess {
 
 class ImmediateValue {
 public:
-	bool isSymbol;
-	uint64_t imm64;
-	std::string symbol;
+	bool isSymbol = false;
+	uint64_t imm64 = 0;
+	std::string symbol = "";
 	ImmediateValue(){}
 	ImmediateValue(std::string sym)
 		:isSymbol(true),symbol(sym){}
@@ -75,6 +75,11 @@ public:
     std::vector<variable*> children;//stores members of this variable (ex. gdt.size or var->name)
     variable* parent = nullptr;//only present for child variables
 	//. storage
-	Architecture storageArch;
-	void* storage;
+	Architecture storageArch = Architecture::invalid;
+	/**
+		 @brief  if this->storageArch is storage_IntegerImmediate then this holds a 64-bit integer instead
+		 if this->storageArch is storage_member then this holds a 64-bit integer offset into the class
+		 if this->storageArch is storage_condition then this holds a currentArch condition code
+	*/
+	void* storage = nullptr;
 };

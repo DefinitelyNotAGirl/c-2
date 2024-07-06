@@ -127,4 +127,27 @@ void error_init()
 			return 1;
 		}
 	);
+	nonImmediateLitop::error.push(
+		[](nonImmediateLitop e) -> int {
+			std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": value for litop \"" << e.msg << "\" is not an immediate.\n";
+			e.printStackTrace();
+			e.src.print();
+			std::cerr << "\n\n\r";
+			ErrorCount++;
+			return 1;
+		}
+	);
+	invalidAttribute::error.push(
+		[](invalidAttribute e) -> int {
+			std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": invalid attribute \"" << e.attribute << "\" for "<<e.entityName<<"\n";
+			std::cout << "valid attributes:\n";
+			for(std::string a : e.validAttributes)
+				std::cout << "    " << a << "\n";
+			e.printStackTrace();
+			e.src.print();
+			std::cerr << "\n\n\r";
+			ErrorCount++;
+			return 1;
+		}
+	);
 }

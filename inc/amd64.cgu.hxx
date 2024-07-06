@@ -8,12 +8,14 @@ namespace runtime::amd64
 	void copy(variable* src, variable* dst);
 	inline void clear(variable* target){}
 	inline void thread(std::string& symbol){}
-	inline void call(function* func){}
+	void call(function* func);
 	inline void enter(uint64_t frameSize){}
 	inline void leave(){}
 	variable* UnsignedIntegerAddition(variable* a, variable* b);
 	void RelativeControlTransfer(ImmediateValue offset);
 	void AbsoluteControlTransfer(ImmediateValue address);
+	uint64_t SaveAll();
+	void LoadAll(uint64_t offset);
 }
 
 namespace amd64
@@ -139,6 +141,7 @@ namespace amd64
 	};
 	inline constexpr uint64_t register_decode_cpl	(Register reg){return (((uint64_t)reg)&(0b11<<11))>>11;};
 	inline constexpr uint64_t register_decode_base	(Register reg){return (((uint64_t)reg)&(0b111<<0))>>0;};
+	inline constexpr uint64_t register_decode_rex	(Register reg){return (((uint64_t)reg)&(1<<3))>>3;};
 
 	Register string_to_register(const std::string& reg_str);
 	const char* register_name(Register reg);
@@ -181,6 +184,14 @@ namespace amd64
 	uint32_t imm32(uint32_t value);
 	uint16_t imm16(uint16_t value);
 	/**
+	* @brief generates a modRM byte that only specifies one reg/mem operrand
+	* 
+	* @param digit specified in the amd64 specification
+	* @param rm reg/mem opperand
+	* @return amd64 modRM byte ready for execution
+	*/
+	byte modRM(uint8_t digit,AddressingMode mod,Register rm);
+	/**
 	* @brief this is short hand for modRM(reg,AddressingMode::RegisterDirect,rm)
 	* 
 	* @param reg reg operrand
@@ -205,16 +216,49 @@ namespace amd64
 	* @return amd64 SIB byte ready for execution
 	*/
 	byte SIB(uint8_t scale, Register index, Register base);
+
+	enum class Condition {
+		Overflow 		= 0x0,
+		NotOverflow		= 0x1,
+		Below			= 0x2,
+		Carry			= 0x2,
+		NotAboveOrEqual	= 0x2,
+		NotBelow		= 0x3,
+		NotCarry		= 0x3,
+		AboveOrEqual	= 0x3,
+		Zero			= 0x4,
+		Equal			= 0x4,
+		NotZero			= 0x5,
+		NotEqual		= 0x5,
+		BelowOrEqual	= 0x6,
+		NotAbove		= 0x6,
+		NotBelowOrEqual	= 0x7,
+		Above			= 0x7,
+		Sign			= 0x8,
+		NotSign			= 0x9,
+		Parity			= 0xA,
+		ParityEven		= 0xA,
+		NotParity		= 0xB,
+		ParityOdd		= 0xB,
+		Less			= 0xC,
+		NotGreaterOrEqual=0xC,
+		NotLess			= 0xD,
+		GreaterOrEqual	= 0xD,
+		LessOrEqual		= 0xE,
+		NotGreater		= 0xE,
+		NotLessOrEqual	= 0xF,
+		Greater			= 0xF
+	};
 	
 	namespace prefix
 	{
 		/**
 		* @brief constructs a REX prefix
 		* 
-		* @param W
-		* @param R
-		* @param X
-		* @param B
+		* @param W operation size
+		* @param R extends modrm.reg
+		* @param X extends sib.index
+		* @param B extends modrm.rm
 		* @return amd64 REX byte ready for execution
 		*/
 		byte REX(bool W, bool R, bool X, bool B);
@@ -512,53 +556,8 @@ namespace amd64
 			constexpr byte DX__m16 = 0x6F;
 			constexpr byte DX__m16_32 = 0x6F;
 		}
-		namespace jo{
-			constexpr byte rel8 = 0x70;
-		}
-		namespace jno{
-			constexpr byte rel8 = 0x71;
-		}
-		namespace jb{
-			constexpr byte rel8 = 0x72;
-		}
-		namespace jnb{
-			constexpr byte rel8 = 0x73;
-		}
-		namespace jz{
-			constexpr byte rel8 = 0x74;
-		}
-		namespace jnz{
-			constexpr byte rel8 = 0x75;
-		}
-		namespace jbe{
-			constexpr byte rel8 = 0x76;
-		}
-		namespace jnbe{
-			constexpr byte rel8 = 0x77;
-		}
-		namespace js{
-			constexpr byte rel8 = 0x78;
-		}
-		namespace jns{
-			constexpr byte rel8 = 0x79;
-		}
-		namespace jp{
-			constexpr byte rel8 = 0x7A;
-		}
-		namespace jnp{
-			constexpr byte rel8 = 0x7B;
-		}
-		namespace jl{
-			constexpr byte rel8 = 0x7C;
-		}
-		namespace jnl{
-			constexpr byte rel8 = 0x7D;
-		}
-		namespace jle{
-			constexpr byte rel8 = 0x7E;
-		}
-		namespace jnle{
-			constexpr byte rel8 = 0x7F;
+		namespace jcc {
+			constexpr byte rel8off(Condition cc){return (0x70)|((uint8_t)cc);}
 		}
 		namespace test{
 			constexpr byte rm8__r8 = 0x84;
@@ -599,9 +598,7 @@ namespace amd64
 			constexpr byte rAX = 0x90;
 			constexpr byte imm16_32_64 = 0xB8;
 		}
-		namespace nop{
-			constexpr byte _ = 0x90;
-		}
+		constexpr byte nop = 0x90;
 		namespace pause{
 			constexpr byte _ = 0x90;
 		}
@@ -710,7 +707,7 @@ namespace amd64
 			constexpr byte rm8__CL = 0xD2;
 			constexpr byte rm16_32_64__CL = 0xD3;
 		}
-		namespace retn{
+		namespace ret_near{
 			constexpr byte imm16 = 0xC2;
 			constexpr byte _ = 0xC3;
 		}
@@ -720,7 +717,7 @@ namespace amd64
 		namespace leave{
 			constexpr byte rBP = 0xC9;
 		}
-		namespace retf{
+		namespace ret_far{
 			constexpr byte imm16 = 0xCA;
 			constexpr byte _ = 0xCB;
 		}
@@ -1124,8 +1121,7 @@ namespace amd64
 		}
 		namespace call{
 			constexpr byte rel16_32 = 0xE8;
-			constexpr byte rm16_32 = 0xFF;
-			constexpr byte rm64 = 0xFF;
+			constexpr byte rm16_32_64 = 0xFF;
 		}
 		namespace jmp{
 			constexpr byte rel16_32 = 0xE9;
@@ -1193,27 +1189,14 @@ namespace amd64
 		namespace jmpf{
 			constexpr byte m16_32_64 = 0xFF;
 		}
-
-		namespace jns {
-			constexpr byte rel8off = 0x79;
-		}
-
-		namespace jge {
-			constexpr byte rel8off = 0x7D;
-		}
 		/**
 			@brief opcodes in this namespace need to be prefixed with 0x0F
 		*/
 		namespace secondary
 		{
 			constexpr byte syscall = 0x05;
-			namespace jns {
-				constexpr rel16off = 0x89;
-				constexpr rel32off = 0x89;
-			}
-			namespace jge {
-				constexpr rel16off = 0x8D;
-				constexpr rel32off = 0x8D;
+			namespace jcc {
+				constexpr byte rel16_32off(Condition cc){return (0x80)|((uint8_t)cc);}
 			}
 		}
 	}

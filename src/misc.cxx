@@ -2,8 +2,8 @@
  * Created Date: Monday July 31st 2023
  * Author: Lilith
  * -----
- * Last Modified: Monday June 3rd 2024 11:44:37 pm
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Sat Jul 06 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
@@ -53,7 +53,9 @@ std::string getNewName()
                 mfile.push_back(i);
         }
     }
-    return "local"CPE2_SYMBOL_SCOPE_SEP+mfile+CPE2_SYMBOL_SCOPE_SEP+"anonymous"+std::to_string(NewNameCount++);
+    //return "local"CPE2_SYMBOL_SCOPE_SEP+mfile+CPE2_SYMBOL_SCOPE_SEP+"anonymous"+std::to_string(NewNameCount++);
+	return "anonymous"+std::to_string(NewNameCount++);
+	//return currentScope->name+CPE2_SYMBOL_SCOPE_SEP+"anonymous"+std::to_string(NewNameCount++);
 }
 
 std::string getNewVariableName()

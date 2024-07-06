@@ -2,8 +2,8 @@
  * Created Date: Tuesday June 4th 2024
  * Author: Lilith
  * -----
- * Last Modified: Tuesday June 4th 2024 3:25:05 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Sat Jun 29 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
@@ -30,6 +30,7 @@
 /** @file */
 
 #include <compiler.h>
+#include <class_variable.h>
 #include <amd64.cgu.hxx>
 
 namespace runtime
@@ -92,5 +93,43 @@ namespace runtime
 	void leave()
 	{
 		amd64::leave();
+	}
+
+	/**
+	 * @brief performs unsigned integer addition
+	 * 
+	 * @param a first input
+	 * @param b second input
+	 * @return variable holding the result
+	 */
+	variable* UnsignedIntegerAddition(variable* a, variable* b)
+	{
+		return amd64::UnsignedIntegerAddition(a, b);
+	}
+	
+	void RelativeControlTransfer(ImmediateValue offset)
+	{
+		return amd64::RelativeControlTransfer(offset);
+	}
+	void AbsoluteControlTransfer(ImmediateValue address)
+	{
+		return amd64::AbsoluteControlTransfer(address);
+	}
+
+	/**
+	 * @brief save all user registers to the stack except the stack pointer, the frame pointer and the thread-data pointer
+	 * @return stack frame offset of saved data
+	 */
+	uint64_t SaveAll()
+	{
+		return amd64::SaveAll();
+	}
+
+	/**
+	 * @brief load all user registers from the stack except the stack pointer, the frame pointer and the thread-data pointer
+	 */
+	void LoadAll(uint64_t offset)
+	{
+		return amd64::LoadAll(offset);
 	}
 }

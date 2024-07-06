@@ -103,7 +103,7 @@ static void setFunctionStorages(function* func)
 			else
 			{
 				// pass via stack
-				uint64_t offset = func->stack.push(arg->dataType->size);
+				uint64_t offset = func->stack->push(arg->dataType->size);
 				storage->mode = amd64::StorageMode::IndirectRegister;
 				storage->displacement = offset;
 				storage->reg = amd64::Register::rbp;

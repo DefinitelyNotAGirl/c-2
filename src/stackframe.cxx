@@ -29,7 +29,7 @@ uint64_t stackframe::push(uint64_t bytes)
 	this->m_workingOffset += bytes;
 	if((this->m_workingOffset+bytes) > (this->m_size))
 		this->m_size = this->m_workingOffset+bytes;
-	return this->m_size;
+	return this->m_workingOffset;
 }
 
 uint64_t stackframe::pop(uint64_t bytes)

@@ -1,32 +1,4 @@
-/*
- * Created Date: Monday June 10th 2024
- * Author: Lilith
- * -----
- * Last Modified: Monday June 10th 2024 4:03:49 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
- * -----
- * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
- * 
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use, copy,
- * modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- */
+#pragma once
 
 namespace elf64
 {
@@ -227,12 +199,12 @@ namespace elf64
 	};
 
 	struct SymbolTableEntry {
-		uint32_t name;
-		uint8_t info;
-		uint8_t other;
-		uint16_t SectionTableIndex;
-		uint64_t SymbolValue;
-		uint64_t SymbolSize;
+		uint32_t name = 0;
+		uint8_t info = 0;
+		uint8_t other = 0;
+		uint16_t SectionTableIndex = 0;
+		uint64_t SymbolValue = 0;
+		uint64_t SymbolSize = 0;
 		SymbolTableEntry(){}
 		SymbolTableEntry(SymbolTableEntry& e)
 			:name(e.name),info(e.info),other(e.other),SectionTableIndex(e.SectionTableIndex),SymbolValue(e.SymbolValue),SymbolSize(e.SymbolSize){}
@@ -259,8 +231,8 @@ namespace elf64
 		*/
 		SYMTAB	= 0x0001,
 		TEXT 	= 0x0002,
-		DATA 	= 0x0003,
-		RODATA	= 0x0004,
+		DATA 	= 0x0004,
+		RODATA	= 0x0006,
 	};
 	inline uint16_t to_uint16(SectionTableIndex index)
 	{

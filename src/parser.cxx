@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tue Jun 25 2024
+ * Last Modified: Sat Jul 06 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -51,6 +51,7 @@
 #include <issues.hxx>
 #include <output.hxx>
 #include <ELF64.hxx>
+#include <cgu.h>
 
 #define IM_NOT_STUCK nullptr
 
@@ -731,7 +732,8 @@ void updateCurrentScope(scope* sc)
 		std::cout << "\033[35m[INFO]\033[0m updating scope: " << sc->name << std::endl;
 	lastScope = currentScope;
 	currentScope = sc;
-	compilerBug("unimplemented: change code generation destination");
+	if(sc->func != nullptr)
+		code = sc->func->code;
 }
 
 #include <resources.hxx>
@@ -813,6 +815,268 @@ uint64_t alignToMultiple(uint64_t value, uint64_t alignment)
 
 variable* call(function* func,std::vector<variable*> args)
 {
+	if(args.size() != func->vparams.size())
+		compilerBug("invalid call to variable* call(function* func,std::vector<variable*> args), args.size() != func->vparams.size()");
+	std::cout << "call to function: " << func->expression_ansi() << std::endl;
+	if(func->isPrimitive)
+	{
+		if(true)
+		{
+			//attempt to compute at compile time
+			switch(func->op)
+			{
+				case(primitiveOP::add):
+				{
+					if(args[0]->storageArch == Architecture::storage_IntegerImmediate && args[1]->storageArch == Architecture::storage_IntegerImmediate)
+					{
+						variable* result = new variable;
+						result->storageArch = Architecture::storage_IntegerImmediate;
+						result->storage = (uint64_t)args[0]->storage + (uint64_t)args[1]->storage;
+						result->dataType = getType("u64");
+						result->name = "____cpe2internalresult";
+					}
+					break;
+				}
+				case(primitiveOP::mul):
+				{
+					if(args[0]->storageArch == Architecture::storage_IntegerImmediate && args[1]->storageArch == Architecture::storage_IntegerImmediate)
+					{
+						variable* result = new variable;
+						result->storageArch = Architecture::storage_IntegerImmediate;
+						result->storage = (uint64_t)args[0]->storage * (uint64_t)args[1]->storage;
+						result->dataType = getType("u64");
+						result->name = "____cpe2internalresult";
+					}
+					break;
+				}
+				case(primitiveOP::assign):
+				{
+					if(args[0]->storageArch == Architecture::storage_IntegerImmediate && args[1]->storageArch == Architecture::storage_IntegerImmediate)
+					{
+						args[0]->storage = args[1]->storage;
+						return args[0];
+					}
+					break;
+				}
+				case(primitiveOP::SYSCALL):break;
+				default:
+					compilerBug("compile time operation not implemented: "+std::string(stringify(func->op)));
+			}
+		}
+		//+
+		//+ check if any arguments do not have proper storage (storage_IntegerImmediate or such)
+		//+
+		for(uint64_t i = 0;i<args.size();i++){
+			if(args[i]->storageArch == Architecture::storage_IntegerImmediate)
+			{
+				variable* src = args[i];
+				args[i] = new variable(*src);
+				args[i]->storageArch = Architecture::AMD64;
+				args[i]->storage = (void*)(new amd64::VariableStorage);
+				((amd64::VariableStorage*)args[i]->storage)->mode = amd64::StorageMode::DirectImmediate;
+				((amd64::VariableStorage*)args[i]->storage)->immediate = ImmediateValue((uint64_t)src->storage);
+			}
+			else if(args[i]->storageArch == Architecture::storage_member)
+			{
+				variable* src = args[i];
+				args[i] = new variable(*src);
+				args[i]->storageArch = Architecture::AMD64;
+				args[i]->storage = (void*)(new amd64::VariableStorage);
+				if(src->parent->storageArch == Architecture::AMD64)
+				{
+					//+
+					//+	child of value
+					//+
+					if(src->parent->dataType->valueType == nullptr)
+					{
+						//+
+						//+	[reg+disp0/8/32]
+						//+
+						if(((amd64::VariableStorage*)src->parent->storage)->mode == amd64::StorageMode::IndirectRegister)
+						{
+							((amd64::VariableStorage*)args[i]->storage)->mode = amd64::StorageMode::IndirectRegister;
+							((amd64::VariableStorage*)args[i]->storage)->reg = ((amd64::VariableStorage*)src->parent->storage)->reg;
+							((amd64::VariableStorage*)args[i]->storage)->displacement = ImmediateValue((uint64_t)src->storage);
+						}
+						else
+							compilerBug("unimplemented: child of off-stack object");	
+					}
+					//+
+					//+	child of reference
+					//+
+					else
+					{
+						if(((amd64::VariableStorage*)src->parent->storage)->mode == amd64::StorageMode::DirectRegister)
+						{
+							((amd64::VariableStorage*)args[i]->storage)->mode = amd64::StorageMode::IndirectRegister;
+							((amd64::VariableStorage*)args[i]->storage)->reg = ((amd64::VariableStorage*)src->parent->storage)->reg;
+							((amd64::VariableStorage*)args[i]->storage)->displacement = ImmediateValue((uint64_t)src->storage);
+						}
+						else compilerBug("unimplemented: child of non-register reference");
+					}
+				}
+				else
+					compilerBug("parent-child architecture combination invalid");
+			}
+		}
+		switch(func->op)
+		{
+			case(primitiveOP::add):
+				return runtime::UnsignedIntegerAddition(args[0],args[1]);
+			case(primitiveOP::assign):
+				runtime::copy(args[1],args[0]);
+				return args[1];
+			case(primitiveOP::SYSCALL):
+			{
+				switch(currentArchitecture)
+				{
+					case(Architecture::AMD64):
+						code->push({
+							0x0F,
+							amd64::opcode::secondary::syscall
+						});
+						return nullptr;
+						break;
+				}
+				break;
+			}
+			default:
+				compilerBug("runtime operation not implemented: "+std::string(stringify(func->op)));
+		}
+	}
+	else
+	{
+		//+
+		//+ check if any arguments do not have proper storage (storage_IntegerImmediate or such)
+		//+
+		for(uint64_t i = 0;i<args.size();i++){
+			if(args[i]->storageArch == Architecture::storage_IntegerImmediate)
+			{
+				variable* src = args[i];
+				args[i] = new variable(*src);
+				args[i]->storageArch = Architecture::AMD64;
+				args[i]->storage = (void*)(new amd64::VariableStorage);
+				((amd64::VariableStorage*)args[i]->storage)->mode = amd64::StorageMode::DirectImmediate;
+				((amd64::VariableStorage*)args[i]->storage)->immediate = ImmediateValue((uint64_t)src->storage);
+			}
+			else if(args[i]->storageArch == Architecture::storage_member)
+			{
+				variable* src = args[i];
+				args[i] = new variable(*src);
+				args[i]->storageArch = Architecture::AMD64;
+				args[i]->storage = (void*)(new amd64::VariableStorage);
+				if(src->parent->storageArch == Architecture::AMD64)
+				{
+					//+
+					//+	child of value
+					//+
+					if(src->parent->dataType->valueType == nullptr)
+					{
+						//+
+						//+	[reg+disp0/8/32]
+						//+
+						if(((amd64::VariableStorage*)src->parent->storage)->mode == amd64::StorageMode::IndirectRegister)
+						{
+							((amd64::VariableStorage*)args[i]->storage)->mode = amd64::StorageMode::IndirectRegister;
+							((amd64::VariableStorage*)args[i]->storage)->reg = ((amd64::VariableStorage*)src->parent->storage)->reg;
+							((amd64::VariableStorage*)args[i]->storage)->displacement = ImmediateValue((uint64_t)src->storage);
+						}
+						else
+							compilerBug("unimplemented: child of off-stack object");	
+					}
+					//+
+					//+	child of reference
+					//+
+					else
+					{
+						compilerBug("unimplemented: child of reference");
+					}
+				}
+				else
+					compilerBug("parent-child architecture combination invalid");
+			}
+		}
+		switch(currentArchitecture)
+		{
+			case(Architecture::AMD64):
+			{
+				uint64_t pushed = 0;
+				std::vector<variable*> saved;
+				//+
+				//+ check if any arguments need to be moved out of the way
+				//+
+				for(uint64_t isrc = 0;isrc<args.size();isrc++){
+					bool moved = false;
+					variable* src = args[isrc];
+					if(src->storageArch != currentArchitecture)
+						compilerBug("argument architecture mismatch: "+std::to_string((int)src->storageArch)+"("+src->name+") - "+std::to_string((int)currentArchitecture));
+					amd64::VariableStorage* storage = (amd64::VariableStorage*)src->storage;
+					if(storage->mode != amd64::StorageMode::DirectRegister)
+					{
+						saved.push_back(nullptr);
+						continue;
+					}
+					for(uint64_t idst = 0;idst<args.size();idst++){
+						variable* dst = func->vparams[idst];
+						if(dst->storageArch != currentArchitecture)
+							compilerBug("argument architecture mismatch");
+						if(((amd64::VariableStorage*)dst->storage)->mode != amd64::StorageMode::DirectRegister)
+							continue;
+						if(((amd64::VariableStorage*)dst->storage)->reg == storage->reg)
+						{
+							#if false
+								code->placeSymbol(SymbolType::CodeLocation,0,".debug: moving arg "+src->name+" to avoid parameter "+dst->name);
+								code->push({amd64::opcode::nop});
+							#endif
+							args[isrc] = new variable(*src);
+							args[isrc]->storage = (void*)(new amd64::VariableStorage);
+							((amd64::VariableStorage*)args[isrc]->storage)->displacement = ImmediateValue(negative(func->stack->push(src->dataType->size)));
+							((amd64::VariableStorage*)args[isrc]->storage)->mode = amd64::StorageMode::IndirectRegister;
+							((amd64::VariableStorage*)args[isrc]->storage)->reg = amd64::Register::rbp;
+							runtime::copy(src,args[isrc]);
+							moved = true;
+						}
+					}
+					if(!moved)
+					{
+						variable* save = new variable(*src);
+						((amd64::VariableStorage*)save->storage)->displacement = ImmediateValue(negative(func->stack->push(src->dataType->size)));
+						((amd64::VariableStorage*)save->storage)->mode = amd64::StorageMode::IndirectRegister;
+						((amd64::VariableStorage*)save->storage)->reg = amd64::Register::rbp;
+						saved.push_back(save);
+					}
+					else
+					{
+						saved.push_back(nullptr);
+					}
+				}
+				for(uint64_t i = 0;i<args.size();i++)
+				{
+					variable* src = args[i];
+					variable* dst = func->vparams[i];
+					#if false
+						code->placeSymbol(SymbolType::CodeLocation,0,".debug: copy "+src->name+" to parameter "+dst->name);
+					#endif
+					runtime::copy(src,dst);
+				}
+				runtime::call(func);
+				for(uint64_t i = 0;i<args.size();i++)
+				{
+					if(saved[i] == nullptr)
+						continue;
+					#if false
+						code->placeSymbol(SymbolType::CodeLocation,0,".debug: restore "+args[i]->name);
+					#endif
+					runtime::copy(saved[i],args[i]);
+				}
+				func->stack->pop(pushed);
+				return func->returnValue;
+			}
+			default:
+				compilerBug("call not implemented for current architecture");
+		}
+	}
+	compilerBug("call failure");
 	return nullptr;
 }
 
@@ -883,19 +1147,41 @@ bool endBody(scope*& ts, token& t, line& L)
 		}
 		if(ts->t == scopeType::FUNCTION)
 		{
-			section* fcode = new section;
+			section imcode;
 			if(!ts->func->isLocal)
+				imcode.placeSymbol(SymbolType::GlobalFunction,0,ts->func->symbol);
+			else
+				imcode.placeSymbol(SymbolType::LocalFunction,0,ts->func->symbol);
+			//,
+			//, generic prologue
+			//,
 			{
-				compilerBug("unimplemented: place function symbol");
+				if(ts->func->stack->size() > 0)
+				{
+					imcode.push({amd64::opcode::enter::rBP__imm16__imm8});
+					imcode.push(amd64::imm16(ts->func->stack->size()));
+					imcode.push({(byte)0});
+				}
 			}
-			//finish up function
-			ts->func->abi->genProlouge(fcode, ts);
-			compilerBug("unimplemented: add function code to output");
-			fcode->push(ts->func->code);
-			ts->func->abi->genEpilouge(fcode, ts);
+			ts->func->abi->genProlouge(&imcode, ts);
+			imcode.push(ts->func->code);
+			ts->func->abi->genEpilouge(&imcode, ts);
+			//,
+			//, generic epilogue
+			//,
+			{
+				std::string sym = ts->func->symbol+".epilogue";
+				imcode.placeSymbol(SymbolType::CodeLocation,0,sym);
+				if(ts->func->stack->size() > 0)
+					imcode.push(amd64::opcode::leave::rBP);
+				imcode.push(amd64::opcode::ret_near::_);
+			}
 			for(section* block : ts->extraCodeBlocks)
-				fcode->push(block);
-			compilerBug("unimplemented: function debug information");
+				imcode.push(block);
+			imcode.symbols[0].size = imcode.size();
+			text.push(&imcode);
+			imcode.data = nullptr;
+			unimplementedDebugInfo("function");
 			mOUT(moFunctionID, ts->func);
 		}
 		else if(ts->t == scopeType::CONDITIONAL_BLOCK)
@@ -912,15 +1198,13 @@ bool endBody(scope*& ts, token& t, line& L)
 					}
 					IV++;
 				}
-				compilerBug("unimplemented: stack frame management");
-				compilerBug("unimplemented: jump to ts->reentrySymbol");
+				runtime::RelativeControlTransfer(ts->reentrySymbol);
 			}
 			else
 			{
 				for(section* block : ts->extraCodeBlocks)
 					ts->parent->extraCodeBlocks.push_back(block);
-				compilerBug("unimplemented: stack frame management");
-				compilerBug("unimplemented: jump to ts->reentrySymbol");
+				runtime::RelativeControlTransfer(ts->reentrySymbol);
 			}
 			//else
 			//    std::cout << ts->fstore->stackSize << " <= " << ts->parent->fstore->stackSize << std::endl;
@@ -932,7 +1216,6 @@ bool endBody(scope*& ts, token& t, line& L)
 			ts->parent->func->code->push(ts->func->code);
 			for(section* block : ts->extraCodeBlocks)
 				ts->parent->extraCodeBlocks.push_back(block);
-			compilerBug("unimplemented: stack frame management");
 		}
 		else if(ts->t == scopeType::DUMMY)
 		{
@@ -940,15 +1223,13 @@ bool endBody(scope*& ts, token& t, line& L)
 		}
 		else if(ts->t == scopeType::TRY)
 		{
-			compilerBug("unimplemented: stack frame management");
 			ts->parent->func->code = ts->func->code;
 			for(uint64_t I = 0;I<ts->extraCodeBlocks.size();I++)
 				ts->parent->extraCodeBlocks.push_back(ts->extraCodeBlocks[I]);
 		}
 		else if(ts->t == scopeType::CATCH)
 		{
-			compilerBug("unimplemented: stack frame management");
-			compilerBug("unimplemented: jump to ts->parent->reentrySymbol");
+			runtime::RelativeControlTransfer(ts->parent->reentrySymbol);
 			ts->parent->extraCodeBlocks[0]->push(ts->extraCodeBlocks[0]);
 			ts->parent->extraCodeBlocks[1]->push(ts->extraCodeBlocks[1]);
 			ts->parent->extraCodeBlocks.push_back(ts->func->code);
@@ -957,7 +1238,6 @@ bool endBody(scope*& ts, token& t, line& L)
 		}
 		else if(ts->t == scopeType::TRY_CATCH)
 		{
-			compilerBug("unimplemented: stack frame management");
 			if(t.type == 8 && t.text == "catch")
 			{
 				goToParentScope = false;
@@ -1057,6 +1337,7 @@ class dummy_endline{uint64_t __dummycontent;};
 class dummy_endparse{uint64_t __dummycontent;};
 #define endparse ((dummy_endparse*)0)
 void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>& lines, uint64_t& i);
+std::stack<uint64_t> trycatchSaveallBase;
 void parse(std::vector<line> lines)
 {
 	if(lines.size() == 0)
@@ -1076,8 +1357,20 @@ void parse(std::vector<line> lines)
 	//,
 	//, parse
 	//,
-	for(line& L : lines)
-		parseline(L,is_vstc_send,is_vsls_send,lines,i);
+	try {
+		for(line& L : lines)
+		{
+			//+
+			//+ debug symbol output
+			//+
+			#if false
+				if(code != nullptr)
+					code->placeSymbol(SymbolType::CodeLocation,0,".debug: "+L.text);
+			#endif
+			parseline(L,is_vstc_send,is_vsls_send,lines,i);
+		}
+	}
+	catch(dummy_endparse*){}
 }
 /**
  * @brief this can pretty much be treated as the compilers core
@@ -1356,7 +1649,14 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						options::fcpl = atoi(t.text.c_str());
 					} else if (t.text == "ABI") {
 						t			  = L.nextToken();
+						noSuchABI::error.push([](noSuchABI e) -> int {return 0;});
 						ABI* abi = getABI(t.text);
+						if(abi == nullptr)
+						{
+							noSuchABI::error.pop();
+							noSuchABI("",originCoreHere,source(currentFile,L,t),t.text);
+						}
+						noSuchABI::error.pop();
 						defaultABI = abi;
 					} else if(t.text == "once") {
 						bool found = false;
@@ -1909,7 +2209,10 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 											}
 										} else {
 											t = L.nextToken();
-											compilerBug("unimplemented: litop resolve value");
+											variable* lv = resolve(t);
+											if(lv->storageArch != Architecture::storage_IntegerImmediate)
+												nonImmediateLitop(lop->name,originCoreHere,source(currentFile,L,t));
+											lop->value = (uint64_t)lv->storage;
 											litops.push_back(lop);
 										}
 										break;
@@ -1984,8 +2287,24 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							invalidUseOfKeywordInScope("",originCoreHere,source(currentFile,L,t),currentScope);
 						t = L.nextToken();
 						variable* retVal = resolve(t);
-						compilerBug("unimplemented: return, copy data");
-						compilerBug("unimplemented: return, jump to epilogue");
+						std::vector<variable*> args = {currentScope->func->returnValue,retVal};
+						function* copyFunc = getFunction("operator=",args);
+						std::cout << L.text << std::endl;
+						call(copyFunc,args);
+						std::cout << "return done" << std::endl;
+						if(currentArchitecture == Architecture::AMD64)
+						{
+							code->push({0xE9,0x00,0x00,0x00,0x00});
+							code->Relocations.push_back(
+								smu::RelocationEntry(
+									code->size()-4,
+									4,
+									smu::RelocationType::Relative,currentScope->name+".epilogue"
+								)
+							);
+						}
+						else
+							compilerBug("unimplemented: return, jump to epilogue");
 					} else if (t.text == "while") {
 //,####################################################################################################################
 //,####################################################################################################################
@@ -2007,13 +2326,73 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						sc->func->code = new section;
 						sc->reentrySymbol = sc->name+CPE2_SYMBOL_SCOPE_SEP"reentry";
 						sc->leadingSpace=currentScope->leadingSpace+tabLength;
-						compilerBug("unimplemented: while, place reentry symbol");
-						line conditionLine = L;
-						conditionLine.tpos = 0;
-						conditionLine.text = L.restText();
-						token cond = conditionLine.nextToken();
-						variable* condition = resolve(cond);
-						compilerBug("unimplemented: while, conditional jump");
+						code->placeSymbol(SymbolType::CodeLocation,0,sc->reentrySymbol);
+						code->placeSymbol(SymbolType::CodeLocation,0,sc->name);
+						line conditionLine;
+						conditionLine.lineNum = L.lineNum;
+						conditionLine.file = L.file;
+						variable* condition;
+						t = L.nextToken();
+						if(t.type == 30)
+						{
+							uint64_t l = 0;
+							do {
+								switch(t.type)
+								{
+									case(0):
+										unexpectedBufferTermination("condition expression, logical line terminated",originCoreHere,source());
+									case(30):
+										l++;
+										goto __default_wce;
+									case(31):
+										l--;
+									default:
+										__default_wce:;
+										conditionLine.text += t.text+" ";
+								}
+								t = L.nextToken();
+							} while(l > 0);
+							conditionLine.text = conditionLine.text.substr(2,conditionLine.text.length()-4);
+							token conditionToken = conditionLine.nextToken();
+							condition = resolve(conditionToken);
+							if(condition == nullptr)
+								compilerBug("assertion failed: condition != nullptr");
+						} 
+						else 
+							unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{30});
+						if(currentArchitecture == Architecture::AMD64)
+						{
+							amd64::VariableStorage* cs = (amd64::VariableStorage*)condition->storage;
+							if(cs->mode == amd64::StorageMode::DirectRegister)
+							{
+								code->push({
+									amd64::prefix::REX(1,0,0,amd64::register_decode_rex(cs->reg)),
+									amd64::opcode::cmp::rm16_32_64__imm8,
+									amd64::modRM(0x7,amd64::AddressingMode::RegisterDirect,cs->reg),
+									0
+								});
+								code->push({
+									0x0F,
+									amd64::opcode::secondary::jcc::rel16_32off(amd64::Condition::NotEqual),
+									0,0,0,0
+								});
+								//+
+								//+ linker info
+								//+
+								{
+									code->Relocations.push_back(
+										smu::RelocationEntry(
+											code->size()-4,
+											4,
+											smu::RelocationType::Relative,
+											sc->name
+										)
+									);
+								}
+							}
+							else
+								compilerBug("unimplemented condition storage mode");
+						}
 						//prepare for body
 						updateCurrentScope(sc);
 						section* endcode = new section;
@@ -2021,7 +2400,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						currentScope->func->code = new section;
 						currentScope->extraCodeBlocks.push_back(currentScope->func->code);
 						currentScope->extraCodeBlocks.push_back(endcode);
-						compilerBug("unimplemented: while, place symbol: currentScope->name");
+						code->placeSymbol(SymbolType::CodeLocation,0,currentScope->name);
 //,####################################################################################################################
 //,####################################################################################################################
 //, ███████  ██████  ██████
@@ -2218,63 +2597,76 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							sc->extraCodeBlocks.push_back(sc->func->code);
 							sc->reentrySymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
 							//generate conditional jump code
-							line cl = L;
-							cl.text = "";
-							cl.tpos = 0;
-							token cond;
+							line conditionLine;
+							conditionLine.lineNum = L.lineNum;
+							conditionLine.file = L.file;
+							variable* condition;
+							t = L.nextToken();
 							if(t.type == 30)
 							{
-								t = L.nextToken();
-								cond = t;
-								//while(cond.type != 31)//while != )
-								//{
-								//    //std::cout << "type: " << t.type << std::endl;
-								//    //std::cout << "text: " << 
-								//    cond = L.nextToken();
-								//    cl.text += cond.text;
-								//}
-								//cl.tpos = 0;
-								for(char c : L.restText())
-								{
-									switch(c)
+								uint64_t l = 0;
+								do {
+									switch(t.type)
 									{
-										case(')'):
-											goto endCLine2;
+										case(0):
+											unexpectedBufferTermination("condition expression, logical line terminated",originCoreHere,source());
+										case(30):
+											l++;
+											goto __default_eice;
+										case(31):
+											l--;
 										default:
-											cl.text.push_back(c);
+											__default_eice:;
+											conditionLine.text += t.text+" ";
 									}
-								}
-								endCLine2:;
-							}
-							else
+									t = L.nextToken();
+								} while(l > 0);
+								conditionLine.text = conditionLine.text.substr(2,conditionLine.text.length()-4);
+								std::cout << "condition: " << conditionLine.text << std::endl;
+								token conditionToken = conditionLine.nextToken();
+								condition = resolve(conditionToken);
+								if(condition == nullptr)
+									compilerBug("assertion failed: condition != nullptr");
+								std::cout << "condition type: " << condition->dataType->name << std::endl;
+							} 
+							else 
+								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{30});
+							if(currentArchitecture == Architecture::AMD64)
 							{
-								cond = t;
-								while(cond.type != 40)//while != :
+								amd64::VariableStorage* cs = (amd64::VariableStorage*)condition->storage;
+								if(cs->mode == amd64::StorageMode::DirectRegister)
 								{
-									cond = L.nextToken();
-									//if(cond.type != 40) {
-									//    cl.text += cond.text;
-									//}
-								}
-								//cl.tpos = 0;
-								for(char c : L.restText())
-								{
-									switch(c)
+									code->push({
+										amd64::prefix::REX(1,0,0,amd64::register_decode_rex(cs->reg)),
+										amd64::opcode::cmp::rm16_32_64__imm8,
+										amd64::modRM(0x7,amd64::AddressingMode::RegisterDirect,cs->reg),
+										0
+									});
+									code->push({
+										0x0F,
+										amd64::opcode::secondary::jcc::rel16_32off(amd64::Condition::NotEqual),
+										0,0,0,0
+									});
+									//+
+									//+ linker info
+									//+
 									{
-										case(':'):
-											goto endCLine3;
-										default:
-											cl.text.push_back(c);
+										code->Relocations.push_back(
+											smu::RelocationEntry(
+												code->size()-4,
+												4,
+												smu::RelocationType::Relative,
+												sc->name
+											)
+										);
 									}
 								}
-								endCLine3:;
+								else
+									compilerBug("unimplemented condition storage mode: "+std::to_string((uint64_t)cs->mode),originCoreHere,source(currentFile,L,t),"");
 							}
-							cond = cl.nextToken();
-							variable* condition = resolve(cond);
-							compilerBug("unimplemented: else if, conditional jump");
 							//set return symbol
 							updateCurrentScope(sc);
-							compilerBug("unimplemented: else if, set return symbol");
+							code->placeSymbol(SymbolType::CodeLocation,0,sc->name);
 						}
 						else
 						{
@@ -2300,7 +2692,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							sc->reentrySymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
 							//set return symbol
 							updateCurrentScope(sc);
-							compilerBug("unimplemented: else, set return symbol");
+							code->placeSymbol(SymbolType::CodeLocation,0,sc->name);
 						}
 					} else if (t.text == "try") {
 //,####################################################################################################################
@@ -2336,20 +2728,16 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							//+ pre code
 							//+
 							{
-								compilerBug("unimplemented: try, pre code");
 								code = sc->extraCodeBlocks[0];
-								//-
-								//- save registers
-								//-
-								{
-								}
+								code->placeSymbol(SymbolType::CodeLocation,0,sc->name+CPE2_SYMBOL_SCOPE_SEP"prologue");
+								trycatchSaveallBase.push(runtime::SaveAll());
 							}
 							//+
 							//+ post code
 							//+
 							{
-								compilerBug("unimplemented: try, post code");
 								code = sc->extraCodeBlocks[1];
+								code->placeSymbol(SymbolType::CodeLocation,0,sc->reentrySymbol);
 							}
 							currentScope = acs;
 							updateCurrentScope(sc);
@@ -2381,7 +2769,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							*(sc->func) = *(currentScope->func);
 							sc->func->code = new section;
 							updateCurrentScope(sc);
-							compilerBug("unimplemented: try, place entry symbol");
+							code->placeSymbol(SymbolType::CodeLocation,0,currentScope->name);
 						}
 						currentScope->tryCounter++;
 					} else if (t.text == "catch") {
@@ -2411,7 +2799,8 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						//, get type to catch
 						//,
 						type* catchType;
-						std::string handlerSymbol;
+						std::string symbol_threaddata_routine;
+						std::string symbol_threaddata_datadst;
 						bool useRoundBrackets = false;
 						{
 							t = L.nextToken();
@@ -2423,9 +2812,13 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							if(t.type != 9)
 								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{9});
 							catchType = getType(t.text);
-							handlerSymbol = std::string("____cpe2")+CPE2_SYMBOL_SCOPE_SEP+"exceptions"+CPE2_SYMBOL_SCOPE_SEP+"handler_"+CPE2_SYMBOL_SCOPE_SEP+catchType->mangledName;
+							symbol_threaddata_routine = std::string("____cpe2")+CPE2_SYMBOL_SCOPE_SEP+"exceptions"+CPE2_SYMBOL_SCOPE_SEP+catchType->mangledName+CPE2_SYMBOL_SCOPE_SEP+"routine";
+							symbol_threaddata_datadst = std::string("____cpe2")+CPE2_SYMBOL_SCOPE_SEP+"exceptions"+CPE2_SYMBOL_SCOPE_SEP+catchType->mangledName+CPE2_SYMBOL_SCOPE_SEP+"datadst";
+							importExternalValue(symbol_threaddata_routine);
+							importExternalValue(symbol_threaddata_datadst);
 						}
 						sc->name += CPE2_SYMBOL_SCOPE_SEP + catchType->mangledName;
+						std::string symbol_routine = sc->name;
 						//,
 						//, declare variable for exception
 						//,
@@ -2436,8 +2829,18 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{1});
 							var = new variable;
 							var->dataType = catchType;
+							var->storageArch = currentArchitecture;
+							if(currentArchitecture == Architecture::AMD64)
+							{
+								amd64::VariableStorage* storage = new amd64::VariableStorage;
+								var->storage = (void*)storage;
+								storage->mode = amd64::StorageMode::IndirectRegister;
+								storage->reg = amd64::Register::rbp;
+								storage->displacement = ImmediateValue(negative(currentScope->func->stack->push(catchType->size)));
+							}
+							else
+								compilerBug("unsupported current architecture: "+std::to_string((uint64_t)currentArchitecture));
 							var->name = t.text;
-							compilerBug("unimplemented: catch, exception data storage");
 							sc->variables.push_back(var);
 						}
 						//,
@@ -2457,48 +2860,227 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							else
 								unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{40,36});
 						}
-						compilerBug("unimplemented: catch, stack frame management");
 						//,
 						//, pre code
 						//,
+						uint64_t save_routine_offset = currentScope->func->stack->push(8);
+						uint64_t save_datadst_offset = currentScope->func->stack->push(8);
+						uint64_t datadst_offset = currentScope->func->stack->push(catchType->size);
 						{
-/* example output code:
-	mov rax, [____cpe2.exceptions.handler_.u64]
-	add rax, r15 ;? rax now base address of handler u64
-	# save old handler
-	movaps [rax+0], xmm0
-	movaps xmm0, [rsp+0]
-	# set address
-	lea rcx, cpe2main.try_catch0.catch.u64
-	mov [rax+0], rcx
-	# set arg destination
-	lea rcx, [rsp + 16]  ; Load effective address of rsp + 16 into rcx
-	mov [rax + 8], rcx   ; Move the value in rcx to [rax + 8]
-*/
-							compilerBug("unimplemented: catch, pre code");
 							code = preCode;
+							//,
+							//, save old handler
+							//,
+							{
+								//. load old handler address to rax
+								code->push({
+									amd64::prefix::REX(1,0,0,1),
+									amd64::opcode::mov::r16_32_64__rm16_32_64,
+									amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
+									0,0,0,0
+								});
+								//+
+								//+ linker info
+								//+
+								{
+									code->Relocations.push_back(
+										smu::RelocationEntry(
+											code->size()-4,
+											4,
+											smu::RelocationType::Absolute,
+											symbol_threaddata_routine
+										)
+									);
+								}
+								//. save rax to stack
+								code->push({
+									amd64::prefix::REX(1,0,0,0),
+									amd64::opcode::mov::rm16_32_64__r16_32_64,
+									amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::rbp)
+								});
+								code->push(amd64::imm32(save_routine_offset));
+								//. load old datadst to rax
+								code->push({
+									amd64::prefix::REX(1,0,0,1),
+									amd64::opcode::mov::r16_32_64__rm16_32_64,
+									amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
+									0,0,0,0
+								});
+								//+
+								//+ linker info
+								//+
+								{
+									code->Relocations.push_back(
+										smu::RelocationEntry(
+											code->size()-4,
+											4,
+											smu::RelocationType::Absolute,
+											symbol_threaddata_datadst
+										)
+									);
+								}
+								//. save rax to stack
+								code->push({
+									amd64::prefix::REX(1,0,0,0),
+									amd64::opcode::mov::rm16_32_64__r16_32_64,
+									amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::rbp)
+								});
+								code->push(amd64::imm32(save_datadst_offset));
+							}
 							//,
 							//, install new handler
 							//,
 							{
+								//. load handler address to rax
+								code->push({
+									amd64::prefix::REX(1,0,0,0),
+									amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rax),
+									0,0,0,0,0,0,0,0
+								});
+								//+
+								//+ linker info
+								//+
+								{
+									code->Relocations.push_back(
+										smu::RelocationEntry(
+											code->size()-8,
+											8,
+											smu::RelocationType::Absolute,
+											symbol_routine
+										)
+									);
+								}
+								//.
+								//. set routine address
+								//.
+								code->push({
+									amd64::prefix::REX(1,0,0,1),
+									amd64::opcode::mov::rm16_32_64__r16_32_64,
+									amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
+									0,0,0,0
+								});
+								//+
+								//+ linker info
+								//+
+								{
+									code->Relocations.push_back(
+										smu::RelocationEntry(
+											code->size()-4,
+											4,
+											smu::RelocationType::Absolute,
+											symbol_threaddata_routine
+										)
+									);
+								}
+								//.
+								//. set data destination address
+								//.
+								code->push({
+									amd64::prefix::REX(1,0,0,1),
+									amd64::opcode::mov::rm16_32_64__r16_32_64,
+									amd64::modRM(amd64::Register::rbp,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
+									0,0,0,0
+								});
+								//+
+								//+ linker info
+								//+
+								{
+									code->Relocations.push_back(
+										smu::RelocationEntry(
+											code->size()-4,
+											4,
+											smu::RelocationType::Absolute,
+											symbol_threaddata_datadst
+										)
+									);
+								}
+								code->push({
+									amd64::prefix::REX(1,0,0,1),
+									amd64::opcode::sub::rm16_32_64__imm16_32,
+									amd64::modRM(5,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
+								});
+								code->push(amd64::imm32(datadst_offset));
+								//+
+								//+ linker info
+								//+
+								{
+									code->Relocations.push_back(
+										smu::RelocationEntry(
+											code->size()-4,
+											4,
+											smu::RelocationType::Absolute,
+											symbol_threaddata_datadst
+										)
+									);
+								}
 							}
 						}
 						//,
 						//, post code
 						//,
 						{
-							compilerBug("unimplemented: catch, post code");
 							code = postCode;
 							//+
 							//+ restore old handler
 							//+
 							{
+								//. load old handler address
+								code->push({
+									amd64::prefix::REX(1,0,0,0),
+									amd64::opcode::mov::r16_32_64__rm16_32_64,
+									amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::rbp)
+								});
+								code->push(amd64::imm32(save_routine_offset));
+								code->push({
+									amd64::prefix::REX(1,0,0,1),
+									amd64::opcode::mov::rm16_32_64__r16_32_64,
+									amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
+									0,0,0,0
+								});
+								//+
+								//+ linker info
+								//+
+								{
+									code->Relocations.push_back(
+										smu::RelocationEntry(
+											code->size()-4,
+											4,
+											smu::RelocationType::Absolute,
+											symbol_threaddata_routine
+										)
+									);
+								}
+								//. load old datadst
+								code->push({
+									amd64::prefix::REX(1,0,0,0),
+									amd64::opcode::mov::r16_32_64__rm16_32_64,
+									amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::rbp)
+								});
+								code->push(amd64::imm32(save_datadst_offset));
+								code->push({
+									amd64::prefix::REX(1,0,0,1),
+									amd64::opcode::mov::rm16_32_64__r16_32_64,
+									amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
+									0,0,0,0
+								});
+								//+
+								//+ linker info
+								//+
+								{
+									code->Relocations.push_back(
+										smu::RelocationEntry(
+											code->size()-4,
+											4,
+											smu::RelocationType::Absolute,
+											symbol_threaddata_datadst
+										)
+									);
+								}
 							}
 						}
-						compilerBug("unimplemented: catch, stack frame management");
 						//set return symbol
 						updateCurrentScope(sc);
-						compilerBug("unimplemented: catch, set return symbol");
+						code->placeSymbol(SymbolType::CodeLocation,0,currentScope->name);
 						//,
 						//, handler code
 						//,
@@ -2507,21 +3089,27 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							//+ restore registers
 							//+
 							{
-								compilerBug("unimplemented: catch, restore registers");
+								runtime::LoadAll(trycatchSaveallBase.top());
 							}
 							//+
-							//+ restore stack pointer
+							//+ restore stack pointer and frame pointer
 							//+
 							{
-								compilerBug("unimplemented: catch, restore stack pointer");
+								code->push({
+									amd64::prefix::REX(1,0,0,1),
+									amd64::opcode::add::rm16_32_64__imm16_32,
+									amd64::modRM(0,amd64::AddressingMode::RegisterDirect,amd64::Register::rbp),
+								});
+								code->push(amd64::imm32(datadst_offset));
 							}
 						}
 						//,
 						//, add resource code
 						//,
-						{
-							compilerBug("unimplemented: catch, resource code");
+						if(catchType->ExceptionOffset == 0){
+							resourceCode.push_back("c2resource exception "+catchType->mangledName+";");
 						}
+						catchType->ExceptionOffset = 1;
 					} else if (t.text == "throw") {
 //,####################################################################################################################
 //,####################################################################################################################
@@ -2545,37 +3133,106 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							//+ check if throwVal is held in rax
 							//+
 							{
-								compilerBug("unimplemented: throw, check if throwVal is held in rax");
+								//+
+								//+ check if throwVal does not have proper storage (storage_IntegerImmediate or such)
+								//+
+								if(throwVal->storageArch == Architecture::storage_IntegerImmediate)
+								{
+									if(currentArchitecture == Architecture::AMD64)
+									{
+										variable* src = throwVal;
+										throwVal = new variable(*src);
+										throwVal->storageArch = Architecture::AMD64;
+										throwVal->storage = (void*)(new amd64::VariableStorage);
+										((amd64::VariableStorage*)throwVal->storage)->mode = amd64::StorageMode::DirectImmediate;
+										((amd64::VariableStorage*)throwVal->storage)->immediate = ImmediateValue((uint64_t)src->storage);
+									}
+								}
+								if(throwVal->storageArch != currentArchitecture)compilerBug("architecture mismatch");
+								if(currentArchitecture == Architecture::AMD64)
+								{
+									if(((amd64::VariableStorage*)throwVal->storage)->reg == amd64::Register::rax)
+									{
+										compilerBug("unimplemented: move throw data away from rax");
+									}
+								}
 							}
 						}
-						//,
-						//, get arg destination
-						//,
-						std::string handlerSymbol = std::string("____cpe2")+CPE2_SYMBOL_SCOPE_SEP+"exceptions"+CPE2_SYMBOL_SCOPE_SEP+"handler_"+CPE2_SYMBOL_SCOPE_SEP+throwVal->dataType->mangledName;
-						compilerBug("unimplemented: throw, get arg destination");
-						//,
-						//, pass data
-						//,
-						{
-							compilerBug("unimplemented: throw, pass data");
+						std::string handlerSymbol_routine = std::string("____cpe2")+CPE2_SYMBOL_SCOPE_SEP+"exceptions"+CPE2_SYMBOL_SCOPE_SEP+throwVal->dataType->mangledName+CPE2_SYMBOL_SCOPE_SEP+"routine";
+						std::string handlerSymbol_datadst = std::string("____cpe2")+CPE2_SYMBOL_SCOPE_SEP+"exceptions"+CPE2_SYMBOL_SCOPE_SEP+throwVal->dataType->mangledName+CPE2_SYMBOL_SCOPE_SEP+"datadst";						
+						if(throwVal->dataType->ExceptionOffset == 0){
+							importExternalValue(handlerSymbol_routine);
+							importExternalValue(handlerSymbol_datadst);
 						}
-						//,
-						//, load saved stack pointer
-						//,
-						{
-							compilerBug("unimplemented: throw, load saved stack pointer");
+						if(throwVal->dataType->ExceptionOffset == 0){
+							resourceCode.push_back("c2resource exception "+throwVal->dataType->mangledName+";");
 						}
+						throwVal->dataType->ExceptionOffset = 1;
 						//,
-						//, get handler address
+						//, pass data and load frame pointer
 						//,
+						if(currentArchitecture == Architecture::AMD64)
 						{
-							compilerBug("unimplemented: throw, get handler address");
+							code->push({
+								amd64::prefix::REX(1,0,0,1),
+								amd64::opcode::mov::r16_32_64__rm16_32_64,
+								amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
+								0,0,0,0
+							});
+							//+
+							//+ linker info
+							//+
+							{
+								code->Relocations.push_back(
+									smu::RelocationEntry(
+										code->size()-4,
+										4,
+										smu::RelocationType::Absolute,
+										handlerSymbol_datadst
+									)
+								);
+							}
+							variable dst;
+							dst.storageArch = Architecture::AMD64;
+							dst.storage = (void*)(new amd64::VariableStorage);
+							((amd64::VariableStorage*)dst.storage)->mode = amd64::StorageMode::IndirectRegister;
+							((amd64::VariableStorage*)dst.storage)->displacement = ImmediateValue(0);
+							((amd64::VariableStorage*)dst.storage)->reg = amd64::Register::rax;
+							runtime::copy(throwVal,&dst);
+							code->push({
+								amd64::prefix::REX(1,0,0,0),
+								amd64::opcode::mov::r16_32_64__rm16_32_64,
+								amd64::modRM(amd64::Register::rbp,amd64::Register::rax)
+							});
 						}
 						//,
 						//, jump to handler
 						//,
 						{
-							compilerBug("unimplemented: throw, jump to rax");
+							code->push({
+								amd64::prefix::REX(1,0,0,1),
+								amd64::opcode::mov::r16_32_64__rm16_32_64,
+								amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
+								0,0,0,0
+							});
+							//+
+							//+ linker info
+							//+
+							{
+								code->Relocations.push_back(
+									smu::RelocationEntry(
+										code->size()-4,
+										4,
+										smu::RelocationType::Absolute,
+										handlerSymbol_routine
+									)
+								);
+							}
+							code->push({
+								amd64::prefix::REX(1,0,0,0),
+								amd64::opcode::jmp::rm16_32_64,
+								amd64::modRM(amd64::Register::rax,amd64::Register::rax)
+							});
 						}
 					} else if (t.text == "c2resource") {
 //,####################################################################################################################
@@ -2588,51 +3245,15 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 //,####################################################################################################################
 //,####################################################################################################################
 						t = L.nextToken();
-						if(t.text == "symbol")
+						if(t.text == "exception")
 						{
+							emitExceptionSymbols = true;
 							t = L.nextToken();
-							if(t.text == "data")
-							{
-								t = L.nextToken();
-								line vsizel(t);
-								token vsizet = vsizel.nextToken();
-								variable* vsize = resolve(vsizet);
-								compilerBug("unimplemented: vsize immediate check");
-								uint64_t size = 0;
-								compilerBug("unimplemented: size assignment");
-								t = L.nextToken();
-								std::string name = t.text;
-								for(std::string sym : resourceSymbols){
-									if(sym == name)
-										compilerBug("symbol already exists.",originCoreHere,source(currentFile,L,t),"");
-								}
-								resourceSymbols.push_back(name);
-								compilerBug("unimplemented: create global symbol");
-								t = L.nextToken();
-								if(t.type == 0)
-								{
-									filldata:;
-									compilerBug("unimplemented: resource data fill");
-								}
-								else
-								{
-									if(t.text == "exceptionoffset")
-									{
-										compilerBug("unimplemented: exceptionoffset data");
-										t = L.nextToken();
-										emitExceptionSymbols = true;
-										if(t.type != 0)
-										{
-											variable* val = resolve(t);
-											compilerBug("unimplemented: exceptionoffset data");
-										}
-										size -= 8;
-										goto filldata;
-									}
-								}
-							}
-							else
-								compilerBug("invalid symbol type",originCoreHere,source(currentFile,L,t),"");
+							std::string sym_routine = std::string("____cpe2")+CPE2_SYMBOL_SCOPE_SEP+"exceptions"+CPE2_SYMBOL_SCOPE_SEP+t.text+CPE2_SYMBOL_SCOPE_SEP+"routine";
+							std::string sym_datadst = std::string("____cpe2")+CPE2_SYMBOL_SCOPE_SEP+"exceptions"+CPE2_SYMBOL_SCOPE_SEP+t.text+CPE2_SYMBOL_SCOPE_SEP+"datadst";
+							setGlobalValue(sym_routine,exceptionoffset+0);
+							setGlobalValue(sym_datadst,exceptionoffset+8);
+							exceptionoffset+=16;
 						}
 						else
 							compilerBug("invalid resource type",originCoreHere,source(currentFile,L,t),"");
@@ -2652,8 +3273,9 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							unexpectedTokenType("",originCoreHere,source(currentFile,L,t),{30});
 						std::vector<variable*> inputs;
 						std::vector<type*> tinputs;
-						std::vector<std::pair<variable*,variable*>> cpy;//copy from a to b
-						uint64_t stackOffset = 0;
+						uint64_t stackOffset = currentScope->func->stack->push(0);
+						uint64_t dataSize = 0;
+						uint64_t toff = 0;
 						while(true)
 						{
 							t = L.nextToken();
@@ -2672,13 +3294,19 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							}
 							//dump("resolving",&ivLine,"");
 							token ivt = ivLine.nextToken();
-							variable* var = resolve(ivt);
-							compilerBug("unimplemented: async input variable storage validity checking");
+							variable* src = resolve(ivt);
 							//,
 							//, move inputs to stack
 							//,
 							{
-								compilerBug("unimplemented: move async inputs to stack");
+								toff = currentScope->func->stack->push(src->dataType->size);
+								dataSize += src->dataType->size;
+								variable dst;
+								amd64::VariableStorage* storage = new amd64::VariableStorage;
+								dst.storage = (void*)storage;
+								storage->mode = amd64::StorageMode::IndirectRegister;
+								storage->reg = amd64::Register::rbp;
+								storage->displacement = ImmediateValue(toff);
 							}
 							t = L.nextToken();
 							if(t.type == 31)
@@ -2697,55 +3325,295 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 						//, create new stack (result stored in rax)
 						//,
 						{
-							compilerBug("unimplemented: get stack space for async thread");
-							//-
-							//- check for mmap errors
-							//-
+							//+
+							//+ Linux
+							//+
+							if(currentSystem == System::Linux)
 							{
-								compilerBug("unimplemented: mmap error checking");
-							}
-							//-
-							//- adjust base pointer
-							//-
-							{
-								compilerBug("unimplemented: adjust base pointer");
+								//+
+								//+ mmap system call
+								//+
+								{
+									//. clear rdi, let system choose address
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::_xor::r16_32_64__rm16_32_64,
+										amd64::modRM(amd64::Register::rdi,amd64::Register::rdi)
+									});
+									//. load 0x1000 to rsi, size = 4KiB
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rsi)
+									});
+									code->push(amd64::imm64(0x1000));
+									//. load flags to rdx
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rdx)
+									});
+									code->push(amd64::imm64((1<<0) | (1<<1)));
+									//. load flags to r10
+									code->push({
+										amd64::prefix::REX(1,0,0,1),
+										amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::r10)
+									});
+									code->push(amd64::imm64((1<<1) | (1<<5) | (1<<8)));
+									//. clear r8
+									code->push({
+										amd64::prefix::REX(1,1,0,1),
+										amd64::opcode::_xor::r16_32_64__rm16_32_64,
+										amd64::modRM(amd64::Register::r8,amd64::Register::r8)
+									});
+									//. clear r9
+									code->push({
+										amd64::prefix::REX(1,1,0,1),
+										amd64::opcode::_xor::r16_32_64__rm16_32_64,
+										amd64::modRM(amd64::Register::r9,amd64::Register::r9)
+									});
+									//. load sys_mmap (9) to rax
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rax)
+									});
+									code->push(amd64::imm64(9));
+									//. fire system call
+									code->push({
+										0x0F,
+										amd64::opcode::secondary::syscall
+									});
+								}
+								//+
+								//+ check for mmap errors
+								//+
+								{
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::test::rm16_32_64__r16_32_64,
+										amd64::modRM(amd64::Register::rax,amd64::Register::rax)
+									});
+									code->push({
+										amd64::opcode::jcc::rel8off(amd64::Condition::NotSign),
+										27
+									});
+									//. load 0x8000000000001000 to rdi
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rdi)
+									});
+									code->push(amd64::imm64(0x8000000000001000));
+									//. compare rax to rdi
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::cmp::r16_32_64__rm16_32_64,
+										amd64::modRM(amd64::Register::rax,amd64::Register::rdi)
+									});
+									//. jump if rax >= rdi
+									code->push({
+										amd64::opcode::jcc::rel8off(amd64::Condition::GreaterOrEqual),
+										12
+									});
+									//. load error handler address and call
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rdi)
+									});
+									code->push(amd64::imm64(0));
+									code->push({
+										amd64::opcode::call::rm16_32_64,
+										amd64::modRM(2,amd64::AddressingMode::RegisterDirect,amd64::Register::rax)
+									});
+								}
+								//+
+								//+ adjust base pointer
+								//+
+								{
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::sub::rAX__imm16_32,
+										0,0,0,0
+									});
+									//+
+									//+ linker info
+									//+
+									{
+										code->Relocations.push_back(
+											smu::RelocationEntry(
+												code->size()-4,
+												4,
+												smu::RelocationType::Absolute,
+												"____cpe2.threadDataSize"
+											)
+										);
+									}
+								}
 							}
 						}
 						//,
 						//, create copy of input data
 						//,
 						{
-							for(std::pair<variable*,variable*>& cpyp : cpy)
+							uint64_t bytes = dataSize;
+							uint64_t disp = 0;
+							uint64_t mbdisp = toff;
+							::amd64::AddressingMode addrMode = (bytes+mbdisp) <= (0b01111111) ? ::amd64::AddressingMode::RegisterIndirect_disp8 : ::amd64::AddressingMode::RegisterIndirect_disp32;
+							uint64_t opsize = 8;
+							amd64::Register src_base = amd64::Register::rbp;
+							amd64::Register dst_base = amd64::Register::rax;
+							while(opsize > 0)
 							{
-								compilerBug("unimplemented: create copy of async inputs");
+								while(bytes >= opsize)
+								{
+									//,
+									//, copy data to rdx
+									//,
+									{
+										if(opsize == 2)code->push({::amd64::prefix::legacy::OperandSizeOverride});
+										code->push({
+											::amd64::prefix::REX((opsize == 8),((src_base & (1<<4))>>4),0,((dst_base & (1<<4))>>4)),
+											(opsize > 1 ? ::amd64::opcode::mov::r16_32_64__rm16_32_64 : ::amd64::opcode::mov::r8__rm8),
+											::amd64::modRM(::amd64::Register::rax,addrMode,src_base)
+										});
+										switch(addrMode)
+										{
+											case(::amd64::AddressingMode::RegisterIndirect_disp8):
+												code->push({(byte)disp+mbdisp});
+												break;
+											case(::amd64::AddressingMode::RegisterIndirect_disp32):
+												code->push(::amd64::imm32(disp+mbdisp));
+												break;
+											default:
+												compilerBug("this code is supposed to be unreachable.");
+										}	
+									}
+									//,
+									//, copy data from rax to dst
+									//,
+									{
+										if(opsize == 2)code->push({::amd64::prefix::legacy::OperandSizeOverride});
+										code->push({
+											::amd64::prefix::REX((opsize == 8),((dst_base & (1<<4))>>4),0,((dst_base & (1<<4))>>4)),
+											(opsize > 1 ? ::amd64::opcode::mov::rm16_32_64__r16_32_64 : ::amd64::opcode::mov::rm8__r8),
+											::amd64::modRM(::amd64::Register::rax,addrMode,dst_base)
+										});
+										switch(addrMode)
+										{
+											case(::amd64::AddressingMode::RegisterIndirect_disp8):
+												code->push({(byte)disp});
+												break;
+											case(::amd64::AddressingMode::RegisterIndirect_disp32):
+												code->push(::amd64::imm32(disp));
+												break;
+											default:
+												compilerBug("this code is supposed to be unreachable.");
+										}
+									}
+									disp+=opsize;
+									bytes-=opsize;
+								}
+								opsize/=2;
 							}
 						}
 						//,
 						//, call system
 						//,
 						{
-							//+
-							//+ sys_clone
-							//+
+							if(currentSystem == System::Linux)
 							{
-								using namespace linux_6;
-								uint64_t clone_flags = CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_THREAD | CLONE_PTRACE;
-								compilerBug("unimplemented: sys_clone call");
+								//+
+								//+ sys_clone
+								//+
+								{
+									using namespace linux_6;
+									uint64_t clone_flags = CLONE_VM | CLONE_FS | CLONE_FILES | CLONE_THREAD | CLONE_PTRACE;
+									//. load flags to rdi
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rdi)
+									});
+									code->push(amd64::imm64(clone_flags));
+									//. copy new stack pointer from rax to rsi
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::mov::r16_32_64__rm16_32_64,
+										amd64::modRM(amd64::Register::rsi,amd64::Register::rax)
+									});
+									//. load sys_clone (56) to rax
+									code->push({
+										amd64::prefix::REX(1,0,0,0),
+										amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rax)
+									});
+									code->push(amd64::imm64(56));
+									//. fire system call
+									code->push({
+										0x0F,
+										amd64::opcode::secondary::syscall
+									});
+								}
+								code->push({
+									amd64::prefix::REX(1,0,0,0),
+									amd64::opcode::test::rm16_32_64__r16_32_64,
+									amd64::modRM(amd64::Register::rax,amd64::Register::rax)
+								});
+								code->push({
+									amd64::opcode::jcc::rel8off(amd64::Condition::NotZero),
+									18
+								});
 							}
-							std::string skipSymbol = getNewName();
-							compilerBug("unimplemented: sys_clone result checking");
 							//,
 							//, new thread code
 							//,
 							{
-								compilerBug("unimplemented: branch thread initialization");
+								code->push({
+									amd64::prefix::REX(1,1,0,0),
+									amd64::opcode::mov::r16_32_64__rm16_32_64,
+									amd64::modRM(amd64::Register::r15,amd64::Register::rsp)
+								});
+								code->push({
+									amd64::prefix::REX(1,0,0,0),
+									amd64::opcode::mov::r16_32_64__rm16_32_64,
+									amd64::modRM(amd64::Register::rbp,amd64::Register::rsp)
+								});
+								code->push({
+									amd64::prefix::REX(1,0,0,1),
+									amd64::opcode::add::rm16_32_64__imm16_32,
+									amd64::modRM(0,amd64::AddressingMode::RegisterDirect,amd64::Register::r15),
+									0,0,0,0
+								});
+								//+
+								//+ linker info
+								//+
+								{
+									code->Relocations.push_back(
+										smu::RelocationEntry(
+											code->size()-4,
+											4,
+											smu::RelocationType::Absolute,
+											"____cpe2.threadDataSize"
+										)
+									);
+								}
+								code->push({
+									amd64::opcode::jmp::rel16_32,
+									0,0,0,0
+								});
+								//+
+								//+ linker info
+								//+
+								{
+									code->Relocations.push_back(
+										smu::RelocationEntry(
+											code->size()-4,
+											4,
+											smu::RelocationType::Relative,
+											threadCodeSymbol
+										)
+									);
+								}
 							}
 							//,
 							//, old thread code
 							//,
 							{
-								compilerBug("unimplemented: origin thread symbol placement");
-								//TODO: error handling
 							}
 						}
 						//,
@@ -2760,7 +3628,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							func->parameters = tinputs;
 							func->vparams = inputs;
 							func->returnType = defaultUnsignedIntegerType;
-							compilerBug("unimplemented: async scope storage properties");
+							func->code = new section;
 							func->isDeprecated = false;
 							func->isPrimitive = false;
 							func->primitiveFloat = false;
@@ -2883,8 +3751,9 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							isArray = true;
 							token sizeToken = arrayCountLine.nextToken();
 							variable* size = resolve(sizeToken);
-							compilerBug("unimplemented: array size immediate check");
-							compilerBug("unimplemented: array size");
+							if(size->storageArch != Architecture::storage_IntegerImmediate)
+								nonImmediateArraySize("",originCoreHere,source(currentFile,L,sizeToken),it);
+							arraySizeCount = (uint64_t)size->storage;
 							it = getType(it->name+"*");
 							t = L.nextToken();
 						}
@@ -2941,25 +3810,29 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								else if (attr.text == "implicitcast") isImplicitCast = true;
 								else if (attr.text == "explicitcast") isImplicitCast = false;
 								else if (attr.text == "noreturn") isNoReturn = true;
-								else if (attr.text == "nodoc") nodoc = true;
-								else if (attr.text == "export") doExport = true;
-								else if (attr.text == "deprecated")
-									isDeprecated = true;
+								else if (attr.text == "nodoc") deprecatedAttribute("nodoc",originCoreHere,source(currentFile,L,attr));
+								else if (attr.text == "export") deprecatedAttribute("export",originCoreHere,source(currentFile,L,attr));
+								else if (attr.text == "deprecated") isDeprecated = true;
 								else if (attr.text.substr(0, strlen("SYMBOL-")) == "SYMBOL-") {
 									//std::cout << "symbol: " << attr.text.substr(strlen("SYMBOL-"),attr.text.length()) << std::endl;
 									symbol = attr.text.substr(strlen("SYMBOL-"),attr.text.length());
 								} else if (attr.text.substr(0, strlen("ABI-")) == "ABI-") {
-									std::string ABIName =
-										attr.text.substr(strlen("ABI-"),attr.text.length());
-									abi = getABI(ABIName);
+									std::string ABIName = attr.text.substr(strlen("ABI-"),attr.text.length());
+									noSuchABI::error.push([](noSuchABI e) -> int {return 1;});
+									try {
+										abi = getABI(ABIName);
+									}catch(noSuchABI e){
+										noSuchABI::error.pop();
+										e.src = source(currentFile,L,t);
+										throw;
+									}
+									noSuchABI::error.pop();
 								} else if (attr.text.substr(0, strlen("mangling-")) == "mangling-") {
 									std::string manglerName =
 										attr.text.substr(strlen("mangling-"),
 														 attr.text.length());
 									mangling = getMangler(manglerName);
-								} else if (attr.text.substr(
-											   0, strlen("primitive")) ==
-										   "primitive") {
+								} else if (attr.text.substr(0, strlen("primitive")) == "primitive") {
 									isPrimitive = true;
 									// primitives
 									if (attr.text == "primitiveInPlace")
@@ -3183,6 +4056,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							FUNCTIONNOARGS:;
 							returnType = it;
 							function* func		   = new function;
+							func->code = new section;
 							func->desc = currentd->desc;
 							func->returnDesc = currentd->ret;
 							func->__declared_file = currentFile;
@@ -3193,7 +4067,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							func->returnType	   = returnType;
 							func->returnValue = new variable;
 							func->returnValue->dataType = returnType;
-							func->returnValue->name = "cpe2 return value";
+							func->returnValue->name = "____cpe2returnvalue";
 							if(isTypeCast)
 							{
 								SETBIT_00(func->miscData);//set cast bit
@@ -3318,7 +4192,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								//, debug info
 								//,
 								{
-									compilerBug("unimplemented: debug info");
+									unimplementedDebugInfo("function body");
 								}
 								if (options::ddebug)
 									std::cout << "body started" << std::endl;
@@ -3327,6 +4201,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								if(!func->isPrimitive)
 								{
 									func->abi->setFunctionStorages(func);
+									importExternalFunction(func->symbol);
 								}
 								mOUT(1, func);
 							} else
@@ -3368,7 +4243,14 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									} else if (attr.text[1] == '+' || attr.text[1] == '-') {
 										compilerBug("unimplemented: variable stack storage specifier");
 									} else {
-										compilerBug("unimplemented: variable register storage specifier");
+										var->storageArch = currentArchitecture;
+										if(currentArchitecture == Architecture::AMD64)
+										{
+											amd64::VariableStorage* storage = new amd64::VariableStorage;
+											var->storage = (void*)storage;
+											storage->reg = amd64::string_to_register(t.text.substr(1,t.text.length()-2));
+											storage->mode = amd64::StorageMode::DirectRegister;
+										}
 									}
 								} else if (attr.text.substr(0, strlen("SYMBOL-")) == "SYMBOL-") {
 									var->symbol = attr.text.substr(strlen("SYMBOL-"),attr.text.length());
@@ -3389,10 +4271,11 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								else if (attr.text == "extern") isExtern = true;
 								else if (attr.text == "noalloc") noalloc = true;
 								else if (attr.text == "volatile") isVolatile = true;
+								else if (attr.text == "nodoc") deprecatedAttribute("nodoc",originCoreHere,source(currentFile,L,attr));
 								else {
 									invalidAttribute(
 										"",originCoreHere,source(currentFile,L,attr),
-										"function",attr.text,
+										"variable",attr.text,
 										{
 											"mangling-...","SYMBOL-...",
 											"local","export","extern","noalloc",
@@ -3408,44 +4291,27 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								mangling->mangle(var);
 							if(isExtern)
 							{
+								var->storageArch = currentArchitecture;
 								if(!(currentScope->t == scopeType::GLOBAL || currentScope->t == scopeType::NAMESPACE))
-									nonGlobalExternal("",originCoreHere,source(currentFile,L,t));
+									nonGlobalExtern("",originCoreHere,source(currentFile,L,t));
 								if(currentArchitecture == Architecture::AMD64)
 								{
 									amd64::VariableStorage* storage = new amd64::VariableStorage;
 									var->storage = storage;
 									storage->mode = amd64::StorageMode::IndirectImmediate;
 									storage->immediate = ImmediateValue(var->symbol);
-									//+
-									//+ elf64 symbol
-									//+
-									{
-										SymbolMap.insert(std::pair<std::string,uint64_t>(
-											var->symbol,
-											elf64::symtab.size()/sizeof(elf64::SymbolTableEntry)
-										));
-										elf64::symtab.push(
-											elf64::SymbolTableEntry(
-												elf64::strtab.size(),
-												0x00,
-												0x00,
-												(uint16_t)elf64::SectionTableIndex::DATA,
-												data.size(),
-												var->dataType->size
-											)
-										);
-										elf64::strtab.push(
-											var->symbol.data(),
-											var->symbol.length()+1
-										);
-									}
+									importExternalVariable(var->symbol);
 								}
 								else
 								{
 									compilerBug("unimplemented: external variable");
 								}
 							}
-							if(var->storage == nullptr)
+							if(isConstExpr)
+							{
+								var->storageArch = Architecture::storage_IntegerImmediate;
+							}
+							if(var->storage == nullptr && !isExtern && !isConstExpr)
 							{
 								var->usedAutoStorage = true;
 								var->storageArch = currentArchitecture;
@@ -3474,10 +4340,13 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 										//+ stack storage
 										storage->mode = amd64::StorageMode::IndirectRegister;
 										storage->reg = amd64::Register::rbp;
-										uint64_t offset = currentScope->func->stack.push(var->dataType->size);
+										uint64_t offset = currentScope->func->stack->push(var->dataType->size);
 										storage->displacement = ImmediateValue(negative(offset));
 									}
 								}
+								//+
+								//+ AMD64 global variable
+								//+
 								else if(currentArchitecture == Architecture::AMD64 && (currentScope->t == scopeType::GLOBAL || currentScope->t == scopeType::NAMESPACE))
 								{
 									var->storage = new amd64::VariableStorage;
@@ -3485,29 +4354,17 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									//+ global memory storage
 									storage->mode = amd64::StorageMode::IndirectImmediate;
 									storage->immediate = ImmediateValue(var->symbol);
-									//+
-									//+ elf64 symbol
-									//+
-									{
-										SymbolMap.insert(std::pair<std::string,uint64_t>(
-											var->symbol,
-											elf64::symtab.size()/sizeof(elf64::SymbolTableEntry)
-										));
-										elf64::symtab.push(
-											elf64::SymbolTableEntry(
-												elf64::strtab.size(),
-												0x00,
-												0x00,
-												(uint16_t)elf64::SectionTableIndex::DATA,
-												data.size(),
-												var->dataType->size
-											)
-										);
-										elf64::strtab.push(
-											var->symbol.data(),
-											var->symbol.length()+1
-										);
-									}
+									data.placeSymbol(SymbolType::GlobalVariable,0,var->symbol);
+								}
+								//+
+								//+ AMD64 class member variable
+								//+
+								else if(currentArchitecture == Architecture::AMD64 && (currentScope->t == scopeType::CLASS))
+								{
+									var->storageArch = Architecture::storage_member;
+									var->storage = (void*)(currentScope->cl->size);
+									currentScope->cl->size += var->dataType->size;
+									currentScope->cl->members.push_back(*var);
 								}
 								else
 								{
@@ -3518,7 +4375,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 							{
 								if(currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH)
 								{
-									compilerBug("unimplemented: stack stored array");
+									uint64_t offset = currentScope->func->stack->push(var->dataType->valueType->size*arraySizeCount);
 								}
 								else if(currentScope->t == scopeType::CLASS)
 								{
@@ -3532,7 +4389,6 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									amd64::VariableStorage* storage = (amd64::VariableStorage*)var->storage;
 									if(storage->mode == amd64::StorageMode::DirectRegister)
 									{
-
 									}
 								}
 							}
@@ -3546,24 +4402,9 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								if(storage->mode == amd64::StorageMode::IndirectImmediate && !storage->immediate.isSymbol)
 									absoluteMemoryStorage("",originCoreHere,source(currentFile,L,t),storage->immediate.imm64);
 							}
-							else
-							{
-								compilerBug("unimplemented: non-amd64 storage check");
+							else if (var->storageArch == Architecture::storage_member) {
 							}
-							if (currentScope->t == scopeType::CLASS) {
-								compilerBug("unimplemented: storage validity check");
-								if(true){
-									compilerBug("unimplemented: storage validity check");
-									if(true){
-										currentScope->cl->members.push_back(
-											*var);
-										compilerBug("unimplemented: member offset");
-									}
-								}
-								if(options::ddebug)
-									std::cout << "declared member: " << var->name << std::endl;
-							} 
-							else
+							if (currentScope->t != scopeType::CLASS)
 							{
 								currentScope->variables.push_back(var);
 								bool isPointer = var->dataType->name.back() == '*' ? true : false;
@@ -3574,53 +4415,46 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								//std::cout << "ctdt: " << std::hex << (void*)childTargetDataType << std::endl;
 								if(childTargetDataType->members.size() > 0)
 								{
-									compilerBug("unimplemented: storage validity check");
-									if(true)
+									std::string msep = isPointer ? "->" : ".";
+									if(isPointer)
 									{
-										std::string msep = isPointer ? "->" : ".";
-										if(isPointer)
+										for(variable i : childTargetDataType->members)
 										{
-											for(variable i : childTargetDataType->members)
-											{
-												//init
-												variable* child = new variable(i);
-												child->doExport = false;
-												//name
-												child->name = var->name+msep+child->name;
-												//storage
-												compilerBug("unimplemented: child storage");
-												//finish up
-												child->parent = var;
-												var->children.push_back(child);
-												currentScope->variables.push_back(child);
-												if(options::ddebug)
-													std::cout << "declared child: " << child->name << std::endl;
-											}
+											//init
+											variable* child = new variable(i);
+											child->doExport = false;
+											//name
+											child->name = var->name+msep+child->name;
+											//storage
+											//finish up
+											child->parent = var;
+											var->children.push_back(child);
+											currentScope->variables.push_back(child);
+											if(options::ddebug)
+												std::cout << "declared child: " << child->name << std::endl;
 										}
-										else
+									}
+									else
+									{
+										for(variable i : childTargetDataType->members)
 										{
-											for(variable i : childTargetDataType->members)
-											{
-												//init
-												variable* child = new variable(i);
-												child->doExport = false;
-												//name
-												child->name = var->name+msep+child->name;
-												//storage
-												compilerBug("unimplemented: child storage");
-												//finish upf
-												child->parent = var;
-												var->children.push_back(child);
-												currentScope->variables.push_back(child);
-												if(options::ddebug)
-													std::cout << "declared child: " << child->name << std::endl;
-											}
+											//init
+											variable* child = new variable(i);
+											child->doExport = false;
+											//name
+											child->name = var->name+msep+child->name;
+											//storage
+											//finish upf
+											child->parent = var;
+											var->children.push_back(child);
+											currentScope->variables.push_back(child);
+											if(options::ddebug)
+												std::cout << "declared child: " << child->name << std::endl;
 										}
 									}
 								}
 							}
-							if(options::ddebug && false)
-								dump("declared variable",var,"");
+							//dump("declared variable",var,"");
 							//,
 							//, debug info
 							//,
@@ -3650,18 +4484,10 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 									{
 										if(!func->isPrimitive)
 											nonPrimitiveOperationOnConstexpr("",originCoreHere,source(currentFile,L,t));
-										switch(currentArchitecture)
-										{
-											case(Architecture::AMD64):
-											{
-												amd64::VariableStorage* storage = (amd64::VariableStorage*)result->storage;
-												if(storage->mode != amd64::StorageMode::DirectImmediate)
-													dynamicAssignmentToConstexpr("",originCoreHere,source(currentFile,L,t));
-												break;
-											}
-											default:
-												compilerBug("unsupporte architecture.");
-										}
+										if(result->storageArch != Architecture::storage_IntegerImmediate)
+											dynamicAssignmentToConstexpr("",originCoreHere,source(currentFile,L,t));
+										if(result->storageArch == Architecture::storage_IntegerImmediate)
+											var->storage = result->storage;
 									}
 									else
 									{
@@ -3698,6 +4524,52 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 				token backupToken = t;
 				line backupLine = L;
 				t = L.nextToken();
+				if(t.type == 32)
+				{
+					line indexLine;
+					indexLine.lineNum = L.lineNum;
+					indexLine.file = L.file;
+					uint64_t l = 0;
+					do {
+						switch(t.type)
+						{
+							case(0):
+								unexpectedBufferTermination("array index expression, logical line terminated",originCoreHere,source());
+							case(32):
+								l++;
+								goto __default_aidx;
+							case(33):
+								l--;
+							default:
+								__default_aidx:;
+								indexLine.text += t.text;
+						}
+						t = L.nextToken();
+					} while(l > 0);
+					indexLine.text = indexLine.text.substr(1,indexLine.text.length()-2);
+					token indexToken = indexLine.nextToken();
+					variable* index = resolve(indexToken);
+					if(index->storageArch == Architecture::storage_IntegerImmediate)
+					{
+						uint64_t disp = (uint64_t)index->storage*(var->dataType->valueType->size);
+						variable* element = new variable;
+						element->name = "____cpe2____arrayElement";
+						element->dataType = var->dataType->valueType;
+						element->storageArch = currentArchitecture;
+						if(currentArchitecture == Architecture::AMD64)
+						{
+							//TODO: check if var is stored in register, if not, move to rbx
+							amd64::VariableStorage* storage = new amd64::VariableStorage;
+							element->storage = storage;
+							storage->mode = amd64::StorageMode::IndirectRegister;
+							storage->reg = ((amd64::VariableStorage*)var->storage)->reg;
+							storage->displacement = ImmediateValue(disp);
+							var = element;
+						}
+					}
+					else compilerBug("unimplemented: non-immediate array index");
+					
+				}
 				if(t.text.back() == '=')
 				{
 					token ot = t;
@@ -3742,96 +4614,6 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 				compilerBug("parser defaulted on first token switch.",originCoreHere,source(),"");
 		}
 	}
-	catch(issues::compilerBug e)
-	{
-		std::cerr << COLOR_RED << "COMPILER BUG" << COLOR_RESET << ": " << e.msg << "\n";
-		if(e.github == "")
-		{
-			std::cerr 
-			<< "this issue doesn't seem to have been reported yet,\n"
-			<< "please open a new issue on https://github.com/DefinitelyNotAGirl/c-2/issues and tag it as 'bug', thank you.\n"
-			<< "if you could pass along the source code that triggered this bug\n"
-			<< "as well as the options you ran the compiler with that would be very helpful.\n"
-			;
-		}
-		else
-		{
-			std::cerr
-			<< "this issue has already been reported here: " << e.github << "\n"
-			<< "if you were to chime in the source code and compiler options\n"
-			<< "that triggered this bug that would be very helpful.\n"
-			;
-		}
-		e.src.print();
-		//e.printTrace();
-		e.printStackTrace();
-		std::cerr << "\n\n\r";
-		ErrorCount++;
-	}
-	catch(noSuchType e)
-	{
-		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": \"" << e.name << "\" does not name a type.\n";
-		//e.printTrace();
-		e.printStackTrace();
-		std::cerr << "\n\n\r";
-		ErrorCount++;
-	}
-	catch(unexpectedTokenType e)
-	{
-		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": unexpected " << getTokenTypename(e.src.sourceToken.type) << ", expected ";
-		std::cerr << getTokenTypename(e.expectedTokenTypes.back());
-		e.expectedTokenTypes.pop_back();
-		while(e.expectedTokenTypes.size() > 1)
-		{
-			std::cerr << "," << getTokenTypename(e.expectedTokenTypes.back());
-			e.expectedTokenTypes.pop_back();
-		}
-		if(e.expectedTokenTypes.size() == 1)
-		{
-			std::cerr << " or " << getTokenTypename(e.expectedTokenTypes.back());
-		}
-		std::cerr << std::endl;
-		//e.printTrace();
-		e.printStackTrace();
-		std::cerr << "\n\n\r";
-		ErrorCount++;
-	}
-	catch(noSuchIdentifier e)
-	{
-		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": unresolved identifier \"" << e.name << "\"\n";
-		//e.printTrace();
-		e.printStackTrace();
-		std::cerr << "\n\n\r";
-		ErrorCount++;
-	}
-	catch(noSuchLitop e)
-	{
-		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": no such Literal operator \"" << e.name << "\"\n";
-		e.printStackTrace();
-		std::cerr << "\n\n\r";
-		ErrorCount++;
-	}
-	catch(noSuchNumberSystem e)
-	{
-		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": no such number system \"" << e.name << "\"\n";
-		e.printStackTrace();
-		std::cerr << "\n\n\r";
-		ErrorCount++;
-	}
-	catch(noSuchFunction e)
-	{
-		std::string neededExpression = getFunctionExpression(e.neededFunction);
-		std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": no such function: " << neededExpression << "\n";
-		if(e.candidates.size() > 0)
-		{
-			std::cerr << "candidates: \n";
-			for(function* candidate : e.candidates)
-				std::cerr << "    " << getFunctionExpression(candidate,(candidate->vparams.size() > 0)) << "\n";
-		}
-		//e.printTrace();
-		e.printStackTrace();
-		std::cerr << "\r\n" << std::endl;
-		ErrorCount++;
-	}
+	catch(issues::issue e){}
 	if (++i >= lines.size()) return;
 }

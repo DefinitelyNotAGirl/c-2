@@ -2,7 +2,7 @@
  * Created Date: Wednesday May 22nd 2024
  * Author: Lilith
  * -----
- * Last Modified: Tue Jun 25 2024
+ * Last Modified: Fri Jul 05 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -106,6 +106,7 @@ namespace issues {
 		void print()
 		{
 			if(this->present == false)return;
+			std::cout << this->sourceFile << ": \n";
 			std::string lnstr = std::to_string(this->sourceLine.lineNum);
 			std::cerr << "  " << lnstr << " | " << this->sourceLine.text << "\n";
 			for(uint64_t i = 0;i<(this->sourceToken.tcol+lnstr.length()+5);i++)
@@ -518,7 +519,7 @@ namespace issues {
 	//+
 	class nonGlobalExtern : public fatal {
 	public:
-		static std::stack<void(*)(nonGlobalExtern e)> error;
+		static std::stack<int(*)(nonGlobalExtern e)> error;
 		static std::stack<void(*)(nonGlobalExtern e)> warn;
 		static std::stack<void(*)(nonGlobalExtern e)> info;
 		nonGlobalExtern(std::string msg, origin orig, source src)
@@ -530,9 +531,33 @@ namespace issues {
 		}
 	};
 	#ifdef ISSUES_CXX
-		static std::stack<void(*)(nonGlobalExtern e)> nonGlobalExtern::error;
+		static std::stack<int(*)(nonGlobalExtern e)> nonGlobalExtern::error;
 		static std::stack<void(*)(nonGlobalExtern e)> nonGlobalExtern::warn;
 		static std::stack<void(*)(nonGlobalExtern e)> nonGlobalExtern::info;
+	#endif
+
+	//+
+	//+
+	//+ fatal error for when the programmer attempts to assign a non-immediate value to a litop
+	//+
+	//+
+	class nonImmediateLitop : public fatal {
+	public:
+		static std::stack<int(*)(nonImmediateLitop e)> error;
+		static std::stack<void(*)(nonImmediateLitop e)> warn;
+		static std::stack<void(*)(nonImmediateLitop e)> info;
+		nonImmediateLitop(std::string msg, origin orig, source src)
+		{
+			this->msg = msg;
+			this->trace.push_front(orig);
+			this->src = src;
+			invoke(*this);
+		}
+	};
+	#ifdef ISSUES_CXX
+		static std::stack<int(*)(nonImmediateLitop e)> nonImmediateLitop::error;
+		static std::stack<void(*)(nonImmediateLitop e)> nonImmediateLitop::warn;
+		static std::stack<void(*)(nonImmediateLitop e)> nonImmediateLitop::info;
 	#endif
 //!####################################################################################################################
 //!####################################################################################################################
@@ -622,6 +647,32 @@ namespace issues {
 		std::stack<void(*)(absoluteMemoryStorage e)> absoluteMemoryStorage::info;
 		std::stack<void(*)(absoluteMemoryStorage e)> absoluteMemoryStorage::warn;
 		std::stack<int(*)(absoluteMemoryStorage e)> absoluteMemoryStorage::error;
+	#endif
+
+	//,
+	//,
+	//, warning for when a attribute is deprecated
+	//,
+	//,
+	class deprecatedAttribute : public issue {
+	public:
+		static action Action;
+		static std::stack<int(*)(deprecatedAttribute e)> error;
+		static std::stack<void(*)(deprecatedAttribute e)> warn;
+		static std::stack<void(*)(deprecatedAttribute e)> info;
+		deprecatedAttribute(std::string msg, origin orig, source src)
+		{
+			this->msg = msg;
+			this->trace.push_front(orig);
+			this->src = src;
+			invoke(*this);
+		}
+	};
+	#ifdef ISSUES_CXX
+		action deprecatedAttribute::Action = action::warning;
+		std::stack<int(*)(deprecatedAttribute e)> deprecatedAttribute::error;
+		std::stack<void(*)(deprecatedAttribute e)> deprecatedAttribute::warn;
+		std::stack<void(*)(deprecatedAttribute e)> deprecatedAttribute::info;
 	#endif
 
 //*####################################################################################################################

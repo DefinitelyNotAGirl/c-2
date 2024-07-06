@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Mon Jun 24 2024
+ * Last Modified: Thu Jun 27 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -55,11 +55,6 @@ void genOutput(std::string& i);
 void initWarnings();
 void setDefaults();
 
-void HANDLER_SIGSEGV(int sig) {
-    printStacktrace(50);
-	exit(1);
-}
-
 line defLine(std::string text)
 {
     line l;
@@ -80,11 +75,10 @@ void test_main();
 void output_init();
 void warn_init();
 void error_init();
+void install_crash_handlers();
 int main(int argc, char** argv)
 {
-    signal(SIGSEGV, HANDLER_SIGSEGV);   // install our handler
-    signal(SIGABRT, HANDLER_SIGSEGV);   // install our handler
-    signal(SIGILL, HANDLER_SIGSEGV);   // install our handler
+	install_crash_handlers();
     //resize stack
     const rlim_t kStackSize = 16 * 1024 * 1024;// min stack size = 16MiB
     struct rlimit rl;

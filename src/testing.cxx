@@ -2,8 +2,8 @@
  * Created Date: Saturday June 8th 2024
  * Author: Lilith
  * -----
- * Last Modified: Saturday June 8th 2024 11:54:00 pm
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Wed Jul 03 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
@@ -57,29 +57,6 @@ void test_main()
 	//. symbols
 	//.
 	{
-		//+
-		//+ _test1
-		//+
-		{
-			SymbolMap.insert(std::pair<std::string,uint64_t>(
-				"__test1",
-				elf64::symtab.size()/sizeof(elf64::SymbolTableEntry)
-			));
-			elf64::symtab.push(
-				elf64::SymbolTableEntry(
-					elf64::strtab.size(),
-					0x00,
-					0x00,
-					(uint16_t)elf64::SectionTableIndex::ABS,
-					0x0123456789ABCDEF,
-					0
-				)
-			);
-			elf64::strtab.push(
-				"__test1",
-				sizeof("__test1")+1
-			);
-		}
 	}
 	//.
 	//. runtime code

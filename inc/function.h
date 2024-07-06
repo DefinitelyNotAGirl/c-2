@@ -31,6 +31,7 @@
 
 struct castFunction;
 
+#include <class_type.h>
 #include <compiler.h>
 #include <stackframe.hxx>
 #include <cpustate.hxx>
@@ -108,7 +109,7 @@ public:
 	/*
 		. code generation
 	*/
-	section* code;
+	section* code = nullptr;
 	ABI* abi = nullptr;
 	bool isPrimitive = false;
     primitiveOP op = primitiveOP::invalid;
@@ -122,7 +123,7 @@ public:
 	/*
 	 . machine state
 	 */
-	stackframe stack;
+	stackframe* stack = new stackframe;
 	cpustate cpu;
 
 	/*
