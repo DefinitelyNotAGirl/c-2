@@ -4617,4 +4617,3 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 	catch(issues::issue e){}
 	if (++i >= lines.size()) return;
 }
-
