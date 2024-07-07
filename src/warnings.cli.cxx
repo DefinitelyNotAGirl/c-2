@@ -23,6 +23,15 @@ void warn_init()
 			std::cerr << COLOR_WARN << "Warning" << COLOR_RESET << ": attribute " << e.msg << " has been deprecated";
 			if(e.msg == "nodoc")std::cout << " as of Thursday the 4th of July 2024, 22:54";
 			if(e.msg == "export")std::cout << " as of Thursday the 4th of July 2024, 22:54";
+			if(e.msg == "defaultUnsignedInt")std::cout << " as of Sunday the 7th of July 2024, 11:33";
+			if(e.msg == "defaultSignedInt")std::cout << " as of Sunday the 7th of July 2024, 11:33";
+			if(e.msg == "defaultChar")std::cout << " as of Sunday the 7th of July 2024, 11:33";
+			if(e.msg == "defaultWchar")std::cout << " as of Sunday the 7th of July 2024, 11:33";
+			if(e.msg == "defaultFloat")std::cout << " as of Sunday the 7th of July 2024, 11:33";
+			if(e.msg == "defaultBool")std::cout << " as of Sunday the 7th of July 2024, 11:33";
+			if(e.msg == "defaultPointer")std::cout << " as of Sunday the 7th of July 2024, 11:33";
+			if(e.msg == "stringifyable")std::cout << " as of Sunday the 7th of July 2024, 11:33";
+			if(e.msg == "iteratable")std::cout << " as of Sunday the 7th of July 2024, 11:33";
 			std::cout << "\n";
 			e.src.print();
 		}

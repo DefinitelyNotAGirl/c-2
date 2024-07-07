@@ -1,3 +1,2 @@
+#define PARSER_IMPLEMENTATION
 #include "parser.hxx"
-
-ParserState_T ParserState;
