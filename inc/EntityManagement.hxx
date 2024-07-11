@@ -24,7 +24,10 @@ namespace Entity {
 		ABI,
 		Symbol,
 		Primitive,
-		Accessibility
+		Accessibility,
+		AbsoluteMemoryStorage,
+		StackStorage,
+		RegisterStorage
 	};
 	struct PrimitiveAttributeData {
 		primitiveOP Operation;
@@ -33,14 +36,22 @@ namespace Entity {
 			:Operation(Operation),InPlace(InPlace){}
 	};
 	class Attribute {
+	private:
+		void init();
 	public:
 		AttributeType Type;
+		token Token;
 		union {
 			PrimitiveAttributeData Primitive;
 			mangler* Mangler;
 			ABI* Abi;
 			std::string Symbol;
 			vaccess Accessibility;
+			int64_t StackOffset;
+			uint64_t Address;
+			std::string Register;
+		private:
+			std::string strData;
 		};
 
 		Attribute(AttributeType Type)
@@ -55,12 +66,17 @@ namespace Entity {
 		Attribute(ABI* Abi)
 			:Abi(Abi),Type(AttributeType::ABI){}
 
-		Attribute(std::string& Symbol)
-			:Symbol(Symbol),Type(AttributeType::Symbol){}
+		Attribute(std::string& data, AttributeType Type)
+			:strData(data),Type(Type){}
 
 		Attribute(vaccess Accessibility)
 			:Accessibility(Accessibility),Type(AttributeType::Accessibility){}
 	};
+
+	function* startFunctionDefinition(std::vector<Attribute>& attributes,std::string& name, std::vector<variable*>& args, type* returnType, bool isIndentBased);
+	function* declareFunction(std::vector<Attribute>& attributes,std::string& name, std::vector<variable*>& args, type* returnType);
+
+	variable* defineVariable(std::vector<Attribute>& attributes,std::string& name, type* Type)
 
 	bool close(scope* s);
 }

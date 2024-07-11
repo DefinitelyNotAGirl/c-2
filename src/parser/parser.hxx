@@ -1,24 +1,7 @@
 #pragma once
-#include <class_line.h>
-#include <class_token.h>
-#include <class_scope.h>
-#include <stack>
-#include <vector>
-#include <string>
-#include <EntityManagement.hxx>
+#include <Parser.hxx>
 #include <issues.hxx>
 using namespace issues;
-
-#undef PARSER_IMPLEMENTATION
-#ifdef PARSER_IMPLEMENTATION
-	#define global
-	#define globalFunction \
-	#if true
-#else
-	#define global extern
-	#define globalFunction ;\
-	#if false
-#endif
 
 //. ██████  ███████ ███████  ██████ ██████  ██ ██████  ████████  ██████  ██████       ██████  ██████       ██ ███████  ██████ ████████ ███████
 //. ██   ██ ██      ██      ██      ██   ██ ██ ██   ██    ██    ██    ██ ██   ██     ██    ██ ██   ██      ██ ██      ██         ██    ██
@@ -41,28 +24,6 @@ public:
 	std::vector<pdobj*> tparams;
 };
 
-//. ██████   █████  ██████  ███████ ███████ ██████      ███████ ████████  █████  ████████ ███████
-//. ██   ██ ██   ██ ██   ██ ██      ██      ██   ██     ██         ██    ██   ██    ██    ██
-//. ██████  ███████ ██████  ███████ █████   ██████      ███████    ██    ███████    ██    █████
-//. ██      ██   ██ ██   ██      ██ ██      ██   ██          ██    ██    ██   ██    ██    ██
-//. ██      ██   ██ ██   ██ ███████ ███████ ██   ██     ███████    ██    ██   ██    ██    ███████
-class ParserState_T
-{
-public:
-	std::string File;
-	line Line;
-	token Token;
-
-	std::stack<scope*> scope;
-	std::vector<line> Lines;
-	uint64_t LineIterator = 0;
-
-	dObj* currentd = new dObj;
-
-	std::vector<Entity::Attribute> Attributes;
-};
-global ParserState_T ParserState;
-
 void resetCurrentD() globalFunction
 {
 	for(pdobj* i : ParserState.currentd->params)
@@ -83,7 +44,6 @@ namespace parse {
 	inline void EndLine(){throw ((dummy_parser_endline*)0);}
 	inline void EndBlock(){throw ((dummy_parser_endblock*)0);}
 
-	void Lines(std::vector<line>& Lines, std::string File = "");
 	void Line();
 	void Directive();
 	namespace Directives {
@@ -107,7 +67,9 @@ namespace parse {
 		void Namespace();
 		void Litop();
 	}
-	namespace Keyword {
+
+	void Keyword();
+	namespace Keywords {
 		void Return();
 		void While();
 		void For();

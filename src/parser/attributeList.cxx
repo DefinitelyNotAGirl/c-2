@@ -24,34 +24,33 @@ void parse::AttributeList()
 				unexpectedTokenType("",originCoreHere,source(currentFile,ParserState.Token,ParserState.Token),{31});
 			ParserState.Token.text = text;
 		}
-		     if(ParserState.Token.text == "export")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
-		else if(ParserState.Token.text == "public")ParserState.Attributes.push_back(Attribute(vaccess::_public));
-		else if(ParserState.Token.text == "protected")ParserState.Attributes.push_back(Attribute(vaccess::_protected));
-		else if(ParserState.Token.text == "private")ParserState.Attributes.push_back(Attribute(vaccess::_private));
-		else if(ParserState.Token.text == "local")ParserState.Attributes.push_back(Attribute(AttributeType::Local));
-		else if(ParserState.Token.text == "volatile")ParserState.Attributes.push_back(Attribute(AttributeType::Volatile));
-		else if(ParserState.Token.text == "noalloc")ParserState.Attributes.push_back(Attribute(AttributeType::NoAlloc));
-		else if(ParserState.Token.text == "inline")ParserState.Attributes.push_back(Attribute(AttributeType::Inline));
-		else if(ParserState.Token.text == "const")ParserState.Attributes.push_back(Attribute(AttributeType::Const));
-		else if(ParserState.Token.text == "constexpr")ParserState.Attributes.push_back(Attribute(AttributeType::Constexpr));
-		else if(ParserState.Token.text == "extern")ParserState.Attributes.push_back(Attribute(AttributeType::Extern));
-		else if(ParserState.Token.text == "iteratable")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
-		else if(ParserState.Token.text == "stringifyable")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
-		else if(ParserState.Token.text == "noreturn")ParserState.Attributes.push_back(Attribute(AttributeType::Noreturn));
-		else if(ParserState.Token.text == "typecast")ParserState.Attributes.push_back(Attribute(AttributeType::Typecast));
+			 if(ParserState.Token.text == "public"      )ParserState.Attributes.push_back(Attribute(vaccess      ::_public     ));
+		else if(ParserState.Token.text == "protected"   )ParserState.Attributes.push_back(Attribute(vaccess      ::_protected  ));
+		else if(ParserState.Token.text == "private"     )ParserState.Attributes.push_back(Attribute(vaccess      ::_private    ));
+		else if(ParserState.Token.text == "local"       )ParserState.Attributes.push_back(Attribute(AttributeType::Local       ));
+		else if(ParserState.Token.text == "volatile"    )ParserState.Attributes.push_back(Attribute(AttributeType::Volatile    ));
+		else if(ParserState.Token.text == "noalloc"     )ParserState.Attributes.push_back(Attribute(AttributeType::NoAlloc     ));
+		else if(ParserState.Token.text == "inline"      )ParserState.Attributes.push_back(Attribute(AttributeType::Inline      ));
+		else if(ParserState.Token.text == "const"       )ParserState.Attributes.push_back(Attribute(AttributeType::Const       ));
+		else if(ParserState.Token.text == "constexpr"   )ParserState.Attributes.push_back(Attribute(AttributeType::Constexpr   ));
+		else if(ParserState.Token.text == "extern"      )ParserState.Attributes.push_back(Attribute(AttributeType::Extern      ));
+		else if(ParserState.Token.text == "noreturn"    )ParserState.Attributes.push_back(Attribute(AttributeType::Noreturn    ));
+		else if(ParserState.Token.text == "typecast"    )ParserState.Attributes.push_back(Attribute(AttributeType::Typecast    ));
 		else if(ParserState.Token.text == "implicitcast")ParserState.Attributes.push_back(Attribute(AttributeType::ImplicitCast));
 		else if(ParserState.Token.text == "explicitcast")ParserState.Attributes.push_back(Attribute(AttributeType::ExplicitCast));
-		else if(ParserState.Token.text == "noop")ParserState.Attributes.push_back(Attribute(AttributeType::Noop));
-		else if(ParserState.Token.text == "nodoc")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
-		else if(ParserState.Token.text == "deprecated")ParserState.Attributes.push_back(Attribute(AttributeType::Deprecated));
+		else if(ParserState.Token.text == "noop"        )ParserState.Attributes.push_back(Attribute(AttributeType::Noop        ));
+		else if(ParserState.Token.text == "deprecated"  )ParserState.Attributes.push_back(Attribute(AttributeType::Deprecated  ));
 		else if(ParserState.Token.text == "defaultUnsignedInt")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
-		else if(ParserState.Token.text == "defaultSignedInt")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
-		else if(ParserState.Token.text == "defaultChar")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
-		else if(ParserState.Token.text == "defaultWchar")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
-		else if(ParserState.Token.text == "defaultFloat")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
-		else if(ParserState.Token.text == "defaultBool")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
-		else if(ParserState.Token.text == "defaultPointer")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
-
+		else if(ParserState.Token.text == "defaultSignedInt"  )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
+		else if(ParserState.Token.text == "defaultChar"       )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
+		else if(ParserState.Token.text == "defaultWchar"      )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
+		else if(ParserState.Token.text == "defaultFloat"      )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
+		else if(ParserState.Token.text == "defaultBool"       )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
+		else if(ParserState.Token.text == "defaultPointer"    )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
+		else if(ParserState.Token.text == "nodoc"             )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
+		else if(ParserState.Token.text == "export"            )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
+		else if(ParserState.Token.text == "iteratable"        )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
+		else if(ParserState.Token.text == "stringifyable"     )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
 		else if(ParserState.Token.text == "primitiveSYSCALL"      )ParserState.Attributes.push_back(Attribute(PrimitiveAttributeData(primitiveOP::SYSCALL     )));
 		else if(ParserState.Token.text == "primitivePRINTCHAR"    )ParserState.Attributes.push_back(Attribute(PrimitiveAttributeData(primitiveOP::PRINTCHAR   )));
 		else if(ParserState.Token.text == "primitivePRINTSTR"     )ParserState.Attributes.push_back(Attribute(PrimitiveAttributeData(primitiveOP::PRINTSTR    )));
@@ -77,10 +76,13 @@ void parse::AttributeList()
 		else if(ParserState.Token.text == "primitiveAssign"       )ParserState.Attributes.push_back(Attribute(PrimitiveAttributeData(primitiveOP::assign      )));
 		else if(ParserState.Token.text == "primitiveInPlace")
 		{
-			if(ParserState.Attributes.back().Type != AttributeType::Primitive)
-				
-			ParserState.Attributes.back().Primitive.InPlace = true;
+			if(ParserState.Attributes.back().Type == AttributeType::Primitive)
+				ParserState.Attributes.back().Primitive.InPlace = true;
+			else
+				unexpectedPrimitiveInPlace("",originCoreHere,source());
 		}
+		else
+			compilerBug("unimplemented attribute: "+ParserState.Token.text);
 		ParserState.Token = ParserState.Token.nextToken();
 	}
 }

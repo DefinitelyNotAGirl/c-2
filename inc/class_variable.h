@@ -67,6 +67,8 @@ public:
 	//. properties
     type* dataType = nullptr;
     bool doExport = false;
+	bool isExtern = false;
+	bool isConstexpr = false;
     bool isParameter = false;//only tracked for vstc features
 	bool isStatic = false;
 	vaccess Access = vaccess::_public;
