@@ -42,3 +42,6 @@ tools/
 src/amd64.cgu.cxx
 test.elf64
 stdout.txt
+
+extensions/c2cmpbuildintegrations/node_modules/
+extensions/c2cmpbuildintegrations/out/
