@@ -76,7 +76,9 @@ namespace Entity {
 	function* startFunctionDefinition(std::vector<Attribute>& attributes,std::string& name, std::vector<variable*>& args, type* returnType, bool isIndentBased);
 	function* declareFunction(std::vector<Attribute>& attributes,std::string& name, std::vector<variable*>& args, type* returnType);
 
-	variable* defineVariable(std::vector<Attribute>& attributes,std::string& name, type* Type)
+	variable* defineVariable(std::vector<Attribute>& attributes,std::string& name, type* Type);
+
+	type* startTypeDefinition(std::string& name, std::vector<std::string>& inherit);
 
 	bool close(scope* s);
 }

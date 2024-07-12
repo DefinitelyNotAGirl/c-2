@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wed Jul 10 2024
+ * Last Modified: Thu Jul 11 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -1980,7 +1980,7 @@ void parseline(line& L,bool& is_vstc_send, bool& is_vsls_send, std::vector<line>
 								declareDwarfType(ntype);
 								types.push_back(ntype);
 								break;
-							}
+						l	}
 						}
 					} else if (t.text == "class") {
 //,####################################################################################################################

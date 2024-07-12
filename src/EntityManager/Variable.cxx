@@ -9,7 +9,7 @@ using Entity::PrimitiveAttributeData;
 
 using namespace issues;
 
-variable* defineVariable(std::vector<Attribute>& attributes,std::string& name, type* Type)
+variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string& name, type* Type)
 {
 	mangler* NameMangler = nullptr;
 
