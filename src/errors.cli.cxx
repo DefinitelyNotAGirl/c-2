@@ -2,6 +2,7 @@
 #include <issues.hxx>
 #include <colors.h>
 #include <function.h>
+#include <dump.hxx>
 using namespace issues;
 
 void error_init()
@@ -26,8 +27,8 @@ void error_init()
 				<< "that triggered this bug that would be very helpful.\n"
 				;
 			}
-			e.src.print();
 			e.printStackTrace();
+			e.src.print();
 			std::cerr << "\n\n\r";
 			ErrorCount++;
 			return 1;
@@ -37,6 +38,7 @@ void error_init()
 		[](noSuchType e) -> int {
 			std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": \"" << e.name << "\" does not name a type.\n";
 			e.printStackTrace();
+			e.src.print();
 			std::cerr << "\n\n\r";
 			ErrorCount++;
 			return 1;
@@ -78,6 +80,7 @@ void error_init()
 		[](noSuchIdentifier e) -> int {
 			std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": unresolved identifier \"" << e.name << "\"\n";
 			e.printStackTrace();
+			e.src.print();
 			std::cerr << "\n\n\r";
 			ErrorCount++;
 			return 1;
@@ -87,6 +90,7 @@ void error_init()
 		[](noSuchLitop e) -> int {
 			std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": no such Literal operator \"" << e.name << "\"\n";
 			e.printStackTrace();
+			e.src.print();
 			std::cerr << "\n\n\r";
 			ErrorCount++;
 			return 1;
@@ -96,6 +100,7 @@ void error_init()
 		[](noSuchNumberSystem e) -> int {
 			std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": no such number system \"" << e.name << "\"\n";
 			e.printStackTrace();
+			e.src.print();
 			std::cerr << "\n\n\r";
 			ErrorCount++;
 			return 1;
@@ -112,6 +117,7 @@ void error_init()
 					std::cerr << "    " << candidate->expression_ansi() << "\n";
 			}
 			e.printStackTrace();
+			e.src.print();
 			std::cerr << "\r\n" << std::endl;
 			ErrorCount++;
 			return 1;
@@ -143,6 +149,26 @@ void error_init()
 			std::cout << "valid attributes:\n";
 			for(std::string a : e.validAttributes)
 				std::cout << "    " << a << "\n";
+			e.printStackTrace();
+			e.src.print();
+			std::cerr << "\n\n\r";
+			ErrorCount++;
+			return 1;
+		}
+	);
+	unexpectedPrimitiveInPlace::error.push(
+		[](unexpectedPrimitiveInPlace e) -> int {
+			std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": unexpected primitiveInPlace attribute";
+			e.printStackTrace();
+			e.src.print();
+			std::cerr << "\n\n\r";
+			ErrorCount++;
+			return 1;
+		}
+	);
+	invalidUseOfKeywordInScope::error.push(
+		[](invalidUseOfKeywordInScope e) -> int {
+			std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": invalid use of keyword \"" << e.src.sourceToken.text << "\" in scope of type " << stringify(e.Scope->t) << "\n";
 			e.printStackTrace();
 			e.src.print();
 			std::cerr << "\n\n\r";

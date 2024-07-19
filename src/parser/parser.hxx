@@ -3,42 +3,34 @@
 #include <issues.hxx>
 using namespace issues;
 
-//. ██████  ███████ ███████  ██████ ██████  ██ ██████  ████████  ██████  ██████       ██████  ██████       ██ ███████  ██████ ████████ ███████
-//. ██   ██ ██      ██      ██      ██   ██ ██ ██   ██    ██    ██    ██ ██   ██     ██    ██ ██   ██      ██ ██      ██         ██    ██
-//. ██   ██ █████   ███████ ██      ██████  ██ ██████     ██    ██    ██ ██████      ██    ██ ██████       ██ █████   ██         ██    ███████
-//. ██   ██ ██           ██ ██      ██   ██ ██ ██         ██    ██    ██ ██   ██     ██    ██ ██   ██ ██   ██ ██      ██         ██         ██
-//. ██████  ███████ ███████  ██████ ██   ██ ██ ██         ██     ██████  ██   ██      ██████  ██████   █████  ███████  ██████    ██    ███████
-class pdobj
-{
-public:
-	std::string name;
-	std::string desc;
-};
-
-class dObj
-{
-public:
-	std::string desc;
-	std::string ret;
-	std::vector<pdobj*> params;
-	std::vector<pdobj*> tparams;
-};
-
-void resetCurrentD() globalFunction
-{
-	for(pdobj* i : ParserState.currentd->params)
-		delete i;
-	for(pdobj* i : ParserState.currentd->tparams)
-		delete i;
-	delete ParserState.currentd;
-	ParserState.currentd = new dObj;
-}
-#endif
-
-
-
 class dummy_parser_endline{};
 class dummy_parser_endblock{};
+
+global std::vector<std::string> includedFiles;
+global std::vector<std::string> dependencies;
+#ifdef PARSER_IMPLEMENTATION
+	uint64_t nextExceptionTypeOffset = 8;
+#else
+	extern uint64_t nextExceptionTypeOffset;
+#endif
+
+/**
+ * @brief stores one string for every line that needs to be written to the resource file
+ * 
+ */
+global std::vector<std::string> resourceCode;
+/**
+ * @brief stores a list of all symbols defined using the c2resource keyword
+ * 
+ */
+global std::vector<std::string> resourceSymbols;
+#ifdef PARSER_IMPLEMENTATION
+	uint64_t exceptionoffset = 16;
+	bool emitExceptionSymbols = false;
+#else
+	extern uint64_t exceptionoffset;
+	extern bool emitExceptionSymbols;
+#endif
 
 namespace parse {
 	inline void EndLine(){throw ((dummy_parser_endline*)0);}
@@ -53,6 +45,7 @@ namespace parse {
 	}
 
 	void Expression();
+	void Call();
 
 	void NewUnique();
 
@@ -76,13 +69,14 @@ namespace parse {
 		void If();
 		void Else();
 		void ElseIf();
-		void Switch();
-		void Case();
-		void Break();
+		inline void Switch(){compilerBug("keyword: 'Switch' not implemented");}
+		inline void Case(){compilerBug("keyword: 'Case' not implemented");}
+		inline void Break(){compilerBug("keyword: 'Break' not implemented");}
 		void Try();
 		void Catch();
 		void Throw();
 		void Async();
-		void Template();
+		inline void Template(){compilerBug("keyword: 'Template' not implemented");};
+		void c2Resource();
 	}
 }

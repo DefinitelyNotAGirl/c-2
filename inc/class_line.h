@@ -60,5 +60,3 @@ public:
     std::string restText();
     void stripTokens(uint64_t n);
 };
-
-void parse(std::vector<line> lines);

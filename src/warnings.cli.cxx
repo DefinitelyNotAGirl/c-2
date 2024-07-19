@@ -32,8 +32,16 @@ void warn_init()
 			if(e.msg == "defaultPointer")std::cout << " as of Sunday the 7th of July 2024, 11:33";
 			if(e.msg == "stringifyable")std::cout << " as of Sunday the 7th of July 2024, 11:33";
 			if(e.msg == "iteratable")std::cout << " as of Sunday the 7th of July 2024, 11:33";
-			std::cout << "\n";
+			std::cerr << "\n";
 			e.src.print();
+		}
+	);
+
+	unexpectedPrimitiveInPlace::warn.push(
+		[](unexpectedPrimitiveInPlace e) {
+			std::cerr << COLOR_WARN << "Warning" << COLOR_RESET << ": unexpected primitiveInPlace attribute";
+			e.src.print();
+			std::cerr << "\n\n\r";
 		}
 	);
 }

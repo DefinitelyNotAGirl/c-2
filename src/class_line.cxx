@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Fri Jul 05 2024
+ * Last Modified: Thu Jul 18 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -34,6 +34,7 @@
 #include <compiler.h>
 #include <issues.hxx>
 #include <dump.hxx>
+#include <Parser.hxx>
 
 using namespace issues;
 

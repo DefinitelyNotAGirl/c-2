@@ -29,7 +29,7 @@ void parse::Declaration::FunctionOrVariable()
 	}
 	ParserState.DeclarationData.NameToken = ParserState.Token;
 	ParserState.NextToken();
-	if(t.type == 30)
+	if(ParserState.Token.type == 30)
 		parse::Declaration::Function();
 	else
 		parse::Declaration::Variable();

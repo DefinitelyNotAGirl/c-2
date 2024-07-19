@@ -5,7 +5,7 @@ void parse::Declaration::Class()
 	ParserState.NextToken();
 	ParserState.DeclarationData.NameToken = ParserState.Token;
 	ParserState.NextToken();
-	std::vector<std::string> inherit;
+	std::vector<token> inherit;
 	token f = ParserState.Token;
 	switch (ParserState.Token.type) {
 		case (40):
@@ -23,7 +23,7 @@ void parse::Declaration::Class()
 				}
 				while (ParserState.Token.type == 9 ||
 					   ParserState.Token.type == 12) {
-					inherit.push_back(ParserState.Token.text);
+					inherit.push_back(ParserState.Token);
 					ParserState.NextToken();
 					switch(ParserState.Token.type)
 					{
@@ -43,25 +43,9 @@ void parse::Declaration::Class()
 	}
 	type* Type = nullptr;
 	if (ParserState.Token.type == 40 || ParserState.Token.type == 36) {
-		scope* sc		  = new scope;
-		sc->parent		  = currentScope;
-		sc->name = currentScope->name + CPE2_SYMBOL_SCOPE_SEP +Type->mangledName;
-		sc->leadingSpace = ParserState.Line.leadingSpaces + tabLength;
-		sc->isIndentBased = ParserState.Token.type == 40;
-		sc->func = nullptr;
-		sc->t = scopeType::CLASS;
-		sc->cl = Type;
-		//if(templateMode == 3)
-		//{
-		//	sc->templateMode = true;
-		//	__typeTemplate = new typeTemplate;
-		//	__typeTemplate->tArgs = templateArgs;
-		//	__typeTemplate->name = ntype->name;
-		//	__typeTemplate->sc = currentScope;
-		//	templateMode = 1;
-		//}
-		updateCurrentScope(sc);
+		Entity::startTypeDefinition(ParserState.Attributes,ParserState.DeclarationData.NameToken.text,inherit,ParserState.Token.type == 40);
 	} else if (ParserState.Token.type == 41) {
+		Entity::declareType(ParserState.Attributes,ParserState.DeclarationData.NameToken.text,inherit);
 	} else {
 		unexpectedTokenType("",originCoreHere,source(currentFile,ParserState.Line,ParserState.Token),{40,41});
 	}

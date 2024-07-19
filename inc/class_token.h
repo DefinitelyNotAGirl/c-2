@@ -44,6 +44,11 @@ public:
 		this->text = var->name;
 		this->type = 10;
 	}
+	token(std::string text)
+	{
+		this->text = text;
+		this->type = 0;
+	}
     line* Line = nullptr;
     std::string text;
     uint64_t col = 0;

@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thu Jun 27 2024
+ * Last Modified: Fri Jul 19 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -46,11 +46,12 @@
 #include <DWARF.h>
 #include <error.h>
 
+#include <Parser.hxx>
+
 #include <stacktrace.hxx>
 
 void cliOptions(int argc, char **argv);
 std::vector<line> getLines(std::string fname);
-void parse(std::vector<line> lines);
 void genOutput(std::string& i);
 void initWarnings();
 void setDefaults();
@@ -243,6 +244,24 @@ int main(int argc, char** argv)
 
     for(std::string i : sourceFiles)
     {
+		if(true)
+		{
+			//declare default types
+			std::vector<Entity::Attribute> noAttribs({});
+			anyType = Entity::declareType(noAttribs,"[[any type]]",std::vector<token>({token("primitive0")}));
+			voidType = Entity::declareType(noAttribs,"void",std::vector<token>({token("primitive0")}));
+			defaultUnsignedIntegerType = Entity::declareType(noAttribs,"u64",std::vector<token>({token("primitive64")}));
+			defaultSignedIntegerType = Entity::declareType(noAttribs,"i64",std::vector<token>({token("primitive64")}));
+			Entity::declareType(noAttribs,"u32",std::vector<token>({token("primitive32")}));
+			Entity::declareType(noAttribs,"u16",std::vector<token>({token("primitive16")}));
+			Entity::declareType(noAttribs, "u8",std::vector<token>({token( "primitive8")}));
+			defaultPointerType = Entity::declareType(noAttribs,"ptr_t",std::vector<token>({token("primitive64")}));
+			defaultCharType = Entity::declareType(noAttribs,"char",std::vector<token>({token("primitive8")}));
+			defaultWcharType = Entity::declareType(noAttribs,"wchar",std::vector<token>({token("primitive16")}));
+			defaultBooleanType = Entity::declareType(noAttribs,"bool",std::vector<token>({token("primitive8")}));
+			defaultFloatType = Entity::declareType(noAttribs,"f64",std::vector<token>({token("primitiveFloat64")}));
+			Entity::declareType(noAttribs,"f32",std::vector<token>({token("primitiveFloat32")}));
+		}
         if(!options::fnoautoinclude)
         {
             std::vector<line> stdLines;
@@ -253,7 +272,7 @@ int main(int argc, char** argv)
             stdLines.push_back(defLine("#include <OperatingSystem>"));
             if(!options::fnolibc)
                 stdLines.push_back(defLine("#include <libc>"));
-            parse(stdLines);
+            parse::Lines(stdLines,"@default includes");
         }
         if(!options::C)
         {
@@ -266,10 +285,9 @@ int main(int argc, char** argv)
         }
 
         std::vector<line> lines = getLines(i);
-        currentFile = i;
         if(options::vstc || options::vsls)
             __reqFileVSTC = currentFile;
-        parse(lines);
+        parse::Lines(lines,i);
         genOutput(i);
         if(options::docDir != "")
             std::filesystem::create_directories(options::docDir);
@@ -279,10 +297,8 @@ int main(int argc, char** argv)
             //std::cout << "outputting: " << oname << std::endl;
             f->write(1,oname);
         }
-
-        //reset compiler
-        resetScope();
     }
+	std::cout << "compiler done" << std::endl;
 	if(issues::ErrorCount != 0)
 		return -1;
     return 0;

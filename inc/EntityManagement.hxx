@@ -3,6 +3,9 @@
 #include <mangling.h>
 #include <ABI.h>
 #include <class_variable.h>
+#include <class_type.h>
+
+variable* call(function* func,std::vector<variable*> args);
 
 namespace Entity {
 	enum class AttributeType {
@@ -32,6 +35,7 @@ namespace Entity {
 	struct PrimitiveAttributeData {
 		primitiveOP Operation;
 		bool InPlace;
+		PrimitiveAttributeData(){}
 		PrimitiveAttributeData(primitiveOP Operation,bool InPlace = false)
 			:Operation(Operation),InPlace(InPlace){}
 	};
@@ -41,18 +45,18 @@ namespace Entity {
 	public:
 		AttributeType Type;
 		token Token;
-		union {
-			PrimitiveAttributeData Primitive;
-			mangler* Mangler;
-			ABI* Abi;
-			std::string Symbol;
-			vaccess Accessibility;
-			int64_t StackOffset;
-			uint64_t Address;
-			std::string Register;
-		private:
-			std::string strData;
-		};
+		//, these were supposed to be a union but C++ is being a piece of shit so i guess they wont be...
+		//, "... constructor deleted ... ill-formed ..." - my ass, 
+		//, calling the constructors of union members is totally illogical and as a consequence a union can't have a constructor.
+		//, do not attempt to refactor this into a union, total hours wasted here: 1
+		PrimitiveAttributeData Primitive;
+		mangler* Mangler;
+		ABI* Abi;
+		std::string Symbol;
+		vaccess Accessibility;
+		int64_t StackOffset;
+		uint64_t Address;
+		std::string Register;
 
 		Attribute(AttributeType Type)
 			:Type(Type){}
@@ -66,8 +70,14 @@ namespace Entity {
 		Attribute(ABI* Abi)
 			:Abi(Abi),Type(AttributeType::ABI){}
 
-		Attribute(std::string& data, AttributeType Type)
-			:strData(data),Type(Type){}
+		Attribute(uint64_t Address)
+			:Address(Address),Type(AttributeType::AbsoluteMemoryStorage){}
+
+		Attribute(int64_t StackOffset)
+			:StackOffset(StackOffset),Type(AttributeType::StackStorage){}
+
+		Attribute(std::string data, AttributeType Type)
+			:Register(data),Symbol(data),Type(Type){}
 
 		Attribute(vaccess Accessibility)
 			:Accessibility(Accessibility),Type(AttributeType::Accessibility){}
@@ -78,7 +88,14 @@ namespace Entity {
 
 	variable* defineVariable(std::vector<Attribute>& attributes,std::string& name, type* Type);
 
-	type* startTypeDefinition(std::string& name, std::vector<std::string>& inherit);
+	type* startTypeDefinition(std::vector<Attribute>& attributes, std::string& name, std::vector<token>& inherit, bool isIndentBased);
+	type* declareType(std::vector<Attribute>& attributes, std::string name, std::vector<token> inherit);
 
 	bool close(scope* s);
+
+	inline void updateCurrentScope(scope* sc) {
+		currentScope = sc;
+		if(sc->func != nullptr)
+			code = sc->func->code;
+	}
 }

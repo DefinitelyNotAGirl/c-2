@@ -1,5 +1,9 @@
 #include "../parser.hxx"
 
+#include <filesystem>
+
+extern std::vector<line> getLines(std::string fname);
+
 void parse::Directives::Include()
 {
 	ParserState.Token = ParserState.Line.nextToken();
@@ -11,9 +15,10 @@ void parse::Directives::Include()
 			if (std::filesystem::exists(inc)) {
 				std::string rstFile = currentFile;
 				currentFile = inc;
-				parse(getLines(inc));
+				auto Lines = getLines(inc);
+				parse::Lines(Lines);
 				currentFile = rstFile;
-				resetScope();
+				//resetScope();
 				includedFiles.push_back(inc);
 				compilerBug("unimplemented: debug file information");
 			}
@@ -35,9 +40,10 @@ void parse::Directives::Include()
 				if (std::filesystem::exists(inc)) {
 					std::string rstFile = currentFile;
 					currentFile = inc;
-					parse(getLines(inc));
+					auto Lines = getLines(inc);
+					parse::Lines(Lines);
 					currentFile = rstFile;
-					resetScope();
+					//resetScope();
 					includedFiles.push_back(inc);
 					dependencies.push_back(inc);
 					goto sysIncludeSuccess;
@@ -48,9 +54,10 @@ void parse::Directives::Include()
 				if (std::filesystem::exists(inc)) {
 					std::string rstFile = currentFile;
 					currentFile = inc;
-					parse(getLines(inc));
+					auto Lines = getLines(inc);
+					parse::Lines(Lines);
 					currentFile = rstFile;
-					resetScope();
+					//resetScope();
 					includedFiles.push_back(inc);
 					dependencies.push_back(inc);
 					goto sysIncludeSuccess;

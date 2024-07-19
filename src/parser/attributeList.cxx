@@ -9,10 +9,10 @@ void parse::AttributeList()
 	while (ParserState.Token.type >= 20 && ParserState.Token.type < 31) {
 		if(ParserState.Token.type == 30)
 		{
-			ParserState.Token = ParserState.Token.nextToken();
+			ParserState.NextToken();
 			std::string text = "("+ParserState.Token.text;
 			recheckLspecAttribEnd:;
-			ParserState.Token = ParserState.Token.nextToken();
+			ParserState.NextToken();
 			if(ParserState.Token.type == 31)
 				text+=")";
 			else if(ParserState.Token.type == 1)
@@ -40,6 +40,9 @@ void parse::AttributeList()
 		else if(ParserState.Token.text == "explicitcast")ParserState.Attributes.push_back(Attribute(AttributeType::ExplicitCast));
 		else if(ParserState.Token.text == "noop"        )ParserState.Attributes.push_back(Attribute(AttributeType::Noop        ));
 		else if(ParserState.Token.text == "deprecated"  )ParserState.Attributes.push_back(Attribute(AttributeType::Deprecated  ));
+		else if(ParserState.Token.text.substr(0,strlen("SYMBOL-")) == "SYMBOL-")ParserState.Attributes.push_back(Attribute(ParserState.Token.text.substr(strlen("SYMBOL-")),AttributeType::Symbol));
+		else if(ParserState.Token.text.substr(0,strlen("ABI-")) == "ABI-")ParserState.Attributes.push_back(Attribute(getABI(ParserState.Token.text.substr(strlen("ABI-")))));
+		else if(ParserState.Token.text.substr(0,strlen("mangling-")) == "mangling-")ParserState.Attributes.push_back(Attribute(getMangler(ParserState.Token.text.substr(strlen("mangling-")))));
 		else if(ParserState.Token.text == "defaultUnsignedInt")deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
 		else if(ParserState.Token.text == "defaultSignedInt"  )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
 		else if(ParserState.Token.text == "defaultChar"       )deprecatedAttribute(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token));
@@ -74,15 +77,43 @@ void parse::AttributeList()
 		else if(ParserState.Token.text == "primitiveInc"          )ParserState.Attributes.push_back(Attribute(PrimitiveAttributeData(primitiveOP::Inc         )));
 		else if(ParserState.Token.text == "primitiveDec"          )ParserState.Attributes.push_back(Attribute(PrimitiveAttributeData(primitiveOP::Dec         )));
 		else if(ParserState.Token.text == "primitiveAssign"       )ParserState.Attributes.push_back(Attribute(PrimitiveAttributeData(primitiveOP::assign      )));
-		else if(ParserState.Token.text == "primitiveInPlace")
-		{
+		else if(ParserState.Token.text == "primitiveInPlace") {
 			if(ParserState.Attributes.back().Type == AttributeType::Primitive)
 				ParserState.Attributes.back().Primitive.InPlace = true;
 			else
 				unexpectedPrimitiveInPlace("",originCoreHere,source());
+		} else if(ParserState.Token.text.front() == '(' && ParserState.Token.text.back() == ')') {
+			if(ParserState.Token.text[1] == '+' || ParserState.Token.text[1] == '-') {
+				line L = ParserState.Line;
+				L.ccol = 0;
+				L.tpos = 0;
+				if(ParserState.Token.text[1] == '+')
+					L.text = ParserState.Token.text.substr(2,ParserState.Token.text.length()-3);
+				else
+					L.text = ParserState.Token.text.substr(1,ParserState.Token.text.length()-2);
+				token t = L.nextToken();
+				variable* offs = resolve(t);
+				if(offs->storageArch != Architecture::storage_IntegerImmediate)
+					compilerBug("unimplemented attribute: "+ParserState.Token.text);
+				ParserState.Attributes.push_back(Attribute(int64_t(offs->storage)));
+			} else if(isdigit(ParserState.Token.text[1])) {
+				line L = ParserState.Line;
+				L.ccol = 0;
+				L.tpos = 0;
+				L.text = ParserState.Token.text.substr(1,ParserState.Token.text.length()-2);
+				token t = L.nextToken();
+				variable* offs = resolve(t);
+				if(offs->storageArch != Architecture::storage_IntegerImmediate)
+					compilerBug("unimplemented attribute: "+ParserState.Token.text);
+				ParserState.Attributes.push_back(Attribute(uint64_t(offs->storage)));
+			} else {
+				ParserState.Attributes.push_back(Attribute(ParserState.Token.text.substr(1,ParserState.Token.text.length()-2),AttributeType::RegisterStorage));
+			}
 		}
 		else
 			compilerBug("unimplemented attribute: "+ParserState.Token.text);
-		ParserState.Token = ParserState.Token.nextToken();
+		if(ParserState.Attributes.size() > 0)
+			ParserState.Attributes.back().Token = ParserState.Token;
+		ParserState.NextToken();
 	}
 }

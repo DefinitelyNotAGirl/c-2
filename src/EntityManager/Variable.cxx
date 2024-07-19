@@ -32,6 +32,11 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 				var->isExtern = true;
 				break;
 			}
+			case(AttributeType::Accessibility):
+			{
+				var->Access = attr.Accessibility;
+				break;
+			}
 			case(AttributeType::Constexpr):
 			{
 				var->isConstexpr = true;
@@ -45,6 +50,17 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 			case(AttributeType::Symbol):
 			{
 				var->symbol = attr.Symbol;
+				break;
+			}
+			case(AttributeType::RegisterStorage):
+			{
+				var->storageArch = currentArchitecture;
+				if(currentArchitecture == Architecture::AMD64) {
+					amd64::VariableStorage* storage = new amd64::VariableStorage;
+					var->storage = (void*)storage;
+					storage->mode = amd64::StorageMode::DirectRegister;
+					storage->reg = amd64::string_to_register(attr.Token.text);
+				}
 				break;
 			}
 			default:
@@ -86,11 +102,11 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 			compilerBug("unimplemented: external variable");
 		}
 	}
-	if(var->isConstExpr)
+	if(var->isConstexpr)
 	{
 		var->storageArch = Architecture::storage_IntegerImmediate;
 	}
-	if(var->storage == nullptr && !var->isExtern && !var->isConstExpr)
+	if(var->storage == nullptr && !var->isExtern && !var->isConstexpr)
 	{
 		var->usedAutoStorage = true;
 		var->storageArch = currentArchitecture;
@@ -154,12 +170,12 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 	{
 		if(currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH)
 		{
-			uint64_t offset = currentScope->func->stack->push(var->dataType->valueType->size*ParserState.DeclarationData.ArraySize->storage);
+			uint64_t offset = currentScope->func->stack->push(var->dataType->valueType->size*((uint64_t)ParserState.DeclarationData.ArraySize->storage));
 		}
 		else if(currentScope->t == scopeType::CLASS)
 		{
 			uint64_t classArrayBase = currentScope->cl->size;
-			currentScope->cl->size+=(var->dataType->valueType->size*ParserState.DeclarationData.ArraySize->storage);
+			currentScope->cl->size+=(var->dataType->valueType->size*((uint64_t)ParserState.DeclarationData.ArraySize->storage));
 		}
 	}
 	if((var->storage != nullptr)&&(currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH)) {

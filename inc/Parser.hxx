@@ -1,3 +1,4 @@
+#pragma once
 #include <class_line.h>
 #include <class_token.h>
 #include <class_scope.h>
@@ -6,18 +7,35 @@
 #include <string>
 #include <EntityManagement.hxx>
 
-#undef PARSER_IMPLEMENTATION
 #ifdef PARSER_IMPLEMENTATION
 	#define global
-	#define globalFunction \
-	#if true
+	#define globalFunction
 #else
 	#define global extern
-	#define globalFunction ;\
-	#if false
+	#define globalFunction ;
 #endif
 
-class dObj;
+//. ██████  ███████ ███████  ██████ ██████  ██ ██████  ████████  ██████  ██████       ██████  ██████       ██ ███████  ██████ ████████ ███████
+//. ██   ██ ██      ██      ██      ██   ██ ██ ██   ██    ██    ██    ██ ██   ██     ██    ██ ██   ██      ██ ██      ██         ██    ██
+//. ██   ██ █████   ███████ ██      ██████  ██ ██████     ██    ██    ██ ██████      ██    ██ ██████       ██ █████   ██         ██    ███████
+//. ██   ██ ██           ██ ██      ██   ██ ██ ██         ██    ██    ██ ██   ██     ██    ██ ██   ██ ██   ██ ██      ██         ██         ██
+//. ██████  ███████ ███████  ██████ ██   ██ ██ ██         ██     ██████  ██   ██      ██████  ██████   █████  ███████  ██████    ██    ███████
+class pdobj
+{
+public:
+	std::string name;
+	std::string desc;
+};
+
+class dObj
+{
+public:
+	std::string desc;
+	std::string ret;
+	std::vector<pdobj*> params;
+	std::vector<pdobj*> tparams;
+};
+
 //. ██████   █████  ██████  ███████ ███████ ██████      ███████ ████████  █████  ████████ ███████
 //. ██   ██ ██   ██ ██   ██ ██      ██      ██   ██     ██         ██    ██   ██    ██    ██
 //. ██████  ███████ ██████  ███████ █████   ██████      ███████    ██    ███████    ██    █████
@@ -31,13 +49,15 @@ public:
 	token Token;
 	void NextToken(){this->Token = this->Line.nextToken();}
 
-	std::stack<scope*> scope;
+	std::stack<scope*> scopes;
 	std::vector<line> Lines;
 	uint64_t LineIterator = 0;
 
 	dObj* currentd = new dObj;
 
 	std::vector<Entity::Attribute> Attributes;
+
+	std::stack<uint64_t> trycatchSaveallBase;
 
 	struct {
 		type* Type = nullptr;
@@ -46,6 +66,18 @@ public:
 	} DeclarationData;
 };
 global ParserState_T ParserState;
+
+void resetCurrentD() globalFunction
+#ifdef PARSER_IMPLEMENTATION
+{
+	for(pdobj* i : ParserState.currentd->params)
+		delete i;
+	for(pdobj* i : ParserState.currentd->tparams)
+		delete i;
+	delete ParserState.currentd;
+	ParserState.currentd = new dObj;
+}
+#endif
 
 namespace parse
 {

@@ -1,4 +1,4 @@
-#include <parser.hxx>
+#include "parser.hxx"
 
 void parse::Lines(std::vector<line>& Lines, std::string File)
 {
@@ -10,13 +10,15 @@ void parse::Lines(std::vector<line>& Lines, std::string File)
 	try {
 		for(;
 			ParserState.LineIterator < ParserState.Lines.size();
-			ParserState.LineIterator++;
+			ParserState.LineIterator++
 		){
 			ParserState.Line = ParserState.Lines[ParserState.LineIterator];
 			try {
 				parse::Line();
+			} catch(issue e) {
 			} catch(dummy_parser_endline*) {
 			}
+			ParserState.Attributes.clear();
 		}
 	} catch(dummy_parser_endblock*) {
 	}

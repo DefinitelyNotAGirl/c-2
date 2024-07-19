@@ -2,15 +2,15 @@
 
 void parse::Directive()
 {
-	if (t.text == "#EOL") {
+	if (ParserState.Token.text == "#EOL") {
 		parse::EndLine();
-	} else if (t.text == "#EOF") {
+	} else if (ParserState.Token.text == "#EOF") {
 		parse::EndBlock();
-	} else if (t.text == "#include") {
+	} else if (ParserState.Token.text == "#include") {
 		parse::Directives::Include();
-	} else if (t.text == "#pragma") {
+	} else if (ParserState.Token.text == "#pragma") {
 		parse::Directives::Pragma();
-	} else if (t.text == "#autodecl") {
+	} else if (ParserState.Token.text == "#autodecl") {
 		parse::Directives::Autodecl();
 	}
 }

@@ -17,13 +17,14 @@ void parse::Declaration::Variable()
 			std::vector<variable*> args;
 			args.push_back(var);
 			args.push_back(result);
-			function* func = getFunction("operator=", args);
-			if(var->isConstExpr)
+			std::string cppcock = "operator=";
+			function* func = getFunction(voidType,cppcock,args);
+			if(var->isConstexpr)
 			{
 				if(!func->isPrimitive)
-					nonPrimitiveOperationOnConstexpr("",originCoreHere,source(currentFile,L,t));
+					nonPrimitiveOperationOnConstexpr("",originCoreHere,source(currentFile,ParserState.Line,ParserState.Token));
 				if(result->storageArch != Architecture::storage_IntegerImmediate)
-					dynamicAssignmentToConstexpr("",originCoreHere,source(currentFile,L,t));
+					dynamicAssignmentToConstexpr("",originCoreHere,source(currentFile,ParserState.Line,ParserState.Token));
 				if(result->storageArch == Architecture::storage_IntegerImmediate)
 					var->storage = result->storage;
 			}

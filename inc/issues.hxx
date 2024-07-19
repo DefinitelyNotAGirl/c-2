@@ -2,7 +2,7 @@
  * Created Date: Wednesday May 22nd 2024
  * Author: Lilith
  * -----
- * Last Modified: Tue Jul 09 2024
+ * Last Modified: Thu Jul 18 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -43,7 +43,7 @@ class token;
 class scope;
 
 namespace issues {
-	#define originCoreHere origin("core",__FILE__,__LINE__)
+	#define originCoreHere issues::origin("core",__FILE__,__LINE__)
 
 	extern uint64_t ErrorCount;
 

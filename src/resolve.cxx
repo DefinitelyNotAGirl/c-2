@@ -2,7 +2,7 @@
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sat Jul 06 2024
+ * Last Modified: Thu Jul 18 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -43,6 +43,7 @@
 #include <cgu.h>
 #include <output.hxx>
 #include <ELF64.hxx>
+#include <Parser.hxx>
 
 #define IM_NOT_STUCK 0
 
@@ -118,7 +119,6 @@ extern std::string __reqFileVSTC;
 extern bool vstcDisableSend;
 extern bool isConstExprAssignment;
 line compLine(std::string text);
-void updateCurrentScope(scope* sc);
 function* getTypeCastFunction(type* in, type* out)//? only checks for explicit cast
 {
     for(castFunction* i : castFunctions){
@@ -188,9 +188,9 @@ function* getTypeCastFunction(type* in, type* out)//? only checks for explicit c
 				std::cout << "<code end>" << std::endl;
 			#endif
 			scope* cs = currentScope;
-			updateCurrentScope(globalScope);
-			parse(stringify);
-			updateCurrentScope(cs);
+			Entity::updateCurrentScope(globalScope);
+			parse::Lines(stringify);
+			Entity::updateCurrentScope(cs);
 		}
 		return getTypeCastFunction(in,out);
 	}

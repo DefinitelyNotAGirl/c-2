@@ -1,5 +1,6 @@
 #include <EntityManagement.hxx>
 #include <Parser.hxx>
+#include <output.hxx>
 
 using Entity::Attribute;
 using Entity::AttributeType;
@@ -9,7 +10,11 @@ using namespace issues;
 
 static function* constructFunction(std::vector<Attribute>& attributes,std::string& name, std::vector<variable*>& args, type* returnType)
 {
-	mangler* NameMangler = nullptr;
+	if(returnType == nullptr)
+	{
+		std::cout << "blub blub" << std::endl;
+	}
+	mangler* NameMangler = defaultMangler;
 
 	bool ImplicitCast = false;
 
@@ -21,6 +26,7 @@ static function* constructFunction(std::vector<Attribute>& attributes,std::strin
 	func->returnValue = new variable;
 	func->returnValue->dataType = returnType;
 	func->returnValue->name = "____cpe2returnvalue";
+	func->abi = defaultABI;
 	for(Attribute& attr : attributes)
 	{
 		switch(attr.Type)
@@ -28,17 +34,20 @@ static function* constructFunction(std::vector<Attribute>& attributes,std::strin
 			case(AttributeType::Typecast):
 			{
 				SETBIT_00(func->miscData);//set cast bit
-				if(func->parameters.size() == 1)
+				if(func->vparams.size() == 1)
 				{
 					castFunction* ncf = new castFunction;
-					ncf->input = func->parameters[0];
+					ncf->input = func->vparams[0]->dataType;
 					ncf->output = func->returnType;
 					ncf->func = func;
 					ncf->canImplicitCast = ImplicitCast;
 					castFunctions.push_back(ncf);
 				}
 				else
+				{
+					std::cout << "invalid typecast function: " << func->expression_ansi() << std::endl;
 					compilerBug("typecast function must take exactly 1 argument.",originCoreHere,source(),"");
+				}
 				break;
 			}
 			case(AttributeType::ExplicitCast):
@@ -172,7 +181,7 @@ function* Entity::startFunctionDefinition(std::vector<Attribute>& attributes,std
 	scope* sc		  = new scope;
 	sc->parent		  = currentScope;
 	sc->name		  = func->symbol;
-	sc->leadingSpace  = L.leadingSpaces + tabLength;
+	sc->leadingSpace  = ParserState.Line.leadingSpaces + tabLength;
 	sc->isIndentBased = isIndentBased;
 	sc->t			  = scopeType::FUNCTION;
 	sc->func		  = func;
