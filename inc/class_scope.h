@@ -30,6 +30,7 @@
 #pragma once
 #include <compiler.h>
 #include <map>
+#include <Routine.hxx>
 
 enum class scopeType : uint64_t
 {
@@ -74,6 +75,8 @@ public:
     uint64_t conditionalCounter = 0;
     uint64_t booleanReturnCounter = 0;
     uint64_t strlenCounter = 0;
+	//routines
+	std::vector<Routine> OnClose;
     //misc
     std::string reentrySymbol = "";
 };
