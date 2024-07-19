@@ -51,7 +51,7 @@ class ABI;
 #include <system.h>
 
 extern std::vector<castFunction*> castFunctions;
-extern std::string currentFile;
+#define currentFile ParserState.File
 extern std::vector<std::string> startObjFiles;
 extern std::vector<std::string> dependencies;
 
@@ -91,6 +91,8 @@ extern uint64_t moScopeID;
 extern scope* globalScope;
 extern scope* currentScope;
 
+extern type* anyType;
+extern type* voidType;
 extern type* defaultUnsignedIntegerType;
 extern type* defaultSignedIntegerType;
 extern type* defaultFloatType;

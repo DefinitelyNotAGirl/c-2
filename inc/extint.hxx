@@ -4,6 +4,8 @@
 #include <cstring>
 #include <cmath>
 
+#define uint64_t_max 0xFFFFFFFFFFFFFFFF
+
 inline uint64_t negative(uint64_t n){return (n | ((uint64_t)1<<63));}
 inline uint64_t positive(uint64_t n){return (n & (~((uint64_t)1<<63)));}
 template<typename src,typename dst>

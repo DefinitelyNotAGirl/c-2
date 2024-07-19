@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Mon Jun 24 2024
+ * Last Modified: Thu Jul 18 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -94,6 +94,8 @@ std::string mdOut = "";
 
 uint64_t POINTER_SIZE = 8;
 
+type* anyType = nullptr;
+type* voidType = nullptr;
 type* defaultUnsignedIntegerType = nullptr;
 type* defaultSignedIntegerType = nullptr;
 type* defaultFloatType = nullptr;

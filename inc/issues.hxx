@@ -2,7 +2,7 @@
  * Created Date: Wednesday May 22nd 2024
  * Author: Lilith
  * -----
- * Last Modified: Fri Jul 05 2024
+ * Last Modified: Thu Jul 18 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -43,7 +43,7 @@ class token;
 class scope;
 
 namespace issues {
-	#define originCoreHere origin("core",__FILE__,__LINE__)
+	#define originCoreHere issues::origin("core",__FILE__,__LINE__)
 
 	extern uint64_t ErrorCount;
 
@@ -651,7 +651,7 @@ namespace issues {
 
 	//,
 	//,
-	//, warning for when a attribute is deprecated
+	//, warning for when an attribute is deprecated
 	//,
 	//,
 	class deprecatedAttribute : public issue {
@@ -673,6 +673,32 @@ namespace issues {
 		std::stack<int(*)(deprecatedAttribute e)> deprecatedAttribute::error;
 		std::stack<void(*)(deprecatedAttribute e)> deprecatedAttribute::warn;
 		std::stack<void(*)(deprecatedAttribute e)> deprecatedAttribute::info;
+	#endif
+
+	//,
+	//,
+	//, warning for when attribute primitiveInPlace is used before the primitve operation is specified
+	//,
+	//,
+	class unexpectedPrimitiveInPlace : public issue {
+	public:
+		static action Action;
+		static std::stack<int(*)(unexpectedPrimitiveInPlace e)> error;
+		static std::stack<void(*)(unexpectedPrimitiveInPlace e)> warn;
+		static std::stack<void(*)(unexpectedPrimitiveInPlace e)> info;
+		unexpectedPrimitiveInPlace(std::string msg, origin orig, source src)
+		{
+			this->msg = msg;
+			this->trace.push_front(orig);
+			this->src = src;
+			invoke(*this);
+		}
+	};
+	#ifdef ISSUES_CXX
+		action unexpectedPrimitiveInPlace::Action = action::warning;
+		std::stack<int(*)(unexpectedPrimitiveInPlace e)> unexpectedPrimitiveInPlace::error;
+		std::stack<void(*)(unexpectedPrimitiveInPlace e)> unexpectedPrimitiveInPlace::warn;
+		std::stack<void(*)(unexpectedPrimitiveInPlace e)> unexpectedPrimitiveInPlace::info;
 	#endif
 
 //*####################################################################################################################

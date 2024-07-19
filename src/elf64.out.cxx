@@ -573,13 +573,13 @@ void output::generateElf64()
 		}
 		i++;
 	}
-	std::cout << "opening file: " << objOut << std::endl;
+	//std::cout << "opening file: " << objOut << std::endl;
 	FILE* f = fopen(objOut.c_str(),"wb");
-	std::cout << "writing file..." << std::endl;
+	//std::cout << "writing file..." << std::endl;
 	fwrite(fileBuffer,bufferSize,1,f);
-	std::cout << "closing file..." << std::endl;
+	//std::cout << "closing file..." << std::endl;
 	fclose(f);
-	std::cout << "done." << std::endl;
+	//std::cout << "done." << std::endl;
 	//,
 	//, show outputs
 	//,

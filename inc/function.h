@@ -119,6 +119,7 @@ public:
 	bool isInline = false;
     bool ignoreCall = false;
 	bool isMember = false;
+	bool isExtern = false;
 
 	/*
 	 . machine state
