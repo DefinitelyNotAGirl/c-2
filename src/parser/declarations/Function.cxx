@@ -56,7 +56,7 @@ void parse::Declaration::Function()
 			ParserState.DeclarationData.NameToken.text,
 			arguments,
 			ParserState.DeclarationData.Type,
-			ParserState.Token.type == 36
+			ParserState.Token.type == 40
 		);
 	} else if (ParserState.Token.type == 41) {
 		Entity::declareFunction(

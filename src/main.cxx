@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Fri Jul 19 2024
+ * Last Modified: Tue Jul 23 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -77,6 +77,7 @@ void output_init();
 void warn_init();
 void error_init();
 void install_crash_handlers();
+
 int main(int argc, char** argv)
 {
 	install_crash_handlers();

@@ -12,7 +12,7 @@ static void EvalToken()
 				//,
 				//, close ts
 				//,
-				if(Entity::close(ts))
+				if(!Entity::close(ts))
 					ts = ts->parent;
 			}
 			if(ts != nullptr && ts->t != scopeType::GLOBAL)
@@ -20,15 +20,16 @@ static void EvalToken()
 				//,
 				//, close ts
 				//,
+				scope* sc = ts->parent;
 				Entity::close(ts);
 				//,
 				//, ts is now the new scope
 				//,
-				Entity::updateCurrentScope(ts);
+				Entity::updateCurrentScope(sc);
 			}
 			else
 			{
-				std::cerr << "there are no curly-brace based bodies to close!";
+				std::cerr << "there are no curly-brace based bodies to close!" << std::endl;
 			}
 			break;
 		}
@@ -72,7 +73,7 @@ void parse::Line()
 	{
 		scope* ts = currentScope;
 		while (true) {
-			if (ParserState.Line.leadingSpaces < ts->leadingSpace && ts->isIndentBased) {
+			if ((ParserState.Line.leadingSpaces < ts->leadingSpace) && (ts->isIndentBased == true)) {
 				std::cout << "closing:" << ts->name << std::endl;
 				if(!Entity::close(ts))
 				{

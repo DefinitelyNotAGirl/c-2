@@ -86,6 +86,25 @@ void parse::Keywords::ElseIf()
 			compilerBug("unimplemented condition storage mode: "+std::to_string((uint64_t)cs->mode),originCoreHere,source(currentFile,ParserState.Line,ParserState.Token),"");
 	}
 	//set return symbol
+	struct RoutineData_T {
+		scope* sc;
+	};
+	RoutineData_T* RoutineData = new RoutineData_T; {
+		RoutineData->sc = sc;
+	}
 	Entity::updateCurrentScope(sc);
-	code->placeSymbol(SymbolType::CodeLocation,0,sc->name);
+	currentScope->BranchCode.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			code->placeSymbol(SymbolType::CodeLocation,0,data->sc->name);
+			code->push(data->sc->func->code);
+		}
+	));
+	currentScope->Finalize.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			for(Routine& r : data->sc->BranchCode)
+				data->sc->parent->BranchCode.push_back(r);
+		}
+	));
 }

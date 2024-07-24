@@ -1,6 +1,6 @@
 #include "../parser.hxx"
-
 #include <SYS_LINUX.h>
+#include <output.hxx>
 
 void parse::Keywords::Async()
 {
@@ -393,4 +393,59 @@ void parse::Keywords::Async()
 			unexpectedTokenType("",originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token),{36,40});
 		Entity::updateCurrentScope(sc);
 	}
+	struct RoutineData_T {
+		section* BodyCode;
+		scope* sc;
+		function* func;
+	};
+	RoutineData_T* RoutineData = new RoutineData_T;{
+		RoutineData->BodyCode = currentScope->func->code;
+		RoutineData->sc = currentScope;
+		RoutineData->func = currentScope->func;
+	}
+	currentScope->StartClosure.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			code = new section;
+		}
+	));
+	currentScope->Prologue.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+		}
+	));
+	currentScope->BodyCode.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			code->push(data->BodyCode);
+		}
+	));
+	currentScope->Epilogue.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			variable v_null;
+			v_null.storageArch = Architecture::storage_IntegerImmediate;
+			v_null.storage = (void*)0;
+			v_null.dataType = defaultUnsignedIntegerType;
+			std::vector<variable*> args = {&v_null};
+			function* fexit = getFunction("exit",args);
+			std::cout << "fexit: " << fexit->expression_ansi() << std::endl;
+			call(fexit,args);
+		}
+	));
+	currentScope->Finalize.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			for(Routine& r : data->sc->BranchCode)
+				r.run();
+			text.placeSymbol(SymbolType::LocalFunction,code->size(),data->sc->name);
+			text.push(code);
+		}
+	));
+	currentScope->Destroy.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			delete code;
+		}
+	));
 }

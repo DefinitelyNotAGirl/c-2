@@ -15,4 +15,4 @@ public:
 	void run(){
 		this->callback(this->data);
 	}
-}
+};

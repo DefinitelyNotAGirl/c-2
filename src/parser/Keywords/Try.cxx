@@ -21,20 +21,34 @@ void parse::Keywords::Try()
 		sc->reentrySymbol = sc->name+CPE2_SYMBOL_SCOPE_SEP"epilogue";
 		scope* acs = currentScope;
 		currentScope = sc;
+		struct OnCloseData_T {
+			scope* sc;
+		};
+		OnCloseData_T* OnCloseData = new OnCloseData_T;
+		OnCloseData->sc = sc;
 		//+
 		//+ pre code
 		//+
 		{
-			code = sc->extraCodeBlocks[0];
-			code->placeSymbol(SymbolType::CodeLocation,0,sc->name+CPE2_SYMBOL_SCOPE_SEP"prologue");
+			sc->Prologue.push_back(Routine(OnCloseData,
+				[](void* __data){
+					OnCloseData_T* data = (OnCloseData_T*)__data;
+					code->placeSymbol(SymbolType::CodeLocation,0,data->sc->name+CPE2_SYMBOL_SCOPE_SEP"prologue");
+				}
+			));
 			ParserState.trycatchSaveallBase.push(runtime::SaveAll());
 		}
 		//+
 		//+ post code
 		//+
 		{
-			code = sc->extraCodeBlocks[1];
-			code->placeSymbol(SymbolType::CodeLocation,0,sc->reentrySymbol);
+			sc->Epilogue.push_back(Routine(OnCloseData,
+				[](void* __data){
+					OnCloseData_T* data = (OnCloseData_T*)__data;
+					code->placeSymbol(SymbolType::CodeLocation,0,data->sc->reentrySymbol);	
+					delete data;
+				}
+			));
 		}
 		currentScope = acs;
 		Entity::updateCurrentScope(sc);
@@ -67,6 +81,7 @@ void parse::Keywords::Try()
 		sc->func->code = new section;
 		Entity::updateCurrentScope(sc);
 		code->placeSymbol(SymbolType::CodeLocation,0,currentScope->name);
+
 	}
 	currentScope->tryCounter++;
 }
