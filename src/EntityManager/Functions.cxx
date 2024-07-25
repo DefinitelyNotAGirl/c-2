@@ -170,6 +170,7 @@ function* Entity::declareFunction(std::vector<Attribute>& attributes,std::string
 	if(!func->isPrimitive)
 	{
 		func->abi->setFunctionStorages(func);
+		std::cout << "importing function: " << func->symbol << std::endl;
 		importExternalFunction(func->symbol);
 	}
 	return func;
