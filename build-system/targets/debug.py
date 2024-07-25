@@ -28,7 +28,7 @@ def buildTarget(trg: target, tcurrent: int, tmax: int):
 	else:
 		rebuild = True
 	if not rebuild:
-		print(" \033[33m\U000025CC\033[0m",trg.path,"(",tcurrent,"/",tmax,")")
+		print(" \033[33m\U000025CE\033[0m",trg.path,"(",tcurrent,"/",tmax,")")
 		return 0
 	if trg.type == "c++ object":
 		if compile.debug.cpp(trg.src,trg.path,tcurrent,tmax) != 0:
