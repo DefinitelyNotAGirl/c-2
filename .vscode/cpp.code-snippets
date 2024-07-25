@@ -87,4 +87,35 @@
 			"#endif"
 		]
 	},
+	"routine implemantation": {
+		"prefix": "routine",
+		"body": [
+			"Routine(RoutineData,",
+			"\t[](void* __data){",
+			"\t\tRoutineData_T* data = (RoutineData_T*)__data;",
+			"\t\t$0",
+			"\t}",
+			");"
+		]
+	},
+	"push routine": {
+		"prefix": "routine",
+		"body": [
+			"$1.push_back(Routine(RoutineData,",
+			"\t[](void* __data){",
+			"\t\tRoutineData_T* data = (RoutineData_T*)__data;",
+			"\t\t$0",
+			"\t}",
+			"));"
+		]
+	},
+	"routine data": {
+		"prefix": "routine",
+		"body": [
+			"struct RoutineData_T {",
+			"};",
+			"RoutineData_T* RoutineData = new RoutineData_T;{",
+			"}"
+		]
+	}
 }
