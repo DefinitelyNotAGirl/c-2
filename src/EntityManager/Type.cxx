@@ -70,7 +70,7 @@ static type* constructType(std::vector<Attribute> attributes,std::string& name, 
 				Type->supertypes.push_back(T);
 				for(variable m : T->members)
 				{
-					m.storage = Type->size;
+					m.storage = (void*)Type->size;
 					Type->members.push_back(m);
 					Type->size += m.dataType->size;
 				}

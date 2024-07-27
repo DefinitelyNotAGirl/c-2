@@ -20,4 +20,6 @@ void parse::Keyword()
 	else if(ParserState.Token.text == "throw")parse::Keywords::Throw();
 	else if(ParserState.Token.text == "async")parse::Keywords::Async();
 	else if(ParserState.Token.text == "template")parse::Keywords::Template();
+	else if(ParserState.Token.text == "c2resource")parse::Keywords::c2Resource();
+	else issues::invalidUseOfKeywordInScope(ParserState.Token.text,originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token),currentScope);
 }

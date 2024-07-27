@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Tue Jul 23 2024
+ * Last Modified: Fri Jul 26 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -168,7 +168,7 @@ int main(int argc, char** argv)
 
     //set stdlib include dir
     if(!(options::ffreestanding || options::fnostdlib))
-        includeDirs.push_back("/usr/local/include/cpe2/");
+        includeDirs.push_back("../stdcpe2/inc");
 	
 	//,
 	//, set output destinations

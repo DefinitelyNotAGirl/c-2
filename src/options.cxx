@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Mon Jun 24 2024
+ * Last Modified: Fri Jul 26 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -179,7 +179,7 @@ void CARGHANDLER_HELP_PRAGMA(CARGPARSE_HANDLER_ARGS);
 
 void CARGHANDLER_INFO(CARGPARSE_HANDLER_ARGS)
 {
-    char* data = args.front().c_str();
+    char* data = (char*)args.front().c_str();
     bool doClasses = false;
     bool doFunctions = false;
     bool doScopes = false;

@@ -2,8 +2,8 @@
  * Created Date: Thursday August 17th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Fri Jul 26 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
@@ -47,9 +47,9 @@ namespace __mangler__
         {
             switch(i)
             {
-				case('±'):
-					symbol+="PLUSMINUS";
-					break;
+				//case('±'):
+				//	symbol+="PLUSMINUS";
+				//	break;
                 case('+'):
                     symbol+="ADD";
                     break;
@@ -87,8 +87,8 @@ namespace __mangler__
                     symbol.push_back(i);
             }
         }
-        for(type* p : func->parameters)
-            symbol+="_"+p->mangledName;
+        for(variable* p : func->vparams)
+            symbol+="_"+p->dataType->mangledName;
         func->symbol = symbol;
     }
 
@@ -103,9 +103,9 @@ namespace __mangler__
         {
             switch(i)
             {
-				case('±'):
-					symbol+="PLUSMINUS";
-					break;
+				//case('±'):
+				//	symbol+="PLUSMINUS";
+				//	break;
                 case('+'):
                     symbol+="ADD";
                     break;
@@ -152,11 +152,19 @@ namespace __mangler__
         if(in.front() == '"' && in.back() == '"')
         {
             //string
-            res+="string_0x";
-            for(char i : in.substr(1,in.length()-2))
-            {
-                res+=std::format("{:x}", (uint64_t)i);
-            }
+			#if defined(platform_linux)
+            	res+="string_0x";
+            	for(char i : in.substr(1,in.length()-2))
+            	{
+            	    res+=std::format("{:x}", (uint64_t)i);
+            	}
+			#elif defined(platform_apple)
+				res+="string_0d";
+				for(char i : in.substr(1,in.length()-2))
+            	{
+            	    res+=std::to_string((uint64_t)i);
+            	}
+			#endif
         }
         else if(isDigit(in.front()))
         {

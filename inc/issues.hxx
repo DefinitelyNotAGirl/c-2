@@ -2,7 +2,7 @@
  * Created Date: Wednesday May 22nd 2024
  * Author: Lilith
  * -----
- * Last Modified: Thu Jul 18 2024
+ * Last Modified: Fri Jul 26 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -183,7 +183,7 @@ namespace issues {
 		compilerBug(std::string msg)
 			:github(""){this->msg = msg;this->src = source();invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(compilerBug e)> compilerBug::info;
 		std::stack<void(*)(compilerBug e)> compilerBug::warn;
 		std::stack<int(*)(compilerBug e)> compilerBug::error;
@@ -198,7 +198,7 @@ namespace issues {
 		unexpectedTokenType(ISSUES_CTOR_ARGS, std::list<uint64_t> expectedTokenTypes)
 			:expectedTokenTypes(expectedTokenTypes){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(unexpectedTokenType e)> unexpectedTokenType::info;
 		std::stack<void(*)(unexpectedTokenType e)> unexpectedTokenType::warn;
 		std::stack<int(*)(unexpectedTokenType e)> unexpectedTokenType::error;
@@ -216,7 +216,7 @@ namespace issues {
 		noSuchFile(ISSUES_CTOR_ARGS, std::string file, std::list<std::string> checkedPaths)
 			:file(file),checkedPaths(checkedPaths){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(noSuchFile e)> noSuchFile::info;
 		std::stack<void(*)(noSuchFile e)> noSuchFile::warn;
 		std::stack<int(*)(noSuchFile e)> noSuchFile::error;
@@ -231,7 +231,7 @@ namespace issues {
 		noSuchType(ISSUES_CTOR_ARGS, std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(noSuchType e)> noSuchType::info;
 		std::stack<void(*)(noSuchType e)> noSuchType::warn;
 		std::stack<int(*)(noSuchType e)> noSuchType::error;
@@ -246,7 +246,7 @@ namespace issues {
 		noSuchIdentifier(ISSUES_CTOR_ARGS, std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(noSuchIdentifier e)> noSuchIdentifier::info;
 		std::stack<void(*)(noSuchIdentifier e)> noSuchIdentifier::warn;
 		std::stack<int(*)(noSuchIdentifier e)> noSuchIdentifier::error;
@@ -261,7 +261,7 @@ namespace issues {
 		invalidUseOfKeywordInScope(ISSUES_CTOR_ARGS, scope* Scope)
 			:Scope(Scope){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(invalidUseOfKeywordInScope e)> invalidUseOfKeywordInScope::info;
 		std::stack<void(*)(invalidUseOfKeywordInScope e)> invalidUseOfKeywordInScope::warn;
 		std::stack<int(*)(invalidUseOfKeywordInScope e)> invalidUseOfKeywordInScope::error;
@@ -276,7 +276,7 @@ namespace issues {
 		noSuchABI(ISSUES_CTOR_ARGS, std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(noSuchABI e)> noSuchABI::info;
 		std::stack<void(*)(noSuchABI e)> noSuchABI::warn;
 		std::stack<int(*)(noSuchABI e)> noSuchABI::error;
@@ -291,7 +291,7 @@ namespace issues {
 		nonImmediateArraySize(ISSUES_CTOR_ARGS, type* valueType)
 			:valueType(valueType){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(nonImmediateArraySize e)> nonImmediateArraySize::info;
 		std::stack<void(*)(nonImmediateArraySize e)> nonImmediateArraySize::warn;
 		std::stack<int(*)(nonImmediateArraySize e)> nonImmediateArraySize::error;
@@ -305,7 +305,7 @@ namespace issues {
 		nonImmediateIntegerTemplateArgument(ISSUES_CTOR_ARGS)
 			{ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(nonImmediateIntegerTemplateArgument e)> nonImmediateIntegerTemplateArgument::info;
 		std::stack<void(*)(nonImmediateIntegerTemplateArgument e)> nonImmediateIntegerTemplateArgument::warn;
 		std::stack<int(*)(nonImmediateIntegerTemplateArgument e)> nonImmediateIntegerTemplateArgument::error;
@@ -320,7 +320,7 @@ namespace issues {
 		noSuchLitop(ISSUES_CTOR_ARGS, std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(noSuchLitop e)> noSuchLitop::info;
 		std::stack<void(*)(noSuchLitop e)> noSuchLitop::warn;
 		std::stack<int(*)(noSuchLitop e)> noSuchLitop::error;
@@ -337,7 +337,7 @@ namespace issues {
 		invalidAttribute(ISSUES_CTOR_ARGS, std::string entityName,std::string attribute,std::list<std::string> validAttributes)
 			:entityName(entityName),attribute(attribute),validAttributes(validAttributes){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(invalidAttribute e)> invalidAttribute::info;
 		std::stack<void(*)(invalidAttribute e)> invalidAttribute::warn;
 		std::stack<int(*)(invalidAttribute e)> invalidAttribute::error;
@@ -353,7 +353,7 @@ namespace issues {
 		noSuchFunction(ISSUES_CTOR_ARGS,function* neededFunction, std::vector<function*> candidates)
 			:neededFunction(neededFunction),candidates(candidates){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(noSuchFunction e)> noSuchFunction::info;
 		std::stack<void(*)(noSuchFunction e)> noSuchFunction::warn;
 		std::stack<int(*)(noSuchFunction e)> noSuchFunction::error;
@@ -368,7 +368,7 @@ namespace issues {
 		noSuchVariable(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(noSuchVariable e)> noSuchVariable::info;
 		std::stack<void(*)(noSuchVariable e)> noSuchVariable::warn;
 		std::stack<int(*)(noSuchVariable e)> noSuchVariable::error;
@@ -383,7 +383,7 @@ namespace issues {
 		noSuchMangler(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(noSuchMangler e)> noSuchMangler::info;
 		std::stack<void(*)(noSuchMangler e)> noSuchMangler::warn;
 		std::stack<int(*)(noSuchMangler e)> noSuchMangler::error;
@@ -398,7 +398,7 @@ namespace issues {
 		noSuchSystem(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(noSuchSystem e)> noSuchSystem::info;
 		std::stack<void(*)(noSuchSystem e)> noSuchSystem::warn;
 		std::stack<int(*)(noSuchSystem e)> noSuchSystem::error;
@@ -413,7 +413,7 @@ namespace issues {
 		noSuchArchitecture(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(noSuchArchitecture e)> noSuchArchitecture::info;
 		std::stack<void(*)(noSuchArchitecture e)> noSuchArchitecture::warn;
 		std::stack<int(*)(noSuchArchitecture e)> noSuchArchitecture::error;
@@ -428,7 +428,7 @@ namespace issues {
 		noSuchNumberSystem(ISSUES_CTOR_ARGS,std::string name)
 			:name(name){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(noSuchNumberSystem e)> noSuchNumberSystem::info;
 		std::stack<void(*)(noSuchNumberSystem e)> noSuchNumberSystem::warn;
 		std::stack<int(*)(noSuchNumberSystem e)> noSuchNumberSystem::error;
@@ -444,7 +444,7 @@ namespace issues {
 		invalidType(ISSUES_CTOR_ARGS,std::list<type*> validTypes,type* receivedType)
 			:validTypes(validTypes),receivedType(receivedType){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(invalidType e)> invalidType::info;
 		std::stack<void(*)(invalidType e)> invalidType::warn;
 		std::stack<int(*)(invalidType e)> invalidType::error;
@@ -458,7 +458,7 @@ namespace issues {
 		unexpectedBufferTermination(ISSUES_CTOR_ARGS)
 			{ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(unexpectedBufferTermination e)> unexpectedBufferTermination::info;
 		std::stack<void(*)(unexpectedBufferTermination e)> unexpectedBufferTermination::warn;
 		std::stack<int(*)(unexpectedBufferTermination e)> unexpectedBufferTermination::error;
@@ -482,7 +482,7 @@ namespace issues {
 			invoke(*this);
 		}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(nonPrimitiveOperationOnConstexpr e)> nonPrimitiveOperationOnConstexpr::info;
 		std::stack<void(*)(nonPrimitiveOperationOnConstexpr e)> nonPrimitiveOperationOnConstexpr::warn;
 		std::stack<int(*)(nonPrimitiveOperationOnConstexpr e)> nonPrimitiveOperationOnConstexpr::error;
@@ -506,7 +506,7 @@ namespace issues {
 			invoke(*this);
 		}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		std::stack<void(*)(dynamicAssignmentToConstexpr e)> dynamicAssignmentToConstexpr::info;
 		std::stack<void(*)(dynamicAssignmentToConstexpr e)> dynamicAssignmentToConstexpr::warn;
 		std::stack<int(*)(dynamicAssignmentToConstexpr e)> dynamicAssignmentToConstexpr::error;
@@ -530,10 +530,10 @@ namespace issues {
 			invoke(*this);
 		}
 	};
-	#ifdef ISSUES_CXX
-		static std::stack<int(*)(nonGlobalExtern e)> nonGlobalExtern::error;
-		static std::stack<void(*)(nonGlobalExtern e)> nonGlobalExtern::warn;
-		static std::stack<void(*)(nonGlobalExtern e)> nonGlobalExtern::info;
+	#if defined(ISSUES_CXX)
+		std::stack<int(*)(nonGlobalExtern e)> nonGlobalExtern::error;
+		std::stack<void(*)(nonGlobalExtern e)> nonGlobalExtern::warn;
+		std::stack<void(*)(nonGlobalExtern e)> nonGlobalExtern::info;
 	#endif
 
 	//+
@@ -554,10 +554,10 @@ namespace issues {
 			invoke(*this);
 		}
 	};
-	#ifdef ISSUES_CXX
-		static std::stack<int(*)(nonImmediateLitop e)> nonImmediateLitop::error;
-		static std::stack<void(*)(nonImmediateLitop e)> nonImmediateLitop::warn;
-		static std::stack<void(*)(nonImmediateLitop e)> nonImmediateLitop::info;
+	#if defined(ISSUES_CXX)
+		std::stack<int(*)(nonImmediateLitop e)> nonImmediateLitop::error;
+		std::stack<void(*)(nonImmediateLitop e)> nonImmediateLitop::warn;
+		std::stack<void(*)(nonImmediateLitop e)> nonImmediateLitop::info;
 	#endif
 //!####################################################################################################################
 //!####################################################################################################################
@@ -593,7 +593,7 @@ namespace issues {
 		unimplementedDebugInfo(std::string msg)
 			{this->msg = msg;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		action unimplementedDebugInfo::Action = action::warning;
 		std::stack<void(*)(unimplementedDebugInfo e)> unimplementedDebugInfo::info;
 		std::stack<void(*)(unimplementedDebugInfo e)> unimplementedDebugInfo::warn;
@@ -609,7 +609,7 @@ namespace issues {
 		insufficientPrivilegeLevel(ISSUES_CTOR_ARGS)
 			{ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		action insufficientPrivilegeLevel::Action = action::warning;
 		std::stack<void(*)(insufficientPrivilegeLevel e)> insufficientPrivilegeLevel::info;
 		std::stack<void(*)(insufficientPrivilegeLevel e)> insufficientPrivilegeLevel::warn;
@@ -625,7 +625,7 @@ namespace issues {
 		stackPointerStorage(ISSUES_CTOR_ARGS)
 			{ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		action stackPointerStorage::Action = action::warning;
 		std::stack<void(*)(stackPointerStorage e)> stackPointerStorage::info;
 		std::stack<void(*)(stackPointerStorage e)> stackPointerStorage::warn;
@@ -642,7 +642,7 @@ namespace issues {
 		absoluteMemoryStorage(ISSUES_CTOR_ARGS,uint64_t address)
 			:address(address){ISSUES_CTOR_INIT;invoke(*this);}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		action absoluteMemoryStorage::Action = action::warning;
 		std::stack<void(*)(absoluteMemoryStorage e)> absoluteMemoryStorage::info;
 		std::stack<void(*)(absoluteMemoryStorage e)> absoluteMemoryStorage::warn;
@@ -668,7 +668,7 @@ namespace issues {
 			invoke(*this);
 		}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		action deprecatedAttribute::Action = action::warning;
 		std::stack<int(*)(deprecatedAttribute e)> deprecatedAttribute::error;
 		std::stack<void(*)(deprecatedAttribute e)> deprecatedAttribute::warn;
@@ -694,7 +694,7 @@ namespace issues {
 			invoke(*this);
 		}
 	};
-	#ifdef ISSUES_CXX
+	#if defined(ISSUES_CXX)
 		action unexpectedPrimitiveInPlace::Action = action::warning;
 		std::stack<int(*)(unexpectedPrimitiveInPlace e)> unexpectedPrimitiveInPlace::error;
 		std::stack<void(*)(unexpectedPrimitiveInPlace e)> unexpectedPrimitiveInPlace::warn;

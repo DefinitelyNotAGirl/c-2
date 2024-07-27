@@ -34,6 +34,18 @@ void error_init()
 			return 1;
 		}
 	);
+	noSuchFile::error.push(
+		[](noSuchFile e) -> int {
+			std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": file not found \"" << e.file << "\"\n";
+			e.src.print();
+			std::cerr << "checked paths:\n";
+			for(std::string& path : e.checkedPaths)
+				std::cerr << "\t" << path << "\n";
+			std::cerr << "\n\n\r";
+			ErrorCount++;
+			return 1;
+		}
+	);
 	noSuchType::error.push(
 		[](noSuchType e) -> int {
 			std::cerr << COLOR_RED << "ERROR" << COLOR_RESET << ": \"" << e.name << "\" does not name a type.\n";
@@ -176,4 +188,5 @@ void error_init()
 			return 1;
 		}
 	);
+	
 }

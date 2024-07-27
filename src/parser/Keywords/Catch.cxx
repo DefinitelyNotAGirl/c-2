@@ -89,6 +89,7 @@ void parse::Keywords::Catch()
 		std::string symbol_routine;
 		std::string symbol_threaddata_routine;
 		std::string symbol_threaddata_datadst;
+		std::string reentry;
 	};
 	RoutineData_T* RoutineData = new RoutineData_T;
 	RoutineData->catchType = catchType;
@@ -99,6 +100,7 @@ void parse::Keywords::Catch()
 	RoutineData->symbol_routine = sc->name;
 	RoutineData->symbol_threaddata_routine = symbol_threaddata_routine;
 	RoutineData->symbol_threaddata_datadst = symbol_threaddata_datadst;
+	RoutineData->reentry = currentScope->name+CPE2_SYMBOL_SCOPE_SEP+"reentry";
 	//,
 	//, pre code
 	//,
@@ -325,23 +327,8 @@ void parse::Keywords::Catch()
 		[](void* __data){
 			RoutineData_T* data = (RoutineData_T*)__data;
 			code->placeSymbol(SymbolType::CodeLocation,0,data->sc->name);
-			//+
-			//+ restore registers
-			//+
-			{
-				runtime::LoadAll(ParserState.trycatchSaveallBase.top());
-			}
-			//+
-			//+ restore stack pointer and frame pointer
-			//+
-			{
-				code->push({
-					amd64::prefix::REX(1,0,0,1),
-					amd64::opcode::add::rm16_32_64__imm16_32,
-					amd64::modRM(0,amd64::AddressingMode::RegisterDirect,amd64::Register::rbp),
-				});
-				code->push(amd64::imm32(data->datadst_offset));
-			}
+			code->push(data->sc->func->code);
+			runtime::RelativeControlTransfer(data->reentry);
 		}
 	));
 	//set return symbol

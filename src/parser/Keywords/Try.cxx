@@ -10,7 +10,6 @@ void parse::Keywords::Try()
 		sc->leadingSpace=currentScope->leadingSpace+tabLength;
 		sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"try_catch"+std::to_string(currentScope->tryCounter);
 		sc->parent = currentScope;
-		sc->isIndentBased = true;
 		sc->t = scopeType::TRY_CATCH;
 		sc->func = new function;
 		//sdump(currentScope);
@@ -21,35 +20,60 @@ void parse::Keywords::Try()
 		sc->reentrySymbol = sc->name+CPE2_SYMBOL_SCOPE_SEP"epilogue";
 		scope* acs = currentScope;
 		currentScope = sc;
-		struct OnCloseData_T {
+		struct RoutineData_T {
 			scope* sc;
+			std::string reentry;
 		};
-		OnCloseData_T* OnCloseData = new OnCloseData_T;
-		OnCloseData->sc = sc;
+		RoutineData_T* RoutineData = new RoutineData_T;
+		RoutineData->sc = sc;
+		RoutineData->reentry = currentScope->name+CPE2_SYMBOL_SCOPE_SEP+"reentry";
+		sc->StartClosure.push_back(Routine(RoutineData,
+			[](void* __data){
+				RoutineData_T* data = (RoutineData_T*)__data;
+				code = new section;
+			}
+		));
 		//+
 		//+ pre code
 		//+
 		{
-			sc->Prologue.push_back(Routine(OnCloseData,
+			sc->Prologue.push_back(Routine(RoutineData,
 				[](void* __data){
-					OnCloseData_T* data = (OnCloseData_T*)__data;
+					RoutineData_T* data = (RoutineData_T*)__data;
 					code->placeSymbol(SymbolType::CodeLocation,0,data->sc->name+CPE2_SYMBOL_SCOPE_SEP"prologue");
 				}
 			));
-			ParserState.trycatchSaveallBase.push(runtime::SaveAll());
+		}
+		//+
+		//+ body code
+		//+
+		{
+			sc->BodyCode.push_back(Routine(RoutineData,
+				[](void* __data){
+					RoutineData_T* data = (RoutineData_T*)__data;
+					code->push(data->sc->func->code);
+				}
+			));
 		}
 		//+
 		//+ post code
 		//+
 		{
-			sc->Epilogue.push_back(Routine(OnCloseData,
+			sc->Epilogue.push_back(Routine(RoutineData,
 				[](void* __data){
-					OnCloseData_T* data = (OnCloseData_T*)__data;
-					code->placeSymbol(SymbolType::CodeLocation,0,data->sc->reentrySymbol);	
-					delete data;
+					RoutineData_T* data = (RoutineData_T*)__data;
+					code->placeSymbol(SymbolType::CodeLocation,0,data->reentry);
 				}
 			));
 		}
+		sc->Finalize.push_back(Routine(RoutineData,
+			[](void* __data){
+				RoutineData_T* data = (RoutineData_T*)__data;
+				data->sc->parent->func->code->push(code);
+				for(Routine& r : data->sc->BranchCode)
+					data->sc->parent->BranchCode.push_back(r);
+			}
+		));
 		currentScope = acs;
 		Entity::updateCurrentScope(sc);
 	}
@@ -62,13 +86,10 @@ void parse::Keywords::Try()
 		sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"try"+std::to_string(currentScope->tryCounter);
 		sc->parent = currentScope;
 		ParserState.Token = ParserState.Line.nextToken();
-		if(ParserState.Token.type == 40)
+		if(ParserState.Token.type == 40 || ParserState.Token.type == 36)
 		{
-			sc->isIndentBased = true;
-		}
-		else if(ParserState.Token.type == 36)
-		{
-			sc->isIndentBased = false;
+			sc->isIndentBased = ParserState.Token.type == 40;
+			sc->parent->isIndentBased = sc->isIndentBased;
 		}
 		else
 		{
@@ -81,7 +102,59 @@ void parse::Keywords::Try()
 		sc->func->code = new section;
 		Entity::updateCurrentScope(sc);
 		code->placeSymbol(SymbolType::CodeLocation,0,currentScope->name);
-
+		struct RoutineData_T {
+			scope* sc;
+		};
+		RoutineData_T* RoutineData = new RoutineData_T;{
+			RoutineData->sc = sc;
+		}
+		sc->StartClosure.push_back(Routine(RoutineData,
+			[](void* __data){
+				RoutineData_T* data = (RoutineData_T*)__data;
+				code = new section;
+			}
+		));
+		//+
+		//+ pre code
+		//+
+		{
+			sc->Prologue.push_back(Routine(RoutineData,
+				[](void* __data){
+					RoutineData_T* data = (RoutineData_T*)__data;
+					code->placeSymbol(SymbolType::CodeLocation,0,data->sc->name+CPE2_SYMBOL_SCOPE_SEP"prologue");
+				}
+			));
+		}
+		//+
+		//+ body code
+		//+
+		{
+			sc->BodyCode.push_back(Routine(RoutineData,
+				[](void* __data){
+					RoutineData_T* data = (RoutineData_T*)__data;
+					code->push(data->sc->func->code);
+				}
+			));
+		}
+		//+
+		//+ post code
+		//+
+		{
+			sc->Epilogue.push_back(Routine(RoutineData,
+				[](void* __data){
+					RoutineData_T* data = (RoutineData_T*)__data;
+					code->placeSymbol(SymbolType::CodeLocation,0,data->sc->name+CPE2_SYMBOL_SCOPE_SEP"epilogue");
+				}
+			));
+		}
+		sc->Finalize.push_back(Routine(RoutineData,
+			[](void* __data){
+				RoutineData_T* data = (RoutineData_T*)__data;
+				data->sc->parent->func->code->push(code);
+				for(Routine& r : data->sc->BranchCode)
+					data->sc->parent->BranchCode.push_back(r);
+			}
+		));
 	}
 	currentScope->tryCounter++;
 }

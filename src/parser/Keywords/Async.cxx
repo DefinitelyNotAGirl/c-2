@@ -211,10 +211,11 @@ void parse::Keywords::Async()
 					});
 					switch(addrMode)
 					{
-						case(::amd64::AddressingMode::RegisterIndirect_disp8):
-							code->push({(byte)disp+mbdisp});
+						case(::amd64::AddressingMode::RegisterIndirect_disp8):{
+							byte b = (byte)disp+mbdisp;
+							code->push({b});
 							break;
-						case(::amd64::AddressingMode::RegisterIndirect_disp32):
+						}case(::amd64::AddressingMode::RegisterIndirect_disp32):
 							code->push(::amd64::imm32(disp+mbdisp));
 							break;
 						default:

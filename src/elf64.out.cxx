@@ -7,86 +7,6 @@
 #include <issues.hxx>
 using namespace issues;
 
-template<typename T>
-void memdump(uint64_t start,uint64_t size,uint64_t blocksPerLine)
-{
-	std::cout << "memory dump, block size: " << (uint64_t)sizeof(T) << ", data size: " << size << std::endl;
-	//,
-	//, int to string buffer
-	//,
-	//uint64_t bufferSize = (sizeof(T)*2)+1;
-	uint64_t bufferSize = 2+1;
-	char buffer[bufferSize];
-	buffer[bufferSize-1] = 0;
-	uint64_t textBufferSize = (sizeof(T)*blocksPerLine)+4;
-	char textBuffer[textBufferSize];
-	for(uint64_t i = 0;i<textBufferSize;i++)
-		textBuffer[i] = ' ';
-	textBuffer[textBufferSize-1] = 0;
-	textBuffer[textBufferSize-2] = ']';
-	textBuffer[1] = '[';
-	textBuffer[0] = ' ';
-	//,
-	//, HEXDIG buffer
-	//,
-	char HEXDIG[16] = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
-	char ASCII[256] = {
-		//? control characters
-		'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',//0-15
-		'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',//16-31
-		//? printable characters
-		' ','!','"','#','$','%','&','\'','(',')','*','+',',','-','.','/',
-		'0','1','2','3','4','5','6','7','8','9',':',';','<','=','>','?',
-		'@','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O',
-		'P','Q','R','S','T','U','V','W','X','Y','Z','[','\\',']','^','_',
-		'`','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o',
-		'p','q','r','s','t','u','v','w','x','y','z','{','|','}','~','.',
-		//? extended
-		'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
-		'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
-		'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
-		'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
-		'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
-		'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
-		'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.',
-		'.','.','.','.','.','.','.','.','.','.','.','.','.','.','.','.'
-	};
-	//,
-	//, dump data
-	//,
-	uint64_t BlockLine = 0;
-	uint8_t* dataArray = (uint8_t*)(start);
-	uint64_t c = 0;
-	for(uint64_t I = 0;I<size;I++)
-	{
-		if(I!=0 && ((I%sizeof(T))==0))
-		{
-			std::cout << ' ';
-			BlockLine++;
-		}
-		uint8_t data = dataArray[I];
-		buffer[1] = HEXDIG[((data&0xF))];
-		buffer[0] = HEXDIG[((data&0xF0)>>4)];
-		if(BlockLine == blocksPerLine)
-		{
-			c = 0;
-			std::cout << textBuffer;
-			std::cout << std::endl;
-			BlockLine = 0;
-		}
-		textBuffer[(2)+(c)] = ASCII[data];
-		c++;
-		std::cout << buffer;
-	}
-	uint64_t mod = size%(sizeof(T)*blocksPerLine);
-	mod+=(mod/2);
-	mod--;
-	for(uint64_t I = 0;I<mod;I++)
-		std::cout << ' ';
-	std::cout << ' ' << textBuffer;
-	std::cout << std::endl;
-}
-
 //+####################################################################################################################
 //+####################################################################################################################
 //+ ██    ██  █████  ██████  ██  █████  ██████  ██      ███████ ███████
@@ -418,8 +338,8 @@ void genGlobalValueSymtab()
 //+  ██████  ███████ ██   ████     ███████ ███████ ██       ██████       ██
 //+####################################################################################################################
 //+####################################################################################################################
-#define contentBuffer (fileBuffer+contentOffset)
-#define headerBuffer (fileBuffer+headerOffset)
+#define contentBuffer ((void*)((byte*)fileBuffer+contentOffset))
+#define headerBuffer ((void*)((byte*)fileBuffer+headerOffset))
 extern bool emitExceptionSymbols;
 extern uint64_t exceptionoffset;
 union __emptyspace {

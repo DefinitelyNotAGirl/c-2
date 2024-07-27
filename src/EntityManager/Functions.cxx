@@ -27,6 +27,7 @@ static function* constructFunction(std::vector<Attribute>& attributes,std::strin
 	func->returnValue->dataType = returnType;
 	func->returnValue->name = "____cpe2returnvalue";
 	func->abi = defaultABI;
+	func->symbol.clear();
 	for(Attribute& attr : attributes)
 	{
 		switch(attr.Type)
@@ -170,7 +171,6 @@ function* Entity::declareFunction(std::vector<Attribute>& attributes,std::string
 	if(!func->isPrimitive)
 	{
 		func->abi->setFunctionStorages(func);
-		std::cout << "importing function: " << func->symbol << std::endl;
 		importExternalFunction(func->symbol);
 	}
 	return func;

@@ -42,3 +42,6 @@ tools/
 src/amd64.cgu.cxx
 test.elf64
 stdout.txt
+.DS_Store
+.local/
+debug/

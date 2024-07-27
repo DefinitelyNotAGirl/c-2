@@ -1,8 +1,6 @@
 import util.fs
-
 import targets.debug
 import targets.release
-
 import os
 
 def run() -> int:

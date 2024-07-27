@@ -2,7 +2,7 @@
     "configurations": [
 		{
 			"preLaunchTask": "Debug Build",
-			"name": "Test example - main.c2",
+			"name": "Test compiler on single source file",
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/cp2",
@@ -13,13 +13,18 @@
 				"-S","-c",
 				"-Wno-unimplemented",
 				"-o","build/main.o",
-				"src/main.c2"
+				"${input:sourceFile}"
 			],
 			"stopAtEntry": false,
-			"cwd": "${workspaceFolder}/../cpe2Example/",
+			"cwd": "${input:workingDirectory}",
 			"environment": [],
 			"externalConsole": false,
-			"MIMode": "gdb",
+			"linux": {
+				"MIMode": "gdb",
+			},
+			"osx": {
+				"MIMode": "lldb"
+			},
 			"setupCommands": [
 				{
 					"description": "Enable pretty-printing for gdb",
@@ -68,209 +73,25 @@
                 }
 			]
 		},
+    ],
+	"inputs": [
+    	{
+      		"id": "sourceFile",
+      		"description": "select a source file to run the compiler on",
+      		"type": "pickString",
+			"options": [
+				"src/main.c2",
+				"src/cpuid.c2",
+				"src/io.c2",
+			],
+      		"default": "src/main.c2"
+    	},
 		{
-			"preLaunchTask": "Debug Build",
-			"name": "Test std - out.c2",
-			"type": "cppdbg",
-			"request": "launch",
-			"program": "${workspaceFolder}/cp2",
-			"args": [
-				"-MD",
-				"-Bbuild","-Ddocumentation",
-				"-Iinc","--fno-libc","-NOD",
-				"-S","-c",
-				"-Wno-unimplemented",
-				"-o","build/out.o",
-				"src/out.c2"
-			],
-			"stopAtEntry": false,
-			"cwd": "${workspaceFolder}/../stdcpe2/",
-			"environment": [],
-			"externalConsole": false,
-			"MIMode": "gdb",
-			"setupCommands": [
-				{
-					"description": "Enable pretty-printing for gdb",
-					"text": "-enable-pretty-printing",
-					"ignoreFailures": true
-				},
-				{
-					"description": "Set Disassembly Flavor to Intel",
-					"text": "-gdb-set disassembly-flavor intel",
-					"ignoreFailures": true
-				},
-				{
-                    "description": "Skip system libraries",
-                    "text": "skip -gfi /usr/include/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C++ standard library",
-                    "text": "skip -gfi /usr/lib*/libstdc++.so*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C standard library",
-                    "text": "skip -gfi /lib*/libc.so*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C++ standard library headers",
-                    "text": "skip -gfi /usr/include/c++/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip system headers",
-                    "text": "skip -gfi /usr/include/sys/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C standard library headers",
-                    "text": "skip -gfi /usr/include/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip GCC-specific headers",
-                    "text": "skip -gfi /usr/lib/gcc/*",
-                    "ignoreFailures": true
-                }
-			]
-		},
-		{
-			"preLaunchTask": "Debug Build",
-			"name": "Test std - strlen.c2",
-			"type": "cppdbg",
-			"request": "launch",
-			"program": "${workspaceFolder}/cp2",
-			"args": [
-				"-MD",
-				"-Bbuild","-Ddocumentation",
-				"-Iinc","--fno-libc","-NOD",
-				"-S","-c",
-				"-Wno-unimplemented",
-				"-o","build/strlen.o",
-				"src/strlen.c2"
-			],
-			"stopAtEntry": false,
-			"cwd": "${workspaceFolder}/../stdcpe2/",
-			"environment": [],
-			"externalConsole": false,
-			"MIMode": "gdb",
-			"setupCommands": [
-				{
-					"description": "Enable pretty-printing for gdb",
-					"text": "-enable-pretty-printing",
-					"ignoreFailures": true
-				},
-				{
-					"description": "Set Disassembly Flavor to Intel",
-					"text": "-gdb-set disassembly-flavor intel",
-					"ignoreFailures": true
-				},
-				{
-                    "description": "Skip system libraries",
-                    "text": "skip -gfi /usr/include/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C++ standard library",
-                    "text": "skip -gfi /usr/lib*/libstdc++.so*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C standard library",
-                    "text": "skip -gfi /lib*/libc.so*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C++ standard library headers",
-                    "text": "skip -gfi /usr/include/c++/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip system headers",
-                    "text": "skip -gfi /usr/include/sys/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C standard library headers",
-                    "text": "skip -gfi /usr/include/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip GCC-specific headers",
-                    "text": "skip -gfi /usr/lib/gcc/*",
-                    "ignoreFailures": true
-                }
-			]
-		},
-		{
-			"preLaunchTask": "Debug Build",
-			"name": "Test std - syscall.c2",
-			"type": "cppdbg",
-			"request": "launch",
-			"program": "${workspaceFolder}/cp2",
-			"args": [
-				"-MD",
-				"-Bbuild","-Ddocumentation",
-				"-Iinc","--fno-libc","-NOD",
-				"-S","-c",
-				"-Wno-unimplemented",
-				"-o","build/syscall.o",
-				"src/syscall.c2"
-			],
-			"stopAtEntry": false,
-			"cwd": "${workspaceFolder}/../stdcpe2/",
-			"environment": [],
-			"externalConsole": false,
-			"MIMode": "gdb",
-			"setupCommands": [
-				{
-					"description": "Enable pretty-printing for gdb",
-					"text": "-enable-pretty-printing",
-					"ignoreFailures": true
-				},
-				{
-					"description": "Set Disassembly Flavor to Intel",
-					"text": "-gdb-set disassembly-flavor intel",
-					"ignoreFailures": true
-				},
-				{
-                    "description": "Skip system libraries",
-                    "text": "skip -gfi /usr/include/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C++ standard library",
-                    "text": "skip -gfi /usr/lib*/libstdc++.so*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C standard library",
-                    "text": "skip -gfi /lib*/libc.so*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C++ standard library headers",
-                    "text": "skip -gfi /usr/include/c++/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip system headers",
-                    "text": "skip -gfi /usr/include/sys/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip C standard library headers",
-                    "text": "skip -gfi /usr/include/*",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Skip GCC-specific headers",
-                    "text": "skip -gfi /usr/lib/gcc/*",
-                    "ignoreFailures": true
-                }
-			]
-		},
-    ]
+			"id": "workingDirectory",
+			"description": "select a working directory in which to run the compiler",
+			"type": "pickString",
+			"options": ["${workspaceFolder}/../cpe2Example/","${workspaceFolder}/../stdcpe2/"],
+			"default": "${workspaceFolder}/../cpe2Example/"
+	  	}
+  	]
 }
