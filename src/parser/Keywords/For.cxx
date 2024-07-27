@@ -61,8 +61,46 @@ void parse::Keywords::For()
 	//prepare for body
 	section* endcode = new section;
 	endcode->push(currentScope->func->code);
-	currentScope->func->code = new section;
-	currentScope->extraCodeBlocks.push_back(currentScope->func->code);
-	currentScope->extraCodeBlocks.push_back(endcode);
-	compilerBug("unimplemented: for, set body entry symbol");
+	struct RoutineData_T {
+		section* endcode;
+		section* body;
+		section* precode;
+		scope* sc;
+	};
+	RoutineData_T* RoutineData = new RoutineData_T; {
+		RoutineData->sc = sc;
+		RoutineData->endcode = endcode;
+		RoutineData->precode = currentScope->func->code;
+		currentScope->func->code = new section;
+		RoutineData->body = currentScope->func->code;
+	}
+	currentScope->BodyCode.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			code->push(data->precode);
+		}
+	));
+	currentScope->BranchCode.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			code->placeSymbol(SymbolType::CodeLocation,0,data->sc->name+CPE2_SYMBOL_SCOPE_SEP+"body");
+			code->push(data->body);
+			code->push(data->endcode);
+		}
+	));
+	currentScope->Finalize.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			for(Routine& r : data->sc->BranchCode)
+				data->sc->parent->BranchCode.push_back(r);
+		}
+	));
+	currentScope->Destroy.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			delete data->body;
+			delete data->endcode;
+			delete data->precode;
+		}
+	));
 }

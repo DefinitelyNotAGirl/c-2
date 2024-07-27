@@ -52,13 +52,9 @@ public:
 	std::stack<scope*> scopes;
 	std::vector<line> Lines;
 	uint64_t LineIterator = 0;
-
 	dObj* currentd = new dObj;
-
 	std::vector<Entity::Attribute> Attributes;
-
 	std::stack<uint64_t> trycatchSaveallBase;
-
 	struct {
 		type* Type = nullptr;
 		variable* ArraySize = nullptr;

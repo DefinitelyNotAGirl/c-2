@@ -21,7 +21,7 @@
 			"\t\tinvoke(*this);",
 			"\t}",
 			"};",
-			"#ifdef ISSUES_CXX",
+			"#if defined(ISSUES_CXX)",
 			"\taction $2::Action = action::warning;",
 			"\tstd::stack<int(*)($2 e)> $2::error;",
 			"\tstd::stack<void(*)($2 e)> $2::warn;",
@@ -51,7 +51,7 @@
 			"\t\tinvoke(*this);",
 			"\t}",
 			"};",
-			"#ifdef ISSUES_CXX",
+			"#if defined(ISSUES_CXX)",
 			"\taction $2::Action = action::error;",
 			"\tstd::stack<int(*)($2 e)> $2::error;",
 			"\tstd::stack<void(*)($2 e)> $2::warn;",
@@ -80,11 +80,42 @@
 			"\t\tinvoke(*this);",
 			"\t}",
 			"};",
-			"#ifdef ISSUES_CXX",
+			"#if defined(ISSUES_CXX)",
 			"\tstatic std::stack<int(*)($2 e)> $2::error;",
 			"\tstatic std::stack<void(*)($2 e)> $2::warn;",
 			"\tstatic std::stack<void(*)($2 e)> $2::info;",
 			"#endif"
 		]
 	},
+	"routine implemantation": {
+		"prefix": "routine",
+		"body": [
+			"Routine(RoutineData,",
+			"\t[](void* __data){",
+			"\t\tRoutineData_T* data = (RoutineData_T*)__data;",
+			"\t\t$0",
+			"\t}",
+			");"
+		]
+	},
+	"push routine": {
+		"prefix": "routine",
+		"body": [
+			"$1.push_back(Routine(RoutineData,",
+			"\t[](void* __data){",
+			"\t\tRoutineData_T* data = (RoutineData_T*)__data;",
+			"\t\t$0",
+			"\t}",
+			"));"
+		]
+	},
+	"routine data": {
+		"prefix": "routine",
+		"body": [
+			"struct RoutineData_T {",
+			"};",
+			"RoutineData_T* RoutineData = new RoutineData_T;{",
+			"}"
+		]
+	}
 }

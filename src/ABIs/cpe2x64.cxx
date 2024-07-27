@@ -54,7 +54,7 @@ static void setFunctionStorages(function* func)
 	{
 		func->returnValue->storageArch = Architecture::AMD64;
 		func->returnValue->storage = new amd64::VariableStorage;
-		amd64::VariableStorage* storage = func->returnValue->storage;
+		amd64::VariableStorage* storage = (amd64::VariableStorage*)func->returnValue->storage;
 		if(func->returnValue->dataType->regMode == 1)
 		{
 			// return in rax
@@ -85,7 +85,7 @@ static void setFunctionStorages(function* func)
 		{
 			arg->storageArch = Architecture::AMD64;
 			arg->storage = new amd64::VariableStorage;
-			amd64::VariableStorage* storage = arg->storage;
+			amd64::VariableStorage* storage = (amd64::VariableStorage*)arg->storage;
 			if(arg->dataType->regMode == 1 && (ireg < integerRegisters.size()))
 			{
 				// pass via register

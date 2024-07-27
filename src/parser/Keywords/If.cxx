@@ -15,12 +15,7 @@ void parse::Keywords::If()
 	sc->t = scopeType::CONDITIONAL_BLOCK;
 	sc->func = new function;
 	sc->parent->conditionalCounter++;
-	//std::cout << "transfer " << currentScope->name << " -> " << sc->name << std::endl;
 	*(sc->func) = *(currentScope->func);
-	//std::cout << "parent stack offset: " <<std::dec<< sc->fstore->stackOffset << std::endl;
-	//std::cout << "parent func stack offset: " <<std::dec<< sc->func->fstore->stackOffset << std::endl;
-	//std::cout << "parent stack size: " <<std::dec<< sc->fstore->stackSize << std::endl;
-	//std::cout << "parent func stack size: " <<std::dec<< sc->func->fstore->stackSize << std::endl;
 	sc->func->code = new section;
 	sc->reentrySymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
 	sc->extraCodeBlocks.push_back(sc->func->code);
@@ -83,11 +78,26 @@ void parse::Keywords::If()
 		endCLine1:;
 	}
 	cond = cl.nextToken();
-	//std::cout << "condition: " << cl.text << std::endl;
 	variable* condition = resolve(cond);
-	//cmp(__false__,condition);
 	compilerBug("unimplemented: if, conditional jump");
-	//set return symbol
+	struct RoutineData_T {
+		scope* sc;
+	};
+	RoutineData_T* RoutineData = new RoutineData_T;
+	RoutineData->sc = sc;
 	Entity::updateCurrentScope(sc);
+	currentScope->BranchCode.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			code->push(data->sc->func->code);
+		}
+	));
+	currentScope->Finalize.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			for(Routine& r : data->sc->BranchCode)
+				data->sc->parent->BranchCode.push_back(r);
+		}
+	));
 	compilerBug("unimplemented: if, set return symbol");
 }

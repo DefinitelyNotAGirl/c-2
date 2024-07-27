@@ -1,11 +1,13 @@
 #include <EntityManagement.hxx>
 #include <class_scope.h>
 #include <Parser.hxx>
+#include <output.hxx>
 
 using Entity::AttributeType;
 using Entity::Attribute;
 
 using namespace issues;
+
 
 static type* constructType(std::vector<Attribute> attributes,std::string& name, std::vector<token>& inherit)
 {
@@ -68,7 +70,7 @@ static type* constructType(std::vector<Attribute> attributes,std::string& name, 
 				Type->supertypes.push_back(T);
 				for(variable m : T->members)
 				{
-					m.storage = Type->size;
+					m.storage = (void*)Type->size;
 					Type->members.push_back(m);
 					Type->size += m.dataType->size;
 				}
@@ -100,6 +102,18 @@ type* Entity::startTypeDefinition(std::vector<Attribute>& attributes, std::strin
 		sc->t			  = scopeType::CLASS;
 		sc->cl			  = Type;
 		updateCurrentScope(sc);	
+		struct RoutineData_T {
+			type* Type;
+		};
+		RoutineData_T* RoutineData = new RoutineData_T;{
+			RoutineData->Type = Type;
+		}
+		currentScope->Finalize.push_back(Routine(RoutineData,
+			[](void* __data){
+				RoutineData_T* data = (RoutineData_T*)__data;
+				data->Type->incomplete = false;
+			}
+		));
 	}
 	return Type;
 }

@@ -4,10 +4,13 @@
 		{
 			"label": "Debug",
 			"command": "python run_debug.py",
+			"osx": {
+				"command": "python3 run_debug.py"
+			},
 			"type": "shell",
 			"args": [],
 			"runOptions": {
-				"instanceLimit": 1
+				"instanceLimit": 1,
 			},
 			"icon": {
 				"id": "debug-all"
@@ -30,6 +33,9 @@
 		{
 			"label": "Debug Build",
 			"command": "python ./build-system/main.py debug",
+			"osx": {
+				"command": "python3 ./build-system/main.py debug",
+			},
 			"type": "shell",
 			"args": [],
 			"runOptions": {
@@ -59,6 +65,9 @@
 			},
 			"label": "Release Build",
 			"command": "python ./build-system/main.py release",
+			"osx": {
+				"command": "python3 ./build-system/main.py release",
+			},
 			"type": "shell",
 			"args": [],
 			"problemMatcher": [

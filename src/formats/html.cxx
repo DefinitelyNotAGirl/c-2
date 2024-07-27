@@ -2,8 +2,8 @@
  * Created Date: Tuesday August 15th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thursday August 17th 2023 9:04:51 pm
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Fri Jul 26 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
@@ -58,7 +58,7 @@ static void format_addScope(uint64_t fID, scope* t){gdoc->addScope(fID,t);}
 static void format_write(uint64_t fID, std::string path)
 {
     gdoc->write(fID,path);
-    geosdoc::formatFile* ff = gdoc->getDATA(fID);
+    geosdoc::formatFile* ff = (geosdoc::formatFile*)gdoc->getDATA(fID);
     std::string outpath = ff->lastPath;
     system(std::string("gdml_html "+ff->lastPath+" -o "+path).c_str());
 }

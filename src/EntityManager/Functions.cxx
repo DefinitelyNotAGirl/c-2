@@ -27,6 +27,7 @@ static function* constructFunction(std::vector<Attribute>& attributes,std::strin
 	func->returnValue->dataType = returnType;
 	func->returnValue->name = "____cpe2returnvalue";
 	func->abi = defaultABI;
+	func->symbol.clear();
 	for(Attribute& attr : attributes)
 	{
 		switch(attr.Type)
@@ -178,7 +179,8 @@ function* Entity::declareFunction(std::vector<Attribute>& attributes,std::string
 function* Entity::startFunctionDefinition(std::vector<Attribute>& attributes,std::string& name, std::vector<variable*>& args, type* returnType, bool isIndentBased)
 {
 	function* func = constructFunction(attributes,name,args,returnType);
-	scope* sc		  = new scope;
+	//scope* sc		  = new scope;
+	scope* sc = (scope*)(calloc(1,sizeof(scope)));
 	sc->parent		  = currentScope;
 	sc->name		  = func->symbol;
 	sc->leadingSpace  = ParserState.Line.leadingSpaces + tabLength;
@@ -232,6 +234,76 @@ function* Entity::startFunctionDefinition(std::vector<Attribute>& attributes,std
 		}
 	}
 	updateCurrentScope(sc);
+	struct RoutineData_T {
+		function* func;
+		scope* sc;
+	};
+	RoutineData_T* RoutineData = new RoutineData_T;
+	RoutineData->func = func;
+	RoutineData->sc = sc;
+	//+
+	//+	begin closure
+	//+
+	currentScope->StartClosure.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			code = new section;
+		}
+	));
+	//.
+	//. prologue
+	//.
+	currentScope->Prologue.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			if(!data->func->isLocal)
+				code->placeSymbol(SymbolType::GlobalFunction,0,data->func->symbol);
+			else
+				code->placeSymbol(SymbolType::LocalFunction,0,data->func->symbol);
+			if(data->func->stack->size() > 0)
+			{
+				code->push({amd64::opcode::enter::rBP__imm16__imm8});
+				code->push(amd64::imm16(data->func->stack->size()));
+				code->push({(byte)0});
+			}
+		}
+	));
+	//*
+	//*	body
+	//*
+	currentScope->BodyCode.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			code->push(data->func->code);
+		}
+	));
+	//,
+	//,	epilogue
+	//,
+	currentScope->Epilogue.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			std::string sym = data->func->symbol+".epilogue";
+			code->placeSymbol(SymbolType::CodeLocation,0,sym);
+			if(data->func->stack->size() > 0)
+				code->push(amd64::opcode::leave::rBP);
+			code->push(amd64::opcode::ret_near::_);
+		}
+	));
+	//-
+	//-	finalize
+	//-
+	currentScope->Finalize.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			for(Routine& r : data->sc->BranchCode)
+				r.run();
+			code->symbols[0].size = code->size();
+			text.push(code);
+			code->data = nullptr;
+			delete code;
+		}
+	));
 	//,
 	//, debug info
 	//,

@@ -2,7 +2,7 @@
  * Created Date: Thursday June 6th 2024
  * Author: Lilith
  * -----
- * Last Modified: Sat Jul 20 2024
+ * Last Modified: Fri Jul 26 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -692,7 +692,6 @@ namespace runtime::amd64
 		util_load(base+0x50,::amd64::Register::r12);
 		util_load(base+0x58,::amd64::Register::r13);
 		util_load(base+0x60,::amd64::Register::r14);
-		return base;
 	}
 
 	/**

@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thu Jul 18 2024
+ * Last Modified: Fri Jul 26 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -173,7 +173,7 @@ uint64_t tokenType(std::string& s)
 	else if(s[0] == '<')return 3;
 	else if(s[0] == '|')return 3;
 	else if(s[0] == '&')return 3;
-	else if(s[0] == '±')return 3;
+	//else if(s[0] == '±')return 3;
 	//keywords
 	else if(s == "if")return 8;
 	else if(s == "else")return 8;
@@ -524,7 +524,7 @@ token line::nextToken(bool saveInfo)
 					goto __default;
 				if(t.text == "SYMBOL")
 					goto __default;
-			case('±'):
+			//case('±'):
 			case('+'):
 				skipManglerAndAbiCheck:;
 				if(this->text[I+1] == '=')

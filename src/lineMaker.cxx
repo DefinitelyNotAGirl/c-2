@@ -2,8 +2,8 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wednesday January 24th 2024 7:10:14 pm
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Fri Jul 26 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
  * 
@@ -81,7 +81,7 @@ std::vector<line> getLines(std::string fname)
     fseek(f, 0, SEEK_SET);  /* same as rewind(f); */
     //PRINT_DEBUG
 
-    char* content__ = malloc(fsize + 1);
+    char* content__ = (char*)malloc(fsize + 1);
     fread(content__, fsize, 1, f);
     fclose(f);
     content__[fsize] = 0x00;//terminate content__ string

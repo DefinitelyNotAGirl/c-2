@@ -2,8 +2,8 @@
  * Created Date: Thursday April 25th 2024
  * Author: Lilith
  * -----
- * Last Modified: Thursday April 25th 2024 2:10:06 pm
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Fri Jul 26 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
@@ -58,7 +58,7 @@ static std::vector<std::string> getLines(std::string path)
 {
 	std::vector<std::string> lines;
 	try {
-		char* data = ReadFileContent(path.c_str());
+		char* data = ReadFileContent((char*)path.c_str());
 		uint64_t fsize = lastFSize;
 		std::string working = "";
 		for(uint64_t I = 0;I<fsize;I++)
@@ -103,7 +103,7 @@ namespace resources {
 				std::string offset = sline.substr(end+1);
 				//std::cout << "typename: " << tname << std::endl;
 				//std::cout << "offset: " << offset << std::endl;
-				char* fuckstdcpp = offset.c_str()+offset.length();
+				char* fuckstdcpp = (char*)offset.c_str()+offset.length();
 				uint64_t iOffset = strtoull(offset.c_str(),&fuckstdcpp,10);
 				ExceptionOffsets.insert({std::pair<std::string,uint64_t>(tname,iOffset)});
 			}
@@ -112,7 +112,7 @@ namespace resources {
 				//std::cout << "exception line: " << line << std::endl;
 				uint64_t start = 4;
 				std::string offset = sline.substr(start);
-				char* fuckstdcpp = offset.c_str()+offset.length();
+				char* fuckstdcpp = (char*)offset.c_str()+offset.length();
 				uint64_t iOffset = strtoull(offset.c_str(),&fuckstdcpp,10);
 				nextExceptionTypeOffset = iOffset;
 			}

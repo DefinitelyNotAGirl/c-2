@@ -1,7 +1,7 @@
 #include <EntityManagement.hxx>
 #include <Parser.hxx>
-
 #include <output.hxx>
+#include <dump.hxx>
 
 using Entity::Attribute;
 using Entity::AttributeType;
@@ -11,8 +11,7 @@ using namespace issues;
 
 variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string& name, type* Type)
 {
-	mangler* NameMangler = nullptr;
-
+	mangler* NameMangler = defaultMangler;
 	variable* var	  = new variable;
 	var->dataType	  = Type;
 	mangler* mangling = defaultMangler;
@@ -177,6 +176,8 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 			uint64_t classArrayBase = currentScope->cl->size;
 			currentScope->cl->size+=(var->dataType->valueType->size*((uint64_t)ParserState.DeclarationData.ArraySize->storage));
 		}
+		delete ParserState.DeclarationData.ArraySize;
+		ParserState.DeclarationData.ArraySize = nullptr;
 	}
 	if((var->storage != nullptr)&&(currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH)) {
 		if(var->storageArch == Architecture::AMD64)
@@ -188,7 +189,7 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 		}
 	}
 	if (var->storageArch == Architecture::AMD64) {
-		amd64::VariableStorage* storage = var->storage;
+		amd64::VariableStorage* storage = (amd64::VariableStorage*)var->storage;
 		if(options::fcpl > amd64::register_decode_cpl(storage->reg) && storage->mode == amd64::StorageMode::DirectRegister)
 			insufficientPrivilegeLevel("access register "+std::string(amd64::register_name(storage->reg)),originCoreHere,source());
 		if(storage->reg == amd64::Register::rsp && storage->mode == amd64::StorageMode::DirectRegister)

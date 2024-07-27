@@ -2,7 +2,7 @@
  * Created Date: Monday July 31st 2023
  * Author: Lilith
  * -----
- * Last Modified: Thu Jul 18 2024
+ * Last Modified: Sat Jul 27 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -93,7 +93,7 @@ variable* call(function* func,std::vector<variable*> args)
 {
 	if(args.size() != func->vparams.size())
 		compilerBug("invalid call to variable* call(function* func,std::vector<variable*> args), args.size() != func->vparams.size()");
-	std::cout << "call to function: " << func->expression_ansi() << std::endl;
+	//std::cout << "call to function: " << func->expression_ansi() << std::endl;
 	if(func->isPrimitive)
 	{
 		if(true)
@@ -107,7 +107,7 @@ variable* call(function* func,std::vector<variable*> args)
 					{
 						variable* result = new variable;
 						result->storageArch = Architecture::storage_IntegerImmediate;
-						result->storage = (uint64_t)args[0]->storage + (uint64_t)args[1]->storage;
+						result->storage = (void*)((uint64_t)args[0]->storage + (uint64_t)args[1]->storage);
 						result->dataType = getType("u64");
 						result->name = "____cpe2internalresult";
 					}
@@ -119,7 +119,7 @@ variable* call(function* func,std::vector<variable*> args)
 					{
 						variable* result = new variable;
 						result->storageArch = Architecture::storage_IntegerImmediate;
-						result->storage = (uint64_t)args[0]->storage * (uint64_t)args[1]->storage;
+						result->storage = (void*)((uint64_t)args[0]->storage * (uint64_t)args[1]->storage);
 						result->dataType = getType("u64");
 						result->name = "____cpe2internalresult";
 					}
@@ -557,21 +557,21 @@ type* getType(std::string name) {
 		defaultMangler->mangle(t);
 		types.push_back(t);
 		std::vector<line> lines;
-		lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=(ptr_t,"+name+");"));
-		lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+",ptr_t);"));
-		lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+",u64);"));
-		lines.push_back(compLine("nodoc primitiveAssign primitiveInPlace void operator=("+name+","+name+");"));
-		lines.push_back(compLine("nodoc primitiveAdd primitiveInPlace void operator+=("+name+",u64);"));
-		lines.push_back(compLine("nodoc primitiveAdd primitiveInPlace void operator+=("+name+","+name+");"));
-		lines.push_back(compLine("nodoc primitiveSub primitiveInPlace void operator-=("+name+",u64);"));
-		lines.push_back(compLine("nodoc primitiveSub primitiveInPlace void operator-=("+name+","+name+");"));
-		lines.push_back(compLine("nodoc primitiveMul primitiveInPlace void operator*=("+name+",u64);"));
-		lines.push_back(compLine("nodoc primitiveMul primitiveInPlace void operator*=("+name+","+name+");"));
-		lines.push_back(compLine("nodoc primitiveDiv primitiveInPlace void operator/=("+name+",u64);"));
-		lines.push_back(compLine("nodoc primitiveDiv primitiveInPlace void operator/=("+name+","+name+");"));
-		lines.push_back(compLine("nodoc primitiveMod primitiveInPlace void operator%=("+name+",u64);"));
-		lines.push_back(compLine("nodoc primitiveMod primitiveInPlace void operator%=("+name+","+name+");"));
-		lines.push_back(compLine("nodoc primitiveInPlace primitiveArrayIndex "+t->valueType->name+" operator[]("+name+",u64);"));
+		lines.push_back(compLine("primitiveAssign primitiveInPlace void operator=(ptr_t,"+name+");"));
+		lines.push_back(compLine("primitiveAssign primitiveInPlace void operator=("+name+",ptr_t);"));
+		lines.push_back(compLine("primitiveAssign primitiveInPlace void operator=("+name+",u64);"));
+		lines.push_back(compLine("primitiveAssign primitiveInPlace void operator=("+name+","+name+");"));
+		lines.push_back(compLine("primitiveAdd primitiveInPlace void operator+=("+name+",u64);"));
+		lines.push_back(compLine("primitiveAdd primitiveInPlace void operator+=("+name+","+name+");"));
+		lines.push_back(compLine("primitiveSub primitiveInPlace void operator-=("+name+",u64);"));
+		lines.push_back(compLine("primitiveSub primitiveInPlace void operator-=("+name+","+name+");"));
+		lines.push_back(compLine("primitiveMul primitiveInPlace void operator*=("+name+",u64);"));
+		lines.push_back(compLine("primitiveMul primitiveInPlace void operator*=("+name+","+name+");"));
+		lines.push_back(compLine("primitiveDiv primitiveInPlace void operator/=("+name+",u64);"));
+		lines.push_back(compLine("primitiveDiv primitiveInPlace void operator/=("+name+","+name+");"));
+		lines.push_back(compLine("primitiveMod primitiveInPlace void operator%=("+name+",u64);"));
+		lines.push_back(compLine("primitiveMod primitiveInPlace void operator%=("+name+","+name+");"));
+		lines.push_back(compLine("primitiveArrayIndex primitiveInPlace "+t->valueType->name+" operator[]("+name+",u64);"));
 		parse::Lines(lines);
 		return t;
 	}

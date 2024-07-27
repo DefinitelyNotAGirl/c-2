@@ -38,6 +38,7 @@ void importExternalValue(std::string name)
 }
 void setGlobalValue(std::string name, uint64_t value)
 {
+	std::cout << "setting global value: " << name << " to " << value << std::endl;
 	ValueSymbols.push_back(
 		Symbol(
 			SymbolType::GlobalValue,
