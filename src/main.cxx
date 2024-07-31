@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Fri Jul 26 2024
+ * Last Modified: Wed Jul 31 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -249,7 +249,7 @@ int main(int argc, char** argv)
 		{
 			//declare default types
 			std::vector<Entity::Attribute> noAttribs({});
-			anyType = Entity::declareType(noAttribs,"[[any type]]",std::vector<token>({token("primitive0")}));
+			anyType = Entity::declareType(noAttribs,"____cpe2_type_any",std::vector<token>({token("primitive0")}));
 			voidType = Entity::declareType(noAttribs,"void",std::vector<token>({token("primitive0")}));
 			defaultUnsignedIntegerType = Entity::declareType(noAttribs,"u64",std::vector<token>({token("primitive64")}));
 			defaultSignedIntegerType = Entity::declareType(noAttribs,"i64",std::vector<token>({token("primitive64")}));

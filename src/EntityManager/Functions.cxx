@@ -283,8 +283,7 @@ function* Entity::startFunctionDefinition(std::vector<Attribute>& attributes,std
 	currentScope->Epilogue.push_back(Routine(RoutineData,
 		[](void* __data){
 			RoutineData_T* data = (RoutineData_T*)__data;
-			std::string sym = data->func->symbol+".epilogue";
-			code->placeSymbol(SymbolType::CodeLocation,0,sym);
+			code->placeSymbol(SymbolType::CodeLocation,0,data->func->symbol+".epilogue");
 			if(data->func->stack->size() > 0)
 				code->push(amd64::opcode::leave::rBP);
 			code->push(amd64::opcode::ret_near::_);
@@ -296,14 +295,25 @@ function* Entity::startFunctionDefinition(std::vector<Attribute>& attributes,std
 	currentScope->Finalize.push_back(Routine(RoutineData,
 		[](void* __data){
 			RoutineData_T* data = (RoutineData_T*)__data;
+			code->placeSymbol(SymbolType::CodeLocation,0,data->func->symbol+".passexception");
+			for(Routine& r : data->sc->Epilogue) {
+				if(r.data != data)
+					r.run();
+			}
+			if(data->func->stack->size() > 0)
+				code->push(amd64::opcode::leave::rBP);
+			code->push({amd64::opcode::stc::_});
+			code->push({amd64::opcode::ret_near::_});
 			for(Routine& r : data->sc->BranchCode)
 				r.run();
 			code->symbols[0].size = code->size();
 			text.push(code);
 			code->data = nullptr;
 			delete code;
+			Entity::ExceptionHandlers.pop();
 		}
 	));
+	Entity::ExceptionHandlers.push(func->symbol+".passexception");
 	//,
 	//, debug info
 	//,

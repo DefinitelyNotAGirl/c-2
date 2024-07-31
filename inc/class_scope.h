@@ -83,6 +83,7 @@ public:
 	std::vector<Routine> Finalize;//execute 5th
 	std::vector<Routine> Destroy;//execute before deleting scope object
 	std::vector<Routine> BranchCode;//do not execute (Finalize decides what to do with this)
+	std::vector<Routine> ExceptionHandlerCode;//do not execute (Finalize decides what to do with this)
     //misc
     std::string reentrySymbol = "";
 };

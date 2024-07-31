@@ -29,6 +29,10 @@
  */
 #pragma once
 
+#ifndef CPE2_SYMBOL_SCOPE_SEP
+    #define CPE2_SYMBOL_SCOPE_SEP "."
+#endif
+
 #include <string>
 #include <vector>
 #include <list>

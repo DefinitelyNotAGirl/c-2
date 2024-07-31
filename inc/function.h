@@ -120,7 +120,7 @@ public:
     bool ignoreCall = false;
 	bool isMember = false;
 	bool isExtern = false;
-
+	bool NoExcept = false;
 	/*
 	 . machine state
 	 */

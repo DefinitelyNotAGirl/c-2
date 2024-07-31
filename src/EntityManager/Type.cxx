@@ -83,6 +83,8 @@ static type* constructType(std::vector<Attribute> attributes,std::string& name, 
 	getMangler("c+=2")->mangle(Type);
 
 	types.push_back(Type);
+	importExternalValue(Type->getRuntimeTypeID());
+	resourceCode.push_back("c2resource typeid "+Type->mangledName+";");
 	return Type;
 }
 
