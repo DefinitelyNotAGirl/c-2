@@ -37,6 +37,28 @@ namespace smu
 			:offset(offset),size(size),type(type),symbol(symbol){}
 	};
 
+	enum class InstructionComponentType {
+		Invalid = 0,
+		Relocation,
+		Immediate,
+		Byte
+	};
+	class InstructionComponent {
+	public:
+		InstructionComponentType Type = InstructionComponentType::Invalid;
+		RelocationEntry Reloc;
+		ImmediateValue Immediate;
+		RelocationType ImmediateRelocType;
+		u8 ImmediateSize;
+		byte b;
+		InstructionComponent(ImmediateValue Immediate,u8 size,RelocationType Type)
+			:Immediate(Immediate),ImmediateSize(size),ImmediateRelocType(Type),Type(InstructionComponentType::Immediate){}
+		InstructionComponent(RelocationEntry reloc)
+			:Reloc(reloc),Type(InstructionComponentType::Relocation){}
+		InstructionComponent(byte b)
+			:b(b),Type(InstructionComponentType::Byte){}
+	};
+
 	class section {
 	protected: 
 		/**
@@ -145,6 +167,12 @@ namespace smu
 			memcpy(this->data+this->sizeInFile,data,(n*sizeof(T)));
 			this->sizeInFile = newSize;
 		}
+		/**
+		 * @brief adds an instruction to the data
+		 * 
+		 * @param Instruction a list of instruction components, added to the data in order this also takes care of creating relocation entries
+		 */
+		void push(std::vector<InstructionComponent> Instruction);
 		/**
 		 * @brief adds data to the current data
 		 * 

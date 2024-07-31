@@ -2,7 +2,7 @@
  * Created Date: Tuesday June 4th 2024
  * Author: Lilith
  * -----
- * Last Modified: Sat Jul 06 2024
+ * Last Modified: Wed Jul 31 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -138,5 +138,55 @@ namespace smu
 		memset(this->data+this->sizeInFile,0x90,bytesNeeded);
 		this->sizeInFile = newSize;
 		return newSize;
+	}
+	/**
+	 * @brief adds an instruction to the data
+	 * 
+	 * @param Instruction a list of instruction components, added to the data in order this also takes care of creating relocation entries
+	 */
+	void section::push(std::vector<InstructionComponent> Instruction) {
+		for(InstructionComponent& c : Instruction) {
+			switch(c.Type) {
+				case(InstructionComponentType::Byte): {
+					this->push(c.b);
+					break;
+				}
+				case(InstructionComponentType::Immediate): {
+					switch(c.ImmediateSize) {
+						case(1): {
+							this->push((u8)(c.Immediate.imm64));
+							break;
+						}
+						case(2): {
+							this->push((u16)(c.Immediate.imm64));
+							break;
+						}
+						case(4): {
+							this->push((u32)(c.Immediate.imm64));
+							break;
+						}
+						case(8): {
+							this->push((u64)(c.Immediate.imm64));
+							break;
+						}
+					}
+					if(c.Immediate.isSymbol) {
+						this->Relocations.push_back(RelocationEntry(
+							this->size(),
+							c.ImmediateSize,
+							c.ImmediateRelocType,
+							c.Immediate.symbol
+						));
+					}
+					break;
+				}
+				case(InstructionComponentType::Relocation): {
+					this->Relocations.push_back(c.Reloc);
+					break;
+				}
+			}
+			default: {
+			}
+		}
 	}
 }

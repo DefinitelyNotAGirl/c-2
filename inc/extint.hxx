@@ -6,6 +6,15 @@
 
 #define uint64_t_max 0xFFFFFFFFFFFFFFFF
 
+typedef uint64_t u64;
+typedef uint32_t u32;
+typedef uint16_t u16;
+typedef uint8_t u8;
+typedef int64_t i64;
+typedef int32_t i32;
+typedef int16_t i16;
+typedef int8_t i8;
+
 inline uint64_t negative(uint64_t n){return (n | ((uint64_t)1<<63));}
 inline uint64_t positive(uint64_t n){return (n & (~((uint64_t)1<<63)));}
 template<typename src,typename dst>
