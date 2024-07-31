@@ -2,7 +2,7 @@
  * Created Date: Thursday June 6th 2024
  * Author: Lilith
  * -----
- * Last Modified: Fri Jul 26 2024
+ * Last Modified: Wed Jul 31 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -32,6 +32,7 @@
 #include <SMU.h>
 #include <amd64.cgu.hxx>
 #include <extint.hxx>
+#include <EntityManagement.hxx>
 
 using namespace issues;
 
@@ -585,10 +586,8 @@ namespace runtime::amd64
 
 	void RelativeControlTransfer(ImmediateValue offset)
 	{
-		code->push({
-			::amd64::opcode::jmp::rel16_32,
-			::amd64::imm32(offset.imm64)
-		});
+		code->push({::amd64::opcode::jmp::rel16_32});
+		code->push(::amd64::imm32(offset.imm64));
 		if(offset.isSymbol) {
 			code->Relocations.push_back(
 				smu::RelocationEntry(
@@ -605,9 +604,9 @@ namespace runtime::amd64
 	{
 		code->push({
 			::amd64::prefix::REX(1,0,0,0),
-			::amd64::opcode::mov::r16_32_64__imm16_32_64 + ::amd64::register_decode_base(::amd64::Register::rax),
-			::amd64::imm64(address.imm64)
+			::amd64::opcode::mov::r16_32_64__imm16_32_64 + ::amd64::register_decode_base(::amd64::Register::rax)
 		});
+		code->push(::amd64::imm64(address.imm64));
 		if(address.isSymbol) {
 			code->Relocations.push_back(
 				smu::RelocationEntry(
@@ -711,6 +710,21 @@ namespace runtime::amd64
 				func->symbol
 			)
 		);
+		if(!func->NoExcept) {
+			code->push({
+				0x0F,
+				::amd64::opcode::secondary::jcc::rel16_32off(::amd64::Condition::Carry),
+				0,0,0,0
+			});
+			code->Relocations.push_back(
+				smu::RelocationEntry(
+					code->size()-4,
+					4,
+					smu::RelocationType::Relative,
+					Entity::ExceptionHandlers.top()
+				)
+			);
+		}
 	}
 	#pragma GCC diagnostic pop
 }

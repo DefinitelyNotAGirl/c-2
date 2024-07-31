@@ -31,10 +31,6 @@
 
 #include <compiler.h>
 
-#ifndef CPE2_SYMBOL_SCOPE_SEP
-    #define CPE2_SYMBOL_SCOPE_SEP "."
-#endif
-
 class mangler
 {
 public:

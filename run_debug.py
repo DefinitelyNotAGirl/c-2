@@ -27,12 +27,13 @@ def dumpELF(file: str,dir: str):
 	elif(platform.system() == "Darwin"):
 		CMDtoHTML("/Volumes/programming/cross-compilers/amd64/bin/x86_64-elf-readelf -a "+file,dir+"/readelf")
 	if(platform.system() == "Linux"):
-		CMDtoHTML("objdump -M intel -M x86-64 -M amd64 --disassembler-color=extended --visualize-jumps=extended-color --wide --show-all-symbols -d "+file,dir+"/disassembly")
+		CMDtoHTML("objdump -M intel -M x86-64 -M amd64 --disassembler-color=extended --visualize-jumps=extended-color --wide --show-all-symbols -d "+file,dir+"/disassembly.objdump")
 	elif(platform.system() == "Darwin"):
-		CMDtoHTML("/Volumes/programming/cross-compilers/amd64/bin/x86_64-elf-objdump -M intel -M x86-64 -M amd64 --disassembler-color=extended --visualize-jumps=extended-color --wide --show-all-symbols -d "+file,dir+"/disassembly")
+		CMDtoHTML("/Volumes/programming/cross-compilers/amd64/bin/x86_64-elf-objdump -M intel -M x86-64 -M amd64 --disassembler-color=extended --visualize-jumps=extended-color --wide --show-all-symbols -d "+file,dir+"/disassembly.objdump")
+	execute("HyperTextDisas "+file+" "+dir+"/disassembly.html")
 	return
 
-os.system("python ./build-system/main.py debug")
+execute("python ./build-system/main.py debug")
 os.system(
     "make -C ../cpe2Example C2ARGS=\"-Wno-unimplemented -Wno-deprecated\""
     +" AS=/Volumes/programming/cross-compilers/amd64/bin/x86_64-elf-as"
@@ -41,5 +42,5 @@ os.system(
 )
 dumpELF("../cpe2Example/build/c2resources.o","debug/resources")
 dumpELF("../cpe2Example/build/main.o","debug/main.o")
-dumpELF("../stdcpe2/libcpe2.a","debug/libcpe2")
+#dumpELF("../stdcpe2/libcpe2.a","debug/libcpe2")
 dumpELF("../cpe2Example/test.exe","debug/test.exe")

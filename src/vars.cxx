@@ -2,7 +2,7 @@
  * Created Date: Monday July 10th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thu Jul 18 2024
+ * Last Modified: Wed Jul 31 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023 DefinitelyNotAGirl@github
@@ -119,6 +119,10 @@ std::vector<typeTemplate*> typeTemplates;
 std::vector<functionTemplate*> functionTemplates;
 
 std::vector<ABI*> ABIs;
+
+namespace Entity {
+	std::stack<std::string> ExceptionHandlers;
+}
 
 namespace options
 {

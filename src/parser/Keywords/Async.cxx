@@ -159,29 +159,6 @@ void parse::Keywords::Async()
 					amd64::modRM(2,amd64::AddressingMode::RegisterDirect,amd64::Register::rax)
 				});
 			}
-			//+
-			//+ adjust base pointer
-			//+
-			{
-				code->push({
-					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::sub::rAX__imm16_32,
-					0,0,0,0
-				});
-				//+
-				//+ linker info
-				//+
-				{
-					code->Relocations.push_back(
-						smu::RelocationEntry(
-							code->size()-4,
-							4,
-							smu::RelocationType::Absolute,
-							"____cpe2.threadDataSize"
-						)
-					);
-				}
-			}
 		}
 	}
 	//,
@@ -301,34 +278,10 @@ void parse::Keywords::Async()
 		//,
 		{
 			code->push({
-				amd64::prefix::REX(1,1,0,0),
-				amd64::opcode::mov::r16_32_64__rm16_32_64,
-				amd64::modRM(amd64::Register::r15,amd64::Register::rsp)
-			});
-			code->push({
 				amd64::prefix::REX(1,0,0,0),
 				amd64::opcode::mov::r16_32_64__rm16_32_64,
 				amd64::modRM(amd64::Register::rbp,amd64::Register::rsp)
 			});
-			code->push({
-				amd64::prefix::REX(1,0,0,1),
-				amd64::opcode::add::rm16_32_64__imm16_32,
-				amd64::modRM(0,amd64::AddressingMode::RegisterDirect,amd64::Register::r15),
-				0,0,0,0
-			});
-			//+
-			//+ linker info
-			//+
-			{
-				code->Relocations.push_back(
-					smu::RelocationEntry(
-						code->size()-4,
-						4,
-						smu::RelocationType::Absolute,
-						"____cpe2.threadDataSize"
-					)
-				);
-			}
 			code->push({
 				amd64::opcode::jmp::rel16_32,
 				0,0,0,0

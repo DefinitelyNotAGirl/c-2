@@ -72,6 +72,32 @@ void parse::Keywords::Try()
 				data->sc->parent->func->code->push(code);
 				for(Routine& r : data->sc->BranchCode)
 					data->sc->parent->BranchCode.push_back(r);
+				std::cout << "handle: " << data->sc->name+CPE2_SYMBOL_SCOPE_SEP+"handleexception" << std::endl;
+				data->sc->parent->BranchCode.push_back(Routine(data,
+					[](void* __data){
+						RoutineData_T* data = (RoutineData_T*)__data;
+						code->placeSymbol(SymbolType::CodeLocation,0,data->sc->name+CPE2_SYMBOL_SCOPE_SEP+"handleexception");
+					}
+				));
+				for(Routine& r : data->sc->ExceptionHandlerCode)
+					data->sc->parent->BranchCode.push_back(r);
+				data->sc->parent->BranchCode.push_back(Routine(data,
+					[](void* __data){
+						RoutineData_T* data = (RoutineData_T*)__data;
+						code->push({
+							::amd64::opcode::jmp::rel16_32,
+							0,0,0,0
+						});
+						code->Relocations.push_back(
+							smu::RelocationEntry(
+								code->size()-4,
+								4,
+								smu::RelocationType::Relative,
+								Entity::ExceptionHandlers.top()
+							)
+						);
+					}
+				));
 			}
 		));
 		currentScope = acs;
@@ -86,6 +112,7 @@ void parse::Keywords::Try()
 		sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"try"+std::to_string(currentScope->tryCounter);
 		sc->parent = currentScope;
 		ParserState.Token = ParserState.Line.nextToken();
+		Entity::ExceptionHandlers.push(currentScope->name+CPE2_SYMBOL_SCOPE_SEP+"handleexception");
 		if(ParserState.Token.type == 40 || ParserState.Token.type == 36)
 		{
 			sc->isIndentBased = ParserState.Token.type == 40;
@@ -153,6 +180,7 @@ void parse::Keywords::Try()
 				data->sc->parent->func->code->push(code);
 				for(Routine& r : data->sc->BranchCode)
 					data->sc->parent->BranchCode.push_back(r);
+				Entity::ExceptionHandlers.pop();
 			}
 		));
 	}

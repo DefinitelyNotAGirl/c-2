@@ -32,6 +32,7 @@ namespace Entity {
 		StackStorage,
 		RegisterStorage
 	};
+	extern std::stack<std::string> ExceptionHandlers;
 	struct PrimitiveAttributeData {
 		primitiveOP Operation;
 		bool InPlace;

@@ -83,241 +83,42 @@ void parse::Keywords::Catch()
 	struct RoutineData_T {
 		type* catchType;
 		scope* sc;
-		uint64_t save_routine_offset;
-		uint64_t save_datadst_offset;
-		uint64_t datadst_offset;
-		std::string symbol_routine;
-		std::string symbol_threaddata_routine;
-		std::string symbol_threaddata_datadst;
 		std::string reentry;
+		//std::string RestoreExceptionHandler;
 	};
 	RoutineData_T* RoutineData = new RoutineData_T;
 	RoutineData->catchType = catchType;
 	RoutineData->sc = sc;
-	RoutineData->save_routine_offset = currentScope->func->stack->push(8);
-	RoutineData->save_datadst_offset = currentScope->func->stack->push(8);
-	RoutineData->datadst_offset = currentScope->func->stack->push(catchType->size);
-	RoutineData->symbol_routine = sc->name;
-	RoutineData->symbol_threaddata_routine = symbol_threaddata_routine;
-	RoutineData->symbol_threaddata_datadst = symbol_threaddata_datadst;
 	RoutineData->reentry = currentScope->name+CPE2_SYMBOL_SCOPE_SEP+"reentry";
-	//,
-	//, pre code
-	//,
-	currentScope->Prologue.push_back(Routine(RoutineData,
+	//RoutineData->RestoreExceptionHandler = Entity::ExceptionHandlers.top();
+	currentScope->ExceptionHandlerCode.push_back(Routine(RoutineData,
 		[](void* __data){
 			RoutineData_T* data = (RoutineData_T*)__data;
-			//,
-			//, save old handler
-			//,
-			{
-				//. load old handler address to rax
-				code->push({
-					amd64::prefix::REX(1,0,0,1),
-					amd64::opcode::mov::r16_32_64__rm16_32_64,
-					amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
-					0,0,0,0
-				});
-				//+
-				//+ linker info
-				//+
-				{
-					code->Relocations.push_back(
-						smu::RelocationEntry(
-							code->size()-4,
-							4,
-							smu::RelocationType::Absolute,
-							data->symbol_threaddata_routine
-						)
-					);
-				}
-				//. save rax to stack
-				code->push({
-					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::rm16_32_64__r16_32_64,
-					amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::rbp)
-				});
-				code->push(amd64::imm32(data->save_routine_offset));
-				//. load old datadst to rax
-				code->push({
-					amd64::prefix::REX(1,0,0,1),
-					amd64::opcode::mov::r16_32_64__rm16_32_64,
-					amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
-					0,0,0,0
-				});
-				//+
-				//+ linker info
-				//+
-				{
-					code->Relocations.push_back(
-						smu::RelocationEntry(
-							code->size()-4,
-							4,
-							smu::RelocationType::Absolute,
-							data->symbol_threaddata_datadst
-						)
-					);
-				}
-				//. save rax to stack
-				code->push({
-					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::rm16_32_64__r16_32_64,
-					amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::rbp)
-				});
-				code->push(amd64::imm32(data->save_datadst_offset));
-			}
-			//,
-			//, install new handler
-			//,
-			{
-				//. load handler address to rax
-				code->push({
-					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rax),
-					0,0,0,0,0,0,0,0
-				});
-				//+
-				//+ linker info
-				//+
-				{
-					code->Relocations.push_back(
-						smu::RelocationEntry(
-							code->size()-8,
-							8,
-							smu::RelocationType::Absolute,
-							data->symbol_routine
-						)
-					);
-				}
-				//.
-				//. set routine address
-				//.
-				code->push({
-					amd64::prefix::REX(1,0,0,1),
-					amd64::opcode::mov::rm16_32_64__r16_32_64,
-					amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
-					0,0,0,0
-				});
-				//+
-				//+ linker info
-				//+
-				{
-					code->Relocations.push_back(
-						smu::RelocationEntry(
-							code->size()-4,
-							4,
-							smu::RelocationType::Absolute,
-							data->symbol_threaddata_routine
-						)
-					);
-				}
-				//.
-				//. set data destination address
-				//.
-				code->push({
-					amd64::prefix::REX(1,0,0,1),
-					amd64::opcode::mov::rm16_32_64__r16_32_64,
-					amd64::modRM(amd64::Register::rbp,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
-					0,0,0,0
-				});
-				//+
-				//+ linker info
-				//+
-				{
-					code->Relocations.push_back(
-						smu::RelocationEntry(
-							code->size()-4,
-							4,
-							smu::RelocationType::Absolute,
-							data->symbol_threaddata_datadst
-						)
-					);
-				}
-				code->push({
-					amd64::prefix::REX(1,0,0,1),
-					amd64::opcode::sub::rm16_32_64__imm16_32,
-					amd64::modRM(5,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
-				});
-				code->push(amd64::imm32(data->datadst_offset));
-				//+
-				//+ linker info
-				//+
-				{
-					code->Relocations.push_back(
-						smu::RelocationEntry(
-							code->size()-4,
-							4,
-							smu::RelocationType::Absolute,
-							data->symbol_threaddata_datadst
-						)
-					);
-				}
-			}
-		}
-	));
-	//,
-	//, post code
-	//,
-	currentScope->Epilogue.push_back(Routine(RoutineData,
-		[](void* __data){
-			RoutineData_T* data = (RoutineData_T*)__data;
-			//+
-			//+ restore old handler
-			//+
-			{
-				//. load old handler address
-				code->push({
-					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::r16_32_64__rm16_32_64,
-					amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::rbp)
-				});
-				code->push(amd64::imm32(data->save_routine_offset));
-				code->push({
-					amd64::prefix::REX(1,0,0,1),
-					amd64::opcode::mov::rm16_32_64__r16_32_64,
-					amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
-					0,0,0,0
-				});
-				//+
-				//+ linker info
-				//+
-				{
-					code->Relocations.push_back(
-						smu::RelocationEntry(
-							code->size()-4,
-							4,
-							smu::RelocationType::Absolute,
-							data->symbol_threaddata_routine
-						)
-					);
-				}
-				//. load old datadst
-				code->push({
-					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::r16_32_64__rm16_32_64,
-					amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::rbp)
-				});
-				code->push(amd64::imm32(data->save_datadst_offset));
-				code->push({
-					amd64::prefix::REX(1,0,0,1),
-					amd64::opcode::mov::rm16_32_64__r16_32_64,
-					amd64::modRM(amd64::Register::rax,amd64::AddressingMode::RegisterIndirect_disp32,amd64::Register::r15),
-					0,0,0,0
-				});
-				//+
-				//+ linker info
-				//+
-				{
-					code->Relocations.push_back(
-						smu::RelocationEntry(
-							code->size()-4,
-							4,
-							smu::RelocationType::Absolute,
-							data->symbol_threaddata_datadst
-						)
-					);
-				}
-			}
+			code->push({
+				amd64::opcode::cmp::rAX__imm16_32,
+				0,0,0,0
+			});
+			code->Relocations.push_back(
+				smu::RelocationEntry(
+					code->size()-4,
+					4,
+					smu::RelocationType::Absolute,
+					data->catchType->getRuntimeTypeID()
+				)
+			);
+			code->push({
+				0x0F,
+				::amd64::opcode::secondary::jcc::rel16_32off(::amd64::Condition::Equal),
+				0,0,0,0
+			});
+			code->Relocations.push_back(
+				smu::RelocationEntry(
+					code->size()-4,
+					4,
+					smu::RelocationType::Relative,
+					data->sc->name
+				)
+			);
 		}
 	));
 	//,
@@ -331,13 +132,13 @@ void parse::Keywords::Catch()
 			runtime::RelativeControlTransfer(data->reentry);
 		}
 	));
+	sc->Finalize.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			//Entity::ExceptionHandlers.push(data->RestoreExceptionHandler);
+		}
+	));
 	//set return symbol
 	Entity::updateCurrentScope(sc);
-	//,
-	//, add resource code
-	//,
-	if(catchType->ExceptionOffset == 0){
-		resourceCode.push_back("c2resource exception "+catchType->mangledName+";");
-	}
-	catchType->ExceptionOffset = 1;
+	//Entity::ExceptionHandlers.pop();
 }

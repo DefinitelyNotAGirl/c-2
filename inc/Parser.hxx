@@ -15,6 +15,12 @@
 	#define globalFunction ;
 #endif
 
+/**
+ * @brief stores one string for every line that needs to be written to the resource file
+ * 
+ */
+global std::vector<std::string> resourceCode;
+
 //. ██████  ███████ ███████  ██████ ██████  ██ ██████  ████████  ██████  ██████       ██████  ██████       ██ ███████  ██████ ████████ ███████
 //. ██   ██ ██      ██      ██      ██   ██ ██ ██   ██    ██    ██    ██ ██   ██     ██    ██ ██   ██      ██ ██      ██         ██    ██
 //. ██   ██ █████   ███████ ██      ██████  ██ ██████     ██    ██    ██ ██████      ██    ██ ██████       ██ █████   ██         ██    ███████

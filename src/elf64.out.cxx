@@ -366,16 +366,6 @@ void output::generateElf64()
 		symtab.push(empty,sizeof(elf64::SymbolTableEntry));
 	}
 	//,
-	//, default symbols
-	//,
-	if(emitExceptionSymbols){
-		setGlobalValue("____cpe2.threadDataSize",exceptionoffset);
-	}
-	else
-	{
-		importExternalValue("____cpe2.threadDataSize");
-	}
-	//,
 	//, generate symbol tables
 	//,
 	uint64_t LocalSymbolCount;

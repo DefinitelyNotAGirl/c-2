@@ -91,40 +91,49 @@
 		std::cerr << std::endl;
 	}
 #elif defined(platform_apple)
+	struct TraceInfo {
+	    std::string file;
+	    int line;
+	    std::string function;
+	};
 	#include <execinfo.h>
 	#include <unistd.h>
 	#include <cxxabi.h> // For __cxa_demangle
 	#include <dlfcn.h>  // For dladdr
-	static std::string demangle(const char* mangledName) {
-	    int status;
-	    char* demangled = abi::__cxa_demangle(mangledName, nullptr, nullptr, &status);
-	    std::string result = (status == 0) ? demangled : mangledName;
-	    free(demangled);
-	    return result;
-	}
 
-	static std::string get_source_info(void* addr) {
-	    Dl_info info;
-	    if (dladdr(addr, &info) && info.dli_sname) {
-	        std::string function = demangle(info.dli_sname);
-	        std::string file = ((info.dli_fname) ? info.dli_fname : "unknown");
-	        return file + " in " + function;
+	static TraceInfo get_backtrace_info(void* addr) {
+	    TraceInfo info;
+	    Dl_info dlinfo;
+	
+	    if (dladdr(addr, &dlinfo)) {
+	        int status;
+	        char* demangled = abi::__cxa_demangle(dlinfo.dli_sname, nullptr, 0, &status);
+	        info.function = (status == 0 && demangled) ? demangled : dlinfo.dli_sname;
+	        info.file = dlinfo.dli_fname;
+	        info.line = 0;
+	        if (demangled) {
+	            free(demangled);
+	        }
 	    }
-	    return "No source info available.";
+	    return info;
 	}
-
-	static void printStacktrace(uint64_t len) {
-	    void** array = (void**)calloc(len, sizeof(void*));
-	    size_t size = backtrace(array, len);
-	    char** symbols = backtrace_symbols(array, size);
-
-	    std::cerr << "stack trace:";
-	    for (size_t i = 1; i < size; ++i) 
+	
+	static std::string get_source_info(void *addr) {
+		TraceInfo info = get_backtrace_info(addr);
+	    return std::string("in ")+info.file+" in "+info.function+" at "+std::to_string(info.line);
+	}
+	
+	inline void printStacktrace(uint64_t len)
+	{
+		void** array = (void**)calloc(len,8);
+		size_t size = backtrace(array, len);
+		std::cerr << "stack trace: ";
+		for(uint64_t I = 1;I<size;I++)
 		{
-	        std::string info = get_source_info(array[i]);
-	        if (!info.empty())std::cerr << "\n" << info;
-	    }
-	    std::cerr << std::endl;
+			std::string info = get_source_info(array[I]);
+			if(!info.empty())std::cerr << "\n" << info;
+		}
+		std::cerr << std::endl;
 	}
 #else
 	std::string get_source_info(void* addr);

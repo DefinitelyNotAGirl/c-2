@@ -64,4 +64,8 @@ public:
     bool doExport = false;
     bool iteratable = false;
     bool incomplete = false;
+
+	std::string getRuntimeTypeID() {
+		return std::string("____cpe2")+CPE2_SYMBOL_SCOPE_SEP+"typeid"+CPE2_SYMBOL_SCOPE_SEP+this->mangledName;
+	}
 };

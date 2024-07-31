@@ -13,12 +13,6 @@ global std::vector<std::string> dependencies;
 #else
 	extern uint64_t nextExceptionTypeOffset;
 #endif
-
-/**
- * @brief stores one string for every line that needs to be written to the resource file
- * 
- */
-global std::vector<std::string> resourceCode;
 /**
  * @brief stores a list of all symbols defined using the c2resource keyword
  * 
