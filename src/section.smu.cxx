@@ -184,8 +184,8 @@ namespace smu
 					this->Relocations.push_back(c.Reloc);
 					break;
 				}
-			}
-			default: {
+				default: {
+				}
 			}
 		}
 	}

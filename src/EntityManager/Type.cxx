@@ -2,6 +2,7 @@
 #include <class_scope.h>
 #include <Parser.hxx>
 #include <output.hxx>
+#include <event.hxx>
 
 using Entity::AttributeType;
 using Entity::Attribute;
@@ -117,10 +118,13 @@ type* Entity::startTypeDefinition(std::vector<Attribute>& attributes, std::strin
 			}
 		));
 	}
+	Event::TypeDeclaration.fire((Event::Data::TypeDeclaration*)&Type);
 	return Type;
 }
 
 type* Entity::declareType(std::vector<Attribute>& attributes,std::string name, std::vector<token> inherit)
 {
-	return constructType(attributes,name,inherit);
+	type* Type = constructType(attributes,name,inherit);
+	Event::TypeDeclaration.fire((Event::Data::TypeDeclaration*)&Type);
+	return Type;
 }

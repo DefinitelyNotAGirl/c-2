@@ -1,6 +1,7 @@
 #include <EntityManagement.hxx>
 #include <Parser.hxx>
 #include <output.hxx>
+#include <event.hxx>
 
 using Entity::Attribute;
 using Entity::AttributeType;
@@ -173,6 +174,7 @@ function* Entity::declareFunction(std::vector<Attribute>& attributes,std::string
 		func->abi->setFunctionStorages(func);
 		importExternalFunction(func->symbol);
 	}
+	Event::FunctionDeclaration.fire((Event::Data::FunctionDeclaration*)&func);
 	return func;
 }
 
@@ -322,5 +324,7 @@ function* Entity::startFunctionDefinition(std::vector<Attribute>& attributes,std
 	}
 	if (options::ddebug)
 		std::cout << "body started" << std::endl;
+	Event::FunctionDeclaration.fire((Event::Data::FunctionDeclaration*)&func);
+	Event::FunctionSwitch.fire((Event::Data::FunctionSwitch*)&func);
 	return func;
 }
