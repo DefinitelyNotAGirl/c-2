@@ -2,6 +2,7 @@
 #include <Parser.hxx>
 #include <output.hxx>
 #include <dump.hxx>
+#include <event.hxx>
 
 using Entity::Attribute;
 using Entity::AttributeType;
@@ -257,5 +258,6 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 	{
 		compilerBug("unimplemented: generate debug info");
 	}
+	Event::VariableDeclaration.fire((Event::Data::VariableDeclaration*)&var);
 	return var;
 }

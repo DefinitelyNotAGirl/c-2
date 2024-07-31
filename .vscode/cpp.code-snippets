@@ -117,5 +117,20 @@
 			"RoutineData_T* RoutineData = new RoutineData_T;{",
 			"}"
 		]
+	},
+	"new event": {
+		"prefix": "new event",
+		"body": [
+			"namespace Data {",
+				"\tclass $1 {",
+				"\tpublic:",
+				"\t\t$0",
+				"\t};",
+			"}",
+			"/**",
+			" * @brief $2",
+			" */",
+			"extern Event_T<Data::$1> $1;"
+		]
 	}
 }

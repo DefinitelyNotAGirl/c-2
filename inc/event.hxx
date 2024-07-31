@@ -1,0 +1,151 @@
+#include <string>
+#include <vector>
+#include <extint.hxx>
+
+template<typename EventData_T>
+class EventHandler {
+public:
+	typedef void(*EventHandlerCallback)(void* HandlerData,EventData_T* EventData);
+	void* HandlerData = nullptr;
+	EventHandlerCallback callback;
+
+	EventHandler(void* HandlerData,EventHandlerCallback callback)
+		:callback(callback),HandlerData(HandlerData){}
+
+	EventHandler(EventHandlerCallback callback)
+		:callback(callback){}
+
+	void run(EventData_T* EventData){
+		this->callback(this->HandlerData,EventData);
+	}
+};
+
+template<typename EventData_T>
+class Event_T {
+public:
+	std::vector<EventHandler<EventData_T>> EventHandlers;
+	void fire(EventData_T* EventData) {
+		for(EventHandler<EventData_T>& handler : this->EventHandlers) {
+			handler.run(EventData);
+		}
+	}
+};
+
+#ifndef global
+	#define global extern
+#endif
+
+//.
+//. get data types
+//.
+class variable;
+class function;
+class type;
+
+//.
+//.	events
+//.
+namespace Event {
+	namespace Data {
+		class FunctionDeclaration {
+		public:
+			function* func;
+		};
+	}
+	/**
+	 * @brief Fired when a function is declared
+	 */
+	global Event_T<Data::FunctionDeclaration> FunctionDeclaration;
+	namespace Data {
+		class FunctionSwitch {
+		public:
+			function* func;
+		};
+	}
+	/**
+	 * @brief Fired when the function for which the compiler is generating code changes. This event does not imply that the function is done.
+	 */
+	global Event_T<Data::FunctionSwitch> FunctionSwitch;
+	namespace Data {
+		class VariableDeclaration {
+		public:
+			variable* var;
+		};
+	}
+	/**
+	 * @brief Fired when a variable is declared
+	 */
+	global Event_T<Data::VariableDeclaration> VariableDeclaration;
+	namespace Data {
+		class TypeDeclaration {
+		public:
+			type* Type;
+		};
+	}
+	/**
+	 * @brief Fired when a type is declared
+	 */
+	global Event_T<Data::TypeDeclaration> TypeDeclaration;
+	namespace Data {
+		class BranchSplit {
+		public:
+			std::string condition;
+		};
+	}
+	/**
+	 * @brief Fired when the current branch splits
+	 */
+	global Event_T<Data::BranchSplit> BranchSplit;
+	namespace Data {
+		class BranchSwitch {
+		public:
+			u64 BranchID;
+		};
+	}
+	/**
+	 * @brief Fired when the compiler switches the branch for which it is generating code
+	 */
+	global Event_T<Data::BranchSwitch> BranchSwitch;
+	namespace Data {
+		class BranchExit {
+		public:
+		};
+	}
+	/**
+	 * @brief Fired when the current branch exists
+	 */
+	global Event_T<Data::BranchExit> BranchExit;
+	namespace Data {
+		class BranchMerge {
+		public:
+			/**
+			 * @brief The current branch merges with TargetBranch
+			 */
+			u64 TargetBranch;
+		};
+	}
+	/**
+	 * @brief Fired when the current branch merges with another
+	 */
+	global Event_T<Data::BranchMerge> BranchMerge;
+	namespace Data {
+		class Call {
+		public:
+			function* func;
+		};
+	}
+	/**
+	 * @brief Fired when a function is called, does not apply to primitive functions
+	 */
+	global Event_T<Data::Call> Call;
+	namespace Data {
+		class DestroyVariable {
+		public:
+			variable* var;
+		};
+	}
+	/**
+	 * @brief Fired when a variables constructor is ran. If the destructor is a non-primitive function a seperate Call event is Fired.
+	 */
+	global Event_T<Data::DestroyVariable> DestroyVariable;
+}
