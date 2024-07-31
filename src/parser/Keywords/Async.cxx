@@ -79,19 +79,19 @@ void parse::Keywords::Async()
 				//. load 0x1000 to rsi, size = 4KiB
 				code->push({
 					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rsi)
+					amd64::opcode::mov::r16_32_64__imm16_32_64(amd64::Register::rsi)
 				});
 				code->push(amd64::imm64(0x1000));
 				//. load flags to rdx
 				code->push({
 					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rdx)
+					amd64::opcode::mov::r16_32_64__imm16_32_64(amd64::Register::rdx)
 				});
 				code->push(amd64::imm64((1<<0) | (1<<1)));
 				//. load flags to r10
 				code->push({
 					amd64::prefix::REX(1,0,0,1),
-					amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::r10)
+					amd64::opcode::mov::r16_32_64__imm16_32_64(amd64::Register::r10)
 				});
 				code->push(amd64::imm64((1<<1) | (1<<5) | (1<<8)));
 				//. clear r8
@@ -109,7 +109,7 @@ void parse::Keywords::Async()
 				//. load sys_mmap (9) to rax
 				code->push({
 					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rax)
+					amd64::opcode::mov::r16_32_64__imm16_32_64(amd64::Register::rax)
 				});
 				code->push(amd64::imm64(9));
 				//. fire system call
@@ -134,7 +134,7 @@ void parse::Keywords::Async()
 				//. load 0x8000000000001000 to rdi
 				code->push({
 					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rdi)
+					amd64::opcode::mov::r16_32_64__imm16_32_64(amd64::Register::rdi)
 				});
 				code->push(amd64::imm64(0x8000000000001000));
 				//. compare rax to rdi
@@ -151,7 +151,7 @@ void parse::Keywords::Async()
 				//. load error handler address and call
 				code->push({
 					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rdi)
+					amd64::opcode::mov::r16_32_64__imm16_32_64(amd64::Register::rdi)
 				});
 				code->push(amd64::imm64(0));
 				code->push({
@@ -242,7 +242,7 @@ void parse::Keywords::Async()
 				//. load flags to rdi
 				code->push({
 					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rdi)
+					amd64::opcode::mov::r16_32_64__imm16_32_64(amd64::Register::rdi)
 				});
 				code->push(amd64::imm64(clone_flags));
 				//. copy new stack pointer from rax to rsi
@@ -254,7 +254,7 @@ void parse::Keywords::Async()
 				//. load sys_clone (56) to rax
 				code->push({
 					amd64::prefix::REX(1,0,0,0),
-					amd64::opcode::mov::r16_32_64__imm16_32_64 + amd64::register_decode_base(amd64::Register::rax)
+					amd64::opcode::mov::r16_32_64__imm16_32_64(amd64::Register::rax)
 				});
 				code->push(amd64::imm64(56));
 				//. fire system call

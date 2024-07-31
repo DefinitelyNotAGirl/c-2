@@ -35,6 +35,8 @@
 #include <EntityManagement.hxx>
 
 using namespace issues;
+using smu::InstructionComponent;
+using smu::InstructionComponentType;
 
 namespace amd64
 {
@@ -330,6 +332,27 @@ namespace runtime::amd64
 		}
 //,####################################################################################################################
 //,####################################################################################################################
+//,
+//,
+//,	Direct Immediate to Direct Register
+//,
+//,
+//,####################################################################################################################
+//,####################################################################################################################
+		else if( 
+			(srcStore->mode == ::amd64::StorageMode::DirectImmediate)
+			&&
+			(dstStore->mode == ::amd64::StorageMode::DirectRegister)
+		)
+		{
+			code->push(std::vector<InstructionComponent>{
+				InstructionComponent(::amd64::prefix::REX(1,::amd64::register_decode_rex(dstStore->reg),0,0)),
+				InstructionComponent(::amd64::opcode::mov::r16_32_64__imm16_32_64(dstStore->reg)),
+				InstructionComponent(srcStore->immediate,8,smu::RelocationType::Absolute)
+			});
+		}
+//,####################################################################################################################
+//,####################################################################################################################
 //, ██████  ██████                       ██       ██ ██████
 //, ██   ██ ██   ██                       ██      ██ ██   ██
 //, ██   ██ ██████      █████ █████ █████  ██     ██ ██████
@@ -337,7 +360,7 @@ namespace runtime::amd64
 //, ██████  ██   ██                      ██       ██ ██   ██
 //,####################################################################################################################
 //,####################################################################################################################
-		if(
+		else if(
 			(
 				(srcStore->mode == ::amd64::StorageMode::DirectRegister)
 				&&
@@ -407,7 +430,7 @@ namespace runtime::amd64
 //, ██ ██   ██                      ██       ██ ██   ██
 //,####################################################################################################################
 //,####################################################################################################################
-		if(
+		else if(
 			(srcStore->mode == ::amd64::StorageMode::IndirectRegister)
 			&&
 			(dstStore->mode == ::amd64::StorageMode::IndirectRegister)
@@ -501,7 +524,7 @@ namespace runtime::amd64
 //, ██ ██   ██                      ██       ██ ██████  ██      ██
 //,####################################################################################################################
 //,####################################################################################################################
-		if(
+		else if(
 			(srcStore->mode == ::amd64::StorageMode::IndirectRegister)
 			&&
 			(dstStore->mode == ::amd64::StorageMode::IndirectImmediate)
@@ -514,7 +537,7 @@ namespace runtime::amd64
 			{
 				code->push({
 					::amd64::prefix::REX(1,0,0,0),
-					::amd64::opcode::mov::r16_32_64__imm16_32_64 + ((byte)Base)
+					::amd64::opcode::mov::r16_32_64__imm16_32_64(Base)
 				});
 				code->push(::amd64::imm64(dstStore->immediate.imm64));
 				if(dstStore->immediate.isSymbol){
@@ -539,6 +562,8 @@ namespace runtime::amd64
 				__dst.storage = &__dst_store;
 			}
 			copy(src,&__dst);
+		} else {
+			compilerBug("invalid copy inputs");
 		}
 	}
 	void clear(variable* target);
@@ -604,7 +629,7 @@ namespace runtime::amd64
 	{
 		code->push({
 			::amd64::prefix::REX(1,0,0,0),
-			::amd64::opcode::mov::r16_32_64__imm16_32_64 + ::amd64::register_decode_base(::amd64::Register::rax)
+			::amd64::opcode::mov::r16_32_64__imm16_32_64(::amd64::Register::rax)
 		});
 		code->push(::amd64::imm64(address.imm64));
 		if(address.isSymbol) {

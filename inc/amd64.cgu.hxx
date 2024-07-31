@@ -585,7 +585,9 @@ namespace amd64
 			constexpr byte rm8__imm8 = 0xC6;
 			constexpr byte rm16_32_64__imm16_32 = 0xC7;
 			constexpr byte r8__imm8 = 0xB0;
-			constexpr byte r16_32_64__imm16_32_64 = 0xB8;
+			constexpr byte r16_32_64__imm16_32_64(Register dst) {
+				return (0xB8 | register_decode_base(dst));
+			}
 		}
 		namespace lea{
 			constexpr byte r16_32_64__m = 0x8D;
