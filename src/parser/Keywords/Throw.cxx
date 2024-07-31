@@ -48,7 +48,7 @@ void parse::Keywords::Throw()
 	if(currentArchitecture == Architecture::AMD64)
 	{
 		code->push({
-			amd64::opcode::mov::r16_32_64__imm16_32_64,
+			amd64::opcode::mov::r16_32_64__imm16_32_64(::amd64::Register::rax),
 			0,0,0,0
 		});
 		//+
