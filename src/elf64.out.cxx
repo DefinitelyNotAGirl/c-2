@@ -75,8 +75,8 @@ static void GenerateRelaSection(std::string name,section* s)
 			rtype = elf64::RelocationType::R_X86_64_RELATIVE64;
 		else if(re.type == smu::RelocationType::Relative && re.size == 4)
 			rtype = elf64::RelocationType::R_X86_64_PC32;
-		else
-			compilerBug("unimplemented, relocation: "+std::to_string((uint64_t)re.type)+" - "+std::to_string(re.size));
+		//else
+		//	compilerBug("unimplemented, relocation: "+std::to_string((uint64_t)re.type)+" - "+std::to_string(re.size));
 		rs->push(elf64::RelocationEntry(re.offset,symNum,rtype,0));
 	}
 	addSection(name,rs,0x00,elf64::SectionType::SHT_RELA,false);
@@ -157,8 +157,8 @@ void genLocalSymtab(section* sec)
 				e.SectionTableIndex = (uint64_t)elf64::SectionTableIndex::DATA;
 				break;
 			}
-			default:
-				compilerBug("unknown symbol type: "+std::to_string((uint64_t)s.Type)+" ("+s.name+")");
+			//default:
+			//	compilerBug("unknown symbol type: "+std::to_string((uint64_t)s.Type)+" ("+s.name+")");
 		}
 		//.
 		//. push name to strtab

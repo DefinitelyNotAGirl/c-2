@@ -2,7 +2,7 @@
  * Created Date: Monday July 31st 2023
  * Author: Lilith
  * -----
- * Last Modified: Sat Jul 27 2024
+ * Last Modified: Sat Aug 03 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -30,10 +30,12 @@
 
 #include <compiler.h>
 #include <mangling.h>
-
 #include <Parser.hxx>
-
 #include <dump.hxx>
+#include <conditions.hxx>
+
+using smu::InstructionComponent;
+using smu::InstructionComponentType;
 
 using namespace issues;
 
@@ -94,8 +96,7 @@ variable* call(function* func,std::vector<variable*> args)
 	if(args.size() != func->vparams.size())
 		compilerBug("invalid call to variable* call(function* func,std::vector<variable*> args), args.size() != func->vparams.size()");
 	//std::cout << "call to function: " << func->expression_ansi() << std::endl;
-	if(func->isPrimitive)
-	{
+	if(func->isPrimitive) {
 		if(true)
 		{
 			//attempt to compute at compile time
@@ -110,6 +111,7 @@ variable* call(function* func,std::vector<variable*> args)
 						result->storage = (void*)((uint64_t)args[0]->storage + (uint64_t)args[1]->storage);
 						result->dataType = getType("u64");
 						result->name = "____cpe2internalresult";
+						return result;
 					}
 					break;
 				}
@@ -122,6 +124,7 @@ variable* call(function* func,std::vector<variable*> args)
 						result->storage = (void*)((uint64_t)args[0]->storage * (uint64_t)args[1]->storage);
 						result->dataType = getType("u64");
 						result->name = "____cpe2internalresult";
+						return result;
 					}
 					break;
 				}
@@ -135,8 +138,39 @@ variable* call(function* func,std::vector<variable*> args)
 					break;
 				}
 				case(primitiveOP::SYSCALL):break;
-				default:
-					compilerBug("compile time operation not implemented: "+std::string(stringify(func->op)));
+				case(primitiveOP::Less): {
+					if(args[0]->storageArch == Architecture::storage_IntegerImmediate && args[1]->storageArch == Architecture::storage_IntegerImmediate)
+					{
+						bool eval = (uint64_t)args[0]->storage < (uint64_t)args[1]->storage;
+						variable* result = new variable;
+						result->storageArch = Architecture::storage_IntegerImmediate;
+						result->storage = (void*)(eval);
+						result->dataType = getType("bool");
+						result->name = "____cpe2internalresult";
+						ConditionCode.push((Condition)(0xF0 | eval));
+						return result;
+					}
+					break;
+				}
+				case(primitiveOP::Greater): {
+					if(args[0]->storageArch == Architecture::storage_IntegerImmediate && args[1]->storageArch == Architecture::storage_IntegerImmediate)
+					{
+						bool eval = (uint64_t)args[0]->storage > (uint64_t)args[1]->storage;
+						variable* result = new variable;
+						result->storageArch = Architecture::storage_IntegerImmediate;
+						result->storage = (void*)(eval);
+						result->dataType = getType("bool");
+						result->name = "____cpe2internalresult";
+						ConditionCode.push((Condition)(0xF0 | eval));
+						return result;
+					}
+					break;
+				}
+				default: {
+					if(args[0]->storageArch == Architecture::storage_IntegerImmediate && args[1]->storageArch == Architecture::storage_IntegerImmediate)
+						compilerBug("compile time operation not implemented: "+std::string(stringify(func->op)));
+				}
+					
 			}
 		}
 		//+
@@ -199,6 +233,8 @@ variable* call(function* func,std::vector<variable*> args)
 		{
 			case(primitiveOP::add):
 				return runtime::UnsignedIntegerAddition(args[0],args[1]);
+			case(primitiveOP::mul):
+				return runtime::UnsignedIntegerMultiplication(args[0],args[1]);
 			case(primitiveOP::assign):
 				runtime::copy(args[1],args[0]);
 				return args[1];
@@ -216,12 +252,68 @@ variable* call(function* func,std::vector<variable*> args)
 				}
 				break;
 			}
+			case(primitiveOP::Less): {
+				if(currentArchitecture == Architecture::AMD64) {
+					variable rax = *args[0];
+					amd64::VariableStorage raxStore;
+					rax.storage = (void*)&raxStore;
+					raxStore.mode = amd64::StorageMode::DirectRegister;
+					raxStore.reg = amd64::Register::rax;
+					variable rdx = *args[1];
+					amd64::VariableStorage rdxStore;
+					rdx.storage = (void*)&rdxStore;
+					rdxStore.mode = amd64::StorageMode::DirectRegister;
+					rdxStore.reg = amd64::Register::rdx;
+					runtime::copy(args[0],&rax);
+					runtime::copy(args[1],&rdx);
+					code->push(std::vector<InstructionComponent>({
+						amd64::prefix::REX(1,0,0,0),
+						amd64::opcode::cmp::r16_32_64__rm16_32_64,
+						amd64::modRM(amd64::Register::rax,amd64::Register::rdx)
+					}));
+					ConditionCode.push(Condition::Less);
+					variable* result = new variable;
+					result->storageArch = Architecture::storage_condition;
+					result->storage = (void*)(Condition::Less);
+					result->dataType = getType("bool");
+					result->name = "____cpe2internalresult";
+					return result;
+				}
+				break;
+			}
+			case(primitiveOP::Greater): {
+				if(currentArchitecture == Architecture::AMD64) {
+					variable rax = *args[0];
+					amd64::VariableStorage raxStore;
+					rax.storage = (void*)&raxStore;
+					raxStore.mode = amd64::StorageMode::DirectRegister;
+					raxStore.reg = amd64::Register::rax;
+					variable rdx = *args[1];
+					amd64::VariableStorage rdxStore;
+					rdx.storage = (void*)&rdxStore;
+					rdxStore.mode = amd64::StorageMode::DirectRegister;
+					rdxStore.reg = amd64::Register::rdx;
+					runtime::copy(args[0],&rax);
+					runtime::copy(args[1],&rdx);
+					code->push(std::vector<InstructionComponent>({
+						amd64::prefix::REX(1,0,0,0),
+						amd64::opcode::cmp::r16_32_64__rm16_32_64,
+						amd64::modRM(amd64::Register::rax,amd64::Register::rdx)
+					}));
+					ConditionCode.push(Condition::Greater);
+					variable* result = new variable;
+					result->storageArch = Architecture::storage_condition;
+					result->storage = (void*)(Condition::Greater);
+					result->dataType = getType("bool");
+					result->name = "____cpe2internalresult";
+					return result;
+				}
+				break;
+			}
 			default:
 				compilerBug("runtime operation not implemented: "+std::string(stringify(func->op)));
 		}
-	}
-	else
-	{
+	} else {
 		//+
 		//+ check if any arguments do not have proper storage (storage_IntegerImmediate or such)
 		//+

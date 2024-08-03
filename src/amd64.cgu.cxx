@@ -2,7 +2,7 @@
  * Created Date: Thursday June 6th 2024
  * Author: Lilith
  * -----
- * Last Modified: Wed Jul 31 2024
+ * Last Modified: Fri Aug 02 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -423,6 +423,131 @@ namespace runtime::amd64
 		}
 //,####################################################################################################################
 //,####################################################################################################################
+//,
+//,
+//,	Indirect Register to Direct Register
+//,
+//,
+//,####################################################################################################################
+//,####################################################################################################################
+		else if(
+			(
+				(srcStore->mode == ::amd64::StorageMode::IndirectRegister)
+				&&
+				(dstStore->mode == ::amd64::StorageMode::DirectRegister)
+			)
+		)
+		{
+			if(dstStore->displacement.imm64 == 0x00)
+			{
+				code->push({
+					::amd64::prefix::REX(1,::amd64::register_decode_rex(srcStore->reg),0,::amd64::register_decode_rex(dstStore->reg)),
+					::amd64::opcode::mov::r16_32_64__rm16_32_64,
+					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect,dstStore->reg)
+				});
+			}
+			else if(positive(dstStore->displacement.imm64) <= 0xFF)
+			{
+				code->push({
+					::amd64::prefix::REX(1,::amd64::register_decode_rex(srcStore->reg),0,::amd64::register_decode_rex(dstStore->reg)),
+					::amd64::opcode::mov::r16_32_64__rm16_32_64,
+					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect_disp8,dstStore->reg),
+					(byte)copySignBit<uint64_t,uint8_t>(dstStore->displacement.imm64)
+				});
+				if(srcStore->displacement.isSymbol)
+				{
+					code->Relocations.push_back(
+						smu::RelocationEntry(
+							code->size()-1,
+							1,
+							smu::RelocationType::Absolute,
+							dstStore->displacement.symbol
+						)
+					);
+				}
+			}
+			else if(positive(dstStore->displacement.imm64) <= 0xFFFFFFFF)
+			{
+				code->push({
+					::amd64::prefix::REX(1,::amd64::register_decode_rex(srcStore->reg),0,::amd64::register_decode_rex(dstStore->reg)),
+					::amd64::opcode::mov::rm16_32_64__r16_32_64,
+					::amd64::modRM(srcStore->reg,::amd64::AddressingMode::RegisterIndirect_disp32,dstStore->reg)
+				});
+				code->push(::amd64::imm32(copySignBit<uint64_t,uint32_t>(dstStore->displacement.imm64)));
+				if(srcStore->displacement.isSymbol)
+				{
+					code->Relocations.push_back(
+						smu::RelocationEntry(
+							code->size()-4,
+							4,
+							smu::RelocationType::Absolute,
+							dstStore->displacement.symbol
+						)
+					);
+				}
+			}
+			else
+			{
+				compilerBug("diplacement exceeds 32 bits.");
+			}
+		}
+//,####################################################################################################################
+//,####################################################################################################################
+//,
+//,
+//,	Direct Immediate to Indirect Register
+//,
+//,
+//,####################################################################################################################
+//,####################################################################################################################
+		else if(
+			(
+				(srcStore->mode == ::amd64::StorageMode::DirectImmediate)
+				&&
+				(dstStore->mode == ::amd64::StorageMode::IndirectRegister)
+			)
+		)
+		{
+			code->push(std::vector<InstructionComponent>({
+				InstructionComponent(::amd64::prefix::REX(0,0,0,::amd64::register_decode_rex(dstStore->reg))),
+				InstructionComponent(::amd64::opcode::mov::rm16_32_64__imm16_32),
+				InstructionComponent(::amd64::modRM(0,::amd64::AddressingMode::RegisterIndirect_disp32,dstStore->reg)),
+				InstructionComponent(dstStore->displacement,4,smu::RelocationType::Absolute),
+				InstructionComponent(srcStore->immediate,4,smu::RelocationType::Absolute)
+			}));
+		}
+//,####################################################################################################################
+//,####################################################################################################################
+//,
+//,
+//,	Indirect Immediate to Direct Register
+//,
+//,
+//,####################################################################################################################
+//,####################################################################################################################
+		else if(
+			(
+				(srcStore->mode == ::amd64::StorageMode::IndirectImmediate)
+				&&
+				(dstStore->mode == ::amd64::StorageMode::DirectRegister)
+			)
+		)
+		{
+			code->push(std::vector<InstructionComponent>{
+				InstructionComponent(::amd64::prefix::REX(1,0,0,0)),
+				InstructionComponent(::amd64::opcode::mov::r16_32_64__imm16_32_64(::amd64::Register::rax)),
+				InstructionComponent(srcStore->immediate,8,smu::RelocationType::Absolute)
+			});
+			::amd64::VariableStorage nsrcstore;
+			nsrcstore.mode = ::amd64::StorageMode::IndirectRegister;
+			nsrcstore.displacement = ImmediateValue(0);
+			nsrcstore.reg = ::amd64::Register::rax;
+			variable nsrc = *src;
+			nsrc.storage = (::amd64::VariableStorage*)&nsrcstore;
+			copy(&nsrc,dst);
+		}
+//,####################################################################################################################
+//,####################################################################################################################
 //, ██ ██████                       ██       ██ ██████
 //, ██ ██   ██                       ██      ██ ██   ██
 //, ██ ██████      █████ █████ █████  ██     ██ ██████
@@ -563,7 +688,7 @@ namespace runtime::amd64
 			}
 			copy(src,&__dst);
 		} else {
-			compilerBug("invalid copy inputs");
+			compilerBug("invalid copy inputs, "+std::to_string((u64)srcStore->mode)+" ==> "+std::to_string((u64)dstStore->mode));
 		}
 	}
 	void clear(variable* target);
@@ -607,6 +732,33 @@ namespace runtime::amd64
 		}
 		else compilerBug("unimplemented uint addition storage: "+std::to_string((uint64_t)bStore->mode));
 		return dst;
+	}
+
+	variable* UnsignedIntegerMultiplication(variable* a, variable* b)
+	{
+		if(a->storageArch != Architecture::AMD64)
+			compilerBug("invalid source architecture: "+std::to_string((uint64_t)a->storageArch),originCoreHere,source(),"");
+		if(b->storageArch != Architecture::AMD64)
+			compilerBug("invalid destination architecture: "+std::to_string((uint64_t)b->storageArch),originCoreHere,source(),"");
+		variable* rax = new variable(*a);
+		variable* rdx = new variable(*b);
+		rax->storage = (void*)(new ::amd64::VariableStorage);
+		rdx->storage = (void*)(new ::amd64::VariableStorage);
+		::amd64::VariableStorage* raxStore = (::amd64::VariableStorage*)rax->storage;
+		raxStore->mode = ::amd64::StorageMode::DirectRegister;
+		raxStore->reg = ::amd64::Register::rax;
+		::amd64::VariableStorage* rdxStore = (::amd64::VariableStorage*)rdx->storage;
+		rdxStore->mode = ::amd64::StorageMode::DirectRegister;
+		rdxStore->reg = ::amd64::Register::rdx;
+		runtime::amd64::copy(a,rax);
+		runtime::amd64::copy(b,rdx);
+		::amd64::VariableStorage* bStore = (::amd64::VariableStorage*)b->storage;
+		code->push(std::vector<InstructionComponent>({
+			::amd64::prefix::REX(1,0,0,0),
+			::amd64::opcode::mul::rm16_32_64,
+			::amd64::modRM(4,::amd64::AddressingMode::RegisterDirect,::amd64::Register::rdx)
+		}));
+		return rax;
 	}
 
 	void RelativeControlTransfer(ImmediateValue offset)

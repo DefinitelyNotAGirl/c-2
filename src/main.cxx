@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Wed Jul 31 2024
+ * Last Modified: Fri Aug 02 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -45,6 +45,7 @@
 #include <sys/resource.h>
 #include <DWARF.h>
 #include <error.h>
+#include <EntityManagement.hxx>
 
 #include <Parser.hxx>
 
@@ -128,10 +129,12 @@ int main(int argc, char** argv)
         std::cout << "cpu privilege level: " << options::fcpl << std::endl;
     globalScope->name = "global";
 	globalScope->func = new function;
+	globalScope->func->code = new section;
 	globalScope->func->abi = defaultABI;
 	globalScope->func->returnType = nullptr;
 	globalScope->func->name = "global function";
 	globalScope->func->symbol = "cpe2InitiateGlobals";
+	Entity::updateCurrentScope(globalScope);
     if(options::ffreestanding)
         options::fnoautoinclude = true;
     moClassID = 1;

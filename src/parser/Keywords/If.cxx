@@ -1,9 +1,12 @@
 #include "../parser.hxx"
+#include <conditions.hxx>
 
+using smu::InstructionComponent;
+using smu::InstructionComponentType;
 using namespace issues;
 
-void parse::Keywords::If()
-{
+
+void parse::Keywords::If() {
 	if(currentScope->t == scopeType::GLOBAL)
 		invalidUseOfKeywordInScope("",originCoreHere,source(currentFile,ParserState.Line,ParserState.Token),currentScope);
 	if(options::ddebug)std::cout << "if" << std::endl;
@@ -11,7 +14,7 @@ void parse::Keywords::If()
 	sc->leadingSpace=currentScope->leadingSpace+tabLength;
 	sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"if"+std::to_string(currentScope->ifCounter++);
 	sc->parent = currentScope;
-	sc->isIndentBased = true;
+	sc->isIndentBased = ParserState.Line.text.back() == ':';
 	sc->t = scopeType::CONDITIONAL_BLOCK;
 	sc->func = new function;
 	sc->parent->conditionalCounter++;
@@ -24,19 +27,9 @@ void parse::Keywords::If()
 	cl.text = "";
 	cl.tpos = 0;
 	token cond;
-	if(ParserState.Token.type == 30)
-	{
-		//PRINT_DEBUG
-		ParserState.Token = ParserState.Line.nextToken();
+	ParserState.NextToken();
+	if(ParserState.Token.type == 30) {
 		cond = ParserState.Token;
-		//while(cond.type != 31)//while != )
-		//{
-		//    //std::cout << "type: " << ParserState.Token.type << std::endl;
-		//    //std::cout << "text: " << 
-		//    cond = ParserState.Line.nextToken();
-		//    cl.text += cond.text;
-		//}
-		//cl.tpos = 0;
 		for(char c : ParserState.Line.restText())
 		{
 			switch(c)
@@ -48,56 +41,49 @@ void parse::Keywords::If()
 			}
 		}
 		endCLine0:;
+	} else {
+		unexpectedTokenType("",originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token),{30});
 	}
-	else
-	{
-		//PRINT_DEBUG
-		cond = ParserState.Token;
-		uint64_t otpos = ParserState.Line.tpos;
-		while(cond.type != 40)//while != :
-		{
-			//PRINT_DEBUG
-			cond = ParserState.Line.nextToken();
-			//if(cond.type != 40) {
-			//    cl.text += cond.text;
-			//}
-		}
-		//cl.tpos = 0;
-		ParserState.Line.tpos = otpos;
-		for(char c : ParserState.Line.restText())
-		{
-			//PRINT_DEBUG
-			switch(c)
-			{
-				case(':'):
-					goto endCLine1;
-				default:
-					cl.text.push_back(c);
-			}
-		}
-		endCLine1:;
-	}
+	//std::cout << "condition: " << cl.text << std::endl;
 	cond = cl.nextToken();
+	//std::cout << "if condition check" << std::endl;
 	variable* condition = resolve(cond);
-	compilerBug("unimplemented: if, conditional jump");
+	if(ConditionCode.top() == Condition::True) {
+		//std::cout << "if(true)" << std::endl;
+		runtime::RelativeControlTransfer(ImmediateValue(sc->name+CPE2_SYMBOL_SCOPE_SEP+"body"));
+	} else if(ConditionCode.top() == Condition::False) {
+	} else if(currentArchitecture == Architecture::AMD64) {
+		code->push(std::vector<InstructionComponent>({
+			0x0F,
+			::amd64::opcode::secondary::jcc::rel16_32off((amd64::Condition)ConditionCode.top()),
+			smu::RelocationEntry(0,4,smu::RelocationType::Relative,sc->name+CPE2_SYMBOL_SCOPE_SEP+"body")
+		}));
+	}
+	code->placeSymbol(SymbolType::CodeLocation,0,sc->reentrySymbol);
 	struct RoutineData_T {
 		scope* sc;
 	};
-	RoutineData_T* RoutineData = new RoutineData_T;
-	RoutineData->sc = sc;
+	RoutineData_T* RoutineData = new RoutineData_T; {
+		RoutineData->sc = sc;
+	}
 	Entity::updateCurrentScope(sc);
 	currentScope->BranchCode.push_back(Routine(RoutineData,
 		[](void* __data){
 			RoutineData_T* data = (RoutineData_T*)__data;
+			code->placeSymbol(SymbolType::CodeLocation,0,data->sc->name+CPE2_SYMBOL_SCOPE_SEP+"body");
 			code->push(data->sc->func->code);
+			runtime::RelativeControlTransfer(ImmediateValue(data->sc->reentrySymbol));
 		}
 	));
-	currentScope->Finalize.push_back(Routine(RoutineData,
-		[](void* __data){
-			RoutineData_T* data = (RoutineData_T*)__data;
-			for(Routine& r : data->sc->BranchCode)
-				data->sc->parent->BranchCode.push_back(r);
-		}
-	));
-	compilerBug("unimplemented: if, set return symbol");
+	currentScope->Finalize.push_back(
+		Routine(
+			RoutineData,
+			[](void* __data){
+				RoutineData_T* data = (RoutineData_T*)__data;
+				for(Routine& r : data->sc->BranchCode) {
+					data->sc->parent->BranchCode.push_back(r);
+				}
+			}
+		)
+	);
 }

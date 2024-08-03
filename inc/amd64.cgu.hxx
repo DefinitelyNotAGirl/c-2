@@ -12,6 +12,7 @@ namespace runtime::amd64
 	inline void enter(uint64_t frameSize){}
 	inline void leave(){}
 	variable* UnsignedIntegerAddition(variable* a, variable* b);
+	variable* UnsignedIntegerMultiplication(variable* a, variable* b);
 	void RelativeControlTransfer(ImmediateValue offset);
 	void AbsoluteControlTransfer(ImmediateValue address);
 	uint64_t SaveAll();
@@ -1148,8 +1149,8 @@ namespace amd64
 			constexpr byte rm16_32_64 = 0xF7;
 		}
 		namespace mul{
-			constexpr byte AX__AL__rm8 = 0xF6;
-			constexpr byte rDX__rAX__rm16_32_64 = 0xF7;
+			constexpr byte rm8 = 0xF6;
+			constexpr byte rm16_32_64 = 0xF7;
 		}
 		namespace div{
 			constexpr byte AL__AH__AX__rm8 = 0xF6;

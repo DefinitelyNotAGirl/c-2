@@ -159,6 +159,7 @@ void parse::Keywords::Try()
 			sc->BodyCode.push_back(Routine(RoutineData,
 				[](void* __data){
 					RoutineData_T* data = (RoutineData_T*)__data;
+					code->placeSymbol(SymbolType::CodeLocation,0,data->sc->name+CPE2_SYMBOL_SCOPE_SEP"body");
 					code->push(data->sc->func->code);
 				}
 			));
