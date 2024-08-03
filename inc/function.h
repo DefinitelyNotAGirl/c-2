@@ -42,33 +42,36 @@ namespace smu {
 }
 using smu::section;
 
-enum class primitiveOP : uint64_t
+enum class primitiveOP : uint16_t
 {
-    invalid = 0,
-    add,
-    sub,
-    mul,
-    div,
-    mod,
-    assign,
-    _or,
-    _xor,
-    _and,
-    equal,
-    NotEqual,
-    Greater,
-    GreaterEqual,
-    Less,
-    LessEqual,
-    Not,
-    Inc,
-    Dec,
-    Index,
-    Interrupt,
-    CPUid,
-    PRINTCHAR,
-    PRINTSTR,
-    SYSCALL
+    invalid     = 0x0000,
+	//arithmetic
+    add 		= 0x1000,
+    sub 		= 0x1001,
+    mul 		= 0x1002,
+    div 		= 0x1003,
+    mod 		= 0x1004,
+    _or 		= 0x1005,
+    _xor 		= 0x1006,
+    _and 		= 0x1007,
+	Not 		= 0x1008,
+    Inc 		= 0x1009,
+    Dec 		= 0x100A,
+	//conditionals
+    equal 		= 0x2000,
+    NotEqual 	= 0x2001,
+    Greater 	= 0x2002,
+    GreaterEqual= 0x2003,
+    Less 		= 0x2004,
+    LessEqual 	= 0x2005,
+	//misc
+	assign 		= 0x3000,
+    Index 		= 0x3001,
+    Interrupt 	= 0x3002,
+    CPUid 		= 0x3003,
+    PRINTCHAR 	= 0x3004,
+    PRINTSTR 	= 0x3005,
+    SYSCALL 	= 0x3006,
 };
 
 /*

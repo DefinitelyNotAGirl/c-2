@@ -2,7 +2,7 @@
  * Created Date: Tuesday June 4th 2024
  * Author: Lilith
  * -----
- * Last Modified: Sat Jun 29 2024
+ * Last Modified: Thu Aug 01 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -105,6 +105,18 @@ namespace runtime
 	variable* UnsignedIntegerAddition(variable* a, variable* b)
 	{
 		return amd64::UnsignedIntegerAddition(a, b);
+	}
+
+	/**
+	 * @brief performs unsigned integer multiplication
+	 * 
+	 * @param a first input
+	 * @param b second input
+	 * @return variable holding the result
+	 */
+	variable* UnsignedIntegerMultiplication(variable* a, variable* b)
+	{
+		return amd64::UnsignedIntegerMultiplication(a, b);
 	}
 	
 	void RelativeControlTransfer(ImmediateValue offset)

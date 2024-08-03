@@ -98,6 +98,15 @@ namespace runtime
 	variable* UnsignedIntegerAddition(variable* a, variable* b);
 
 	/**
+	 * @brief performs unsigned integer multiplication
+	 * 
+	 * @param a first input
+	 * @param b second input
+	 * @return variable holding the result
+	 */
+	variable* UnsignedIntegerMultiplication(variable* a, variable* b);
+
+	/**
 	 * @brief transfer control to a relative address
 	 * 
 	 */

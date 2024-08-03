@@ -135,7 +135,8 @@ void parse::Keywords::Catch()
 	sc->Finalize.push_back(Routine(RoutineData,
 		[](void* __data){
 			RoutineData_T* data = (RoutineData_T*)__data;
-			//Entity::ExceptionHandlers.push(data->RestoreExceptionHandler);
+			for(Routine& r : data->sc->BranchCode)
+				data->sc->parent->BranchCode.push_back(r);
 		}
 	));
 	//set return symbol

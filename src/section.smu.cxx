@@ -2,7 +2,7 @@
  * Created Date: Tuesday June 4th 2024
  * Author: Lilith
  * -----
- * Last Modified: Wed Jul 31 2024
+ * Last Modified: Sat Aug 03 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -142,7 +142,7 @@ namespace smu
 	/**
 	 * @brief adds an instruction to the data
 	 * 
-	 * @param Instruction a list of instruction components, added to the data in order this also takes care of creating relocation entries
+	 * @param Instruction a list of instruction components, added to the data in order. This also takes care of creating relocation entries
 	 */
 	void section::push(std::vector<InstructionComponent> Instruction) {
 		for(InstructionComponent& c : Instruction) {
@@ -181,6 +181,8 @@ namespace smu
 					break;
 				}
 				case(InstructionComponentType::Relocation): {
+					c.Reloc.offset += this->size();
+					for(u64 i = 0;i<c.Reloc.size;i++)this->push({0x00});
 					this->Relocations.push_back(c.Reloc);
 					break;
 				}

@@ -1,9 +1,14 @@
 #include "../parser.hxx"
+#include <SMU.h>
+#include <conditions.hxx>
 
 using namespace issues;
+using smu::InstructionComponent;
+using smu::InstructionComponentType;
 
 void parse::Keywords::For()
 {
+	//std::cout << "keyword: for" << std::endl;
 	ParserState.Token = ParserState.Line.nextToken();
 	//construct new scope
 	scope* sc = new scope;
@@ -13,67 +18,84 @@ void parse::Keywords::For()
 	sc->isIndentBased = true;
 	sc->t = scopeType::LOGICAL;
 	sc->func = new function;
-	//sc->parent->conditionalCounter++;
 	*(sc->func) = *(currentScope->func);
 	sc->func->code = new section;
-	//currentScope->reentrySymbol = sc->parent->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
-	//sc->extraCodeBlocks.push_back(&sc->func->code);
-	Entity::updateCurrentScope(sc);
-	compilerBug("unimplemented: for, place symbol currentScope->name");
-	//parse begin line
 	line beginLine = ParserState.Line;
 	beginLine.text = ParserState.Line.restText();
 	beginLine.tpos = 0;
 	beginLine.leadingSpaces+=tabLength;
 	std::vector<line> beginLines = {beginLine};
-	parse::Lines(beginLines);
-	//parse condition line
-	sc = new scope;
-	sc->leadingSpace=currentScope->leadingSpace;
-	sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"body";
-	sc->parent = currentScope;
-	sc->isIndentBased = true;
-	SETBIT_00(sc->miscData);
-	sc->t = scopeType::CONDITIONAL_BLOCK;
-	sc->func = new function;
-	*(sc->func) = *(currentScope->func);
-	sc->func->code = new section;
-	sc->reentrySymbol = sc->parent->name+CPE2_SYMBOL_SCOPE_SEP"reentry";
-	compilerBug("unimplemented: for, set reentry symbol");
 	line conditionLine = ParserState.Lines[++ParserState.LineIterator];
 	token cond = conditionLine.nextToken();
-	variable* condition = resolve(cond);
-	compilerBug("unimplemented: for, conditional jump");
-	//parse end line
-	Entity::updateCurrentScope(sc);
 	line endLine = ParserState.Lines[++ParserState.LineIterator];
 	{
 		uint64_t bi = endLine.text.size()-1;
 		while(endLine.text[bi] != ':' && endLine.text[bi] != '{')
 			bi--;
+		sc->isIndentBased = (endLine.text[bi] == ':');
 		while(endLine.text[bi] != ')')
 			bi--;
 		endLine.text = endLine.text.substr(0,bi);
 	}
 	endLine.leadingSpaces = currentScope->leadingSpace;
 	std::vector<line> endLines = {endLine};
-	parse::Lines(endLines);
-	//prepare for body
+	Entity::updateCurrentScope(sc);
+	//+
+	//+	parse begin line
+	//+
+	{
+		code->placeSymbol(SymbolType::CodeLocation,0,sc->name+CPE2_SYMBOL_SCOPE_SEP+"prologue");
+		parse::Lines(beginLines);
+	}
+	//+
+	//+	parse condition line
+	//+
+	{
+		code->placeSymbol(SymbolType::CodeLocation,0,sc->name+CPE2_SYMBOL_SCOPE_SEP+"condition");
+		variable* condition = resolve(cond);
+		if((u16)ConditionCode.top() == 0xF001) {
+			runtime::RelativeControlTransfer(ImmediateValue(sc->name+CPE2_SYMBOL_SCOPE_SEP+"body"));
+		} else if((u16)ConditionCode.top() == 0xF000) {
+		} else if(currentArchitecture == Architecture::AMD64) {
+			code->push(std::vector<InstructionComponent>({
+				0x0F,
+				::amd64::opcode::secondary::jcc::rel16_32off((amd64::Condition)ConditionCode.top()),
+				smu::RelocationEntry(0,4,smu::RelocationType::Relative,sc->name+CPE2_SYMBOL_SCOPE_SEP+"body")
+			}));
+		}
+	}
+	//+
+	//+	parse end line
+	//+
 	section* endcode = new section;
-	endcode->push(currentScope->func->code);
+	{
+		section* rc = code;
+		code = endcode;
+		code->placeSymbol(SymbolType::CodeLocation,0,sc->name+CPE2_SYMBOL_SCOPE_SEP+"epilogue");
+		parse::Lines(endLines);
+		runtime::RelativeControlTransfer(ImmediateValue(sc->name+CPE2_SYMBOL_SCOPE_SEP+"condition"));
+		code = rc;
+	}
 	struct RoutineData_T {
-		section* endcode;
-		section* body;
 		section* precode;
+		section* body;
+		section* endcode;
 		scope* sc;
 	};
 	RoutineData_T* RoutineData = new RoutineData_T; {
 		RoutineData->sc = sc;
 		RoutineData->endcode = endcode;
-		RoutineData->precode = currentScope->func->code;
+		RoutineData->precode = code;
 		currentScope->func->code = new section;
 		RoutineData->body = currentScope->func->code;
 	}
+	code = currentScope->func->code;
+	currentScope->StartClosure.push_back(Routine(RoutineData,
+		[](void* __data){
+			RoutineData_T* data = (RoutineData_T*)__data;
+			code = new section;
+		}
+	));
 	currentScope->BodyCode.push_back(Routine(RoutineData,
 		[](void* __data){
 			RoutineData_T* data = (RoutineData_T*)__data;
@@ -91,6 +113,7 @@ void parse::Keywords::For()
 	currentScope->Finalize.push_back(Routine(RoutineData,
 		[](void* __data){
 			RoutineData_T* data = (RoutineData_T*)__data;
+			data->sc->parent->func->code->push(code);
 			for(Routine& r : data->sc->BranchCode)
 				data->sc->parent->BranchCode.push_back(r);
 		}
@@ -98,9 +121,6 @@ void parse::Keywords::For()
 	currentScope->Destroy.push_back(Routine(RoutineData,
 		[](void* __data){
 			RoutineData_T* data = (RoutineData_T*)__data;
-			delete data->body;
-			delete data->endcode;
-			delete data->precode;
 		}
 	));
 }

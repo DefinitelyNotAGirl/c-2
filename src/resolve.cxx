@@ -2,7 +2,7 @@
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Thu Jul 18 2024
+ * Last Modified: Fri Aug 02 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -785,7 +785,7 @@ variable* resolve(token& ft)
 						} catch(compilerBug e) {
 							compilerBug::error.pop();
 							e.src = source(currentFile,*t.Line,t);
-							throw e;
+							issues::invoke(e);
 						}
 						currentScope->variables.push_back(out);
 						stack.push_back(token(out));
