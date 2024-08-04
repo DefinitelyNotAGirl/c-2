@@ -16,7 +16,7 @@ void parse::Keywords::For()
 	sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"forloop"+std::to_string(currentScope->forCounter++);
 	sc->parent = currentScope;
 	sc->isIndentBased = true;
-	sc->t = scopeType::LOGICAL;
+	sc->t = scopeType::Loop;
 	sc->func = new function;
 	*(sc->func) = *(currentScope->func);
 	sc->func->code = new section;
@@ -51,7 +51,7 @@ void parse::Keywords::For()
 	//+	parse condition line
 	//+
 	{
-		code->placeSymbol(SymbolType::CodeLocation,0,sc->name+CPE2_SYMBOL_SCOPE_SEP+"condition");
+		code->placeSymbol(SymbolType::CodeLocation,0,sc->name+CPE2_SYMBOL_SCOPE_SEP+"continue");
 		variable* condition = resolve(cond);
 		if((u16)ConditionCode.top() == 0xF001) {
 			runtime::RelativeControlTransfer(ImmediateValue(sc->name+CPE2_SYMBOL_SCOPE_SEP+"body"));
@@ -63,6 +63,7 @@ void parse::Keywords::For()
 				smu::RelocationEntry(0,4,smu::RelocationType::Relative,sc->name+CPE2_SYMBOL_SCOPE_SEP+"body")
 			}));
 		}
+		code->placeSymbol(SymbolType::CodeLocation,0,scope::join({sc->name,"break"}));
 	}
 	//+
 	//+	parse end line
@@ -73,7 +74,7 @@ void parse::Keywords::For()
 		code = endcode;
 		code->placeSymbol(SymbolType::CodeLocation,0,sc->name+CPE2_SYMBOL_SCOPE_SEP+"epilogue");
 		parse::Lines(endLines);
-		runtime::RelativeControlTransfer(ImmediateValue(sc->name+CPE2_SYMBOL_SCOPE_SEP+"condition"));
+		runtime::RelativeControlTransfer(ImmediateValue(sc->name+CPE2_SYMBOL_SCOPE_SEP+"continue"));
 		code = rc;
 	}
 	struct RoutineData_T {

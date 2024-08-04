@@ -15,12 +15,12 @@ void parse::Keywords::While()
 	sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"whileloop"+std::to_string(currentScope->ifCounter++);
 	sc->parent = currentScope;
 	sc->isIndentBased = ParserState.Line.text.back() == ':';
-	sc->t = scopeType::CONDITIONAL_BLOCK;
+	sc->t = scopeType::Loop;
 	sc->func = new function;
 	sc->parent->conditionalCounter++;
 	*(sc->func) = *(currentScope->func);
 	sc->func->code = new section;
-	sc->reentrySymbol = currentScope->name+CPE2_SYMBOL_SCOPE_SEP"conditional"+std::to_string(sc->parent->conditionalCounter)+CPE2_SYMBOL_SCOPE_SEP"reentry";
+	sc->reentrySymbol = scope::join({currentScope->name,"conditional"+std::to_string(sc->parent->conditionalCounter),"continue"});
 	sc->extraCodeBlocks.push_back(sc->func->code);
 	//generate conditional jump code
 	line cl = ParserState.Line;
@@ -59,7 +59,8 @@ void parse::Keywords::While()
 			smu::RelocationEntry(0,4,smu::RelocationType::Relative,sc->name+CPE2_SYMBOL_SCOPE_SEP+"body")
 		}));
 	}
-	struct RoutineData_T {
+	code->placeSymbol(SymbolType::CodeLocation,0,scope::join({sc->name,"break"}));
+	struct RoutineData_T { 
 		scope* sc;
 	};
 	RoutineData_T* RoutineData = new RoutineData_T; {

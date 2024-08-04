@@ -65,7 +65,8 @@ namespace parse {
 		void ElseIf();
 		inline void Switch(){compilerBug("keyword: 'Switch' not implemented");}
 		inline void Case(){compilerBug("keyword: 'Case' not implemented");}
-		inline void Break(){compilerBug("keyword: 'Break' not implemented");}
+		void Break();
+		void Continue();
 		void Try();
 		void Catch();
 		void Throw();

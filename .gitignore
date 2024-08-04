@@ -45,3 +45,4 @@ stdout.txt
 .DS_Store
 .local/
 debug/
+lib/src/libCargparse
