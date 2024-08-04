@@ -16,7 +16,7 @@ void parse::Keywords::Else()
 	sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"else"+std::to_string(currentScope->elseIfCounter++);
 	sc->parent = currentScope;
 	sc->isIndentBased = ParserState.Line.text.back() == ':';
-	sc->t = scopeType::CONDITIONAL_BLOCK;
+	sc->t = scopeType::Else;
 	sc->func = new function;
 	*(sc->func) = *(currentScope->func);
 	sc->func->code = new section;

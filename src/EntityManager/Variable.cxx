@@ -111,9 +111,31 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 		var->usedAutoStorage = true;
 		var->storageArch = currentArchitecture;
 		//+
+		//+ AMD64 global variable
+		//+
+		if(currentArchitecture == Architecture::AMD64 && (currentScope->t == scopeType::GLOBAL || currentScope->t == scopeType::NAMESPACE))
+		{
+			var->storage = new amd64::VariableStorage;
+			amd64::VariableStorage* storage = (amd64::VariableStorage*)var->storage;
+			//+ global memory storage
+			storage->mode = amd64::StorageMode::IndirectImmediate;
+			storage->immediate = ImmediateValue(var->symbol);
+			data.placeSymbol(SymbolType::GlobalVariable,0,var->symbol);
+		}
+		//+
+		//+ AMD64 class member variable
+		//+
+		else if(currentArchitecture == Architecture::AMD64 && (currentScope->t == scopeType::CLASS))
+		{
+			var->storageArch = Architecture::storage_member;
+			var->storage = (void*)(currentScope->cl->size);
+			currentScope->cl->size += var->dataType->size;
+			currentScope->cl->members.push_back(*var);
+		}
+		//+
 		//+ AMD64 local variable
 		//+
-		if(currentArchitecture == Architecture::AMD64 && (currentScope->t == scopeType::FUNCTION  || currentScope->t == scopeType::LOGICAL || currentScope->t == scopeType::CONDITIONAL_BLOCK || currentScope->t == scopeType::TRY || currentScope->t == scopeType::CATCH))
+		else if(currentArchitecture == Architecture::AMD64)
 		{
 			var->storage = new amd64::VariableStorage;
 			amd64::VariableStorage* storage = (amd64::VariableStorage*)var->storage;
@@ -138,28 +160,6 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 				uint64_t offset = currentScope->func->stack->push(var->dataType->size);
 				storage->displacement = ImmediateValue(negative(offset));
 			}
-		}
-		//+
-		//+ AMD64 global variable
-		//+
-		else if(currentArchitecture == Architecture::AMD64 && (currentScope->t == scopeType::GLOBAL || currentScope->t == scopeType::NAMESPACE))
-		{
-			var->storage = new amd64::VariableStorage;
-			amd64::VariableStorage* storage = (amd64::VariableStorage*)var->storage;
-			//+ global memory storage
-			storage->mode = amd64::StorageMode::IndirectImmediate;
-			storage->immediate = ImmediateValue(var->symbol);
-			data.placeSymbol(SymbolType::GlobalVariable,0,var->symbol);
-		}
-		//+
-		//+ AMD64 class member variable
-		//+
-		else if(currentArchitecture == Architecture::AMD64 && (currentScope->t == scopeType::CLASS))
-		{
-			var->storageArch = Architecture::storage_member;
-			var->storage = (void*)(currentScope->cl->size);
-			currentScope->cl->size += var->dataType->size;
-			currentScope->cl->members.push_back(*var);
 		}
 		else
 		{

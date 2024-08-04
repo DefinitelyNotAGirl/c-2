@@ -2,7 +2,7 @@
  * Created Date: Wednesday May 22nd 2024
  * Author: Lilith
  * -----
- * Last Modified: Fri Jul 26 2024
+ * Last Modified: Sun Aug 04 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -558,6 +558,30 @@ namespace issues {
 		std::stack<int(*)(nonImmediateLitop e)> nonImmediateLitop::error;
 		std::stack<void(*)(nonImmediateLitop e)> nonImmediateLitop::warn;
 		std::stack<void(*)(nonImmediateLitop e)> nonImmediateLitop::info;
+	#endif
+
+	//+
+	//+
+	//+ error for when the break count is not a constant expression
+	//+
+	//+
+	class NonConstexprBreakCount : public fatal {
+	public:
+		static std::stack<int(*)(NonConstexprBreakCount e)> error;
+		static std::stack<void(*)(NonConstexprBreakCount e)> warn;
+		static std::stack<void(*)(NonConstexprBreakCount e)> info;
+		NonConstexprBreakCount(std::string msg, origin orig, source src)
+		{
+			this->msg = msg;
+			this->trace.push_front(orig);
+			this->src = src;
+			invoke(*this);
+		}
+	};
+	#if defined(ISSUES_CXX)
+		std::stack<int(*)(NonConstexprBreakCount e)> NonConstexprBreakCount::error;
+		std::stack<void(*)(NonConstexprBreakCount e)> NonConstexprBreakCount::warn;
+		std::stack<void(*)(NonConstexprBreakCount e)> NonConstexprBreakCount::info;
 	#endif
 //!####################################################################################################################
 //!####################################################################################################################

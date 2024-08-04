@@ -81,9 +81,9 @@
 			"\t}",
 			"};",
 			"#if defined(ISSUES_CXX)",
-			"\tstatic std::stack<int(*)($2 e)> $2::error;",
-			"\tstatic std::stack<void(*)($2 e)> $2::warn;",
-			"\tstatic std::stack<void(*)($2 e)> $2::info;",
+			"\tstd::stack<int(*)($2 e)> $2::error;",
+			"\tstd::stack<void(*)($2 e)> $2::warn;",
+			"\tstd::stack<void(*)($2 e)> $2::info;",
 			"#endif"
 		]
 	},

@@ -14,6 +14,7 @@ void parse::Keyword()
 	else if(ParserState.Token.text == "switch")parse::Keywords::Switch();
 	else if(ParserState.Token.text == "case")parse::Keywords::Case();
 	else if(ParserState.Token.text == "break")parse::Keywords::Break();
+	else if(ParserState.Token.text == "continue")parse::Keywords::Continue();
 	else if(ParserState.Token.text == "try")parse::Keywords::Try();
 	else if(ParserState.Token.text == "catch")parse::Keywords::Catch();
 	else if(ParserState.Token.text == "throw")parse::Keywords::Throw();

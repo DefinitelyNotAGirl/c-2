@@ -34,7 +34,23 @@
 
 enum class scopeType : uint64_t
 {
-    INVALID,GLOBAL,FUNCTION,CLASS,NAMESPACE,ENUM,CONDITIONAL_BLOCK,LOGICAL,DUMMY,TRY_CATCH,TRY,CATCH
+    INVALID,
+	GLOBAL,
+	FUNCTION,
+	CLASS,
+	NAMESPACE,
+	ENUM,
+	CONDITIONAL_BLOCK,
+	LOGICAL,
+	DUMMY,
+	TRY_CATCH,
+	TRY,
+	CATCH,
+	Loop,
+	Case,
+	If,
+	ElseIf,
+	Else,
 };
 
 /*
@@ -86,4 +102,13 @@ public:
 	std::vector<Routine> ExceptionHandlerCode;//do not execute (Finalize decides what to do with this)
     //misc
     std::string reentrySymbol = "";
+
+	static std::string join(std::vector<std::string> namepieces) {
+		std::string res;
+		for(std::string& piece : namepieces) {
+			res += piece + ".";
+		}
+		res.pop_back();
+		return res;
+	}
 };

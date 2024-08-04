@@ -15,7 +15,7 @@ void parse::Keywords::If() {
 	sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"if"+std::to_string(currentScope->ifCounter++);
 	sc->parent = currentScope;
 	sc->isIndentBased = ParserState.Line.text.back() == ':';
-	sc->t = scopeType::CONDITIONAL_BLOCK;
+	sc->t = scopeType::If;
 	sc->func = new function;
 	sc->parent->conditionalCounter++;
 	*(sc->func) = *(currentScope->func);

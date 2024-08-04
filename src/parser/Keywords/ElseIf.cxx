@@ -14,7 +14,7 @@ void parse::Keywords::ElseIf() {
 	sc->name=currentScope->name+CPE2_SYMBOL_SCOPE_SEP"elseif"+std::to_string(currentScope->elseIfCounter++);
 	sc->parent = currentScope;
 	sc->isIndentBased = ParserState.Line.text.back() == ':';
-	sc->t = scopeType::CONDITIONAL_BLOCK;
+	sc->t = scopeType::ElseIf;
 	sc->func = new function;
 	*(sc->func) = *(currentScope->func);
 	sc->func->code = new section;
