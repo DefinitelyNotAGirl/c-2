@@ -29,8 +29,8 @@
  */
 #pragma once
 
-#include <extint.hxx>
-#include <environment.hxx>
+#include "extint.hxx"
+#include "environment.hxx"
 #include <string>
 #include <vector>
 

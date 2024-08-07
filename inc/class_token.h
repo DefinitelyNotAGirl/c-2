@@ -30,8 +30,8 @@
 #pragma once
 
 #include <string>
-#include <extint.hxx>
-#include <class_variable.h>
+#include "extint.hxx"
+#include "class_variable.h"
 
 class line;
 

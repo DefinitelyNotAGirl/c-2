@@ -39,11 +39,11 @@
 #include <iostream>
 #define packed __attribute__((packed))
 #define PRINT_DEBUG std::cout << "\033[37m[DEBUG]\033[0m " __FILE__  << ":" <<std::dec<< __LINE__ << std::endl;
-#include <extint.hxx>
+#include "extint.hxx"
 #include <cstdlib>
 #include <cstring>
-#include <bits.h>
-#include <buildinfo.h>
+#include "bits.h"
+#include "buildinfo.h"
 
 namespace pragma{
     void pop();

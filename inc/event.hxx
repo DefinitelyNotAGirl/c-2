@@ -1,7 +1,7 @@
 #include <string>
 #include <vector>
-#include <extint.hxx>
-#include <class_token.h>
+#include "extint.hxx"
+#include "class_token.h"
 
 template<typename EventData_T>
 class EventHandler {
