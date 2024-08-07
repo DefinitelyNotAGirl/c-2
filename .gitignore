@@ -46,3 +46,5 @@ stdout.txt
 .local/
 debug/
 lib/src/libCargparse
+cp2-noext
+cp2-archive
