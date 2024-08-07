@@ -2,7 +2,7 @@
  * Created Date: Sunday July 30th 2023
  * Author: Lilith
  * -----
- * Last Modified: Fri Aug 02 2024
+ * Last Modified: Wed Aug 07 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -44,6 +44,7 @@
 #include <output.hxx>
 #include <ELF64.hxx>
 #include <Parser.hxx>
+#include <event.hxx>
 
 #define IM_NOT_STUCK 0
 
@@ -189,7 +190,7 @@ function* getTypeCastFunction(type* in, type* out)//? only checks for explicit c
 			#endif
 			scope* cs = currentScope;
 			Entity::updateCurrentScope(globalScope);
-			parse::Lines(stringify);
+			parse::Lines(stringify,"compiler-generated-code");
 			Entity::updateCurrentScope(cs);
 		}
 		return getTypeCastFunction(in,out);
@@ -306,6 +307,13 @@ static variable* resolveInteger(token& t)
 		}
 	}
 	skipLitopCheck:;
+	Event::Data::TokenIdentified EventData;
+	token numberToken = t;
+	numberToken.type = 61;
+	numberToken.text = numberToken.text.substr(0,numberToken.text.length()+(numhs*2));
+	EventData.Token = &numberToken;
+	EventData.obj = (void*)value;
+	Event::TokenIdentified.fire(&EventData);
 	variable* var = new variable;
 	var->name = getNewVariableName();
 	var->dataType = defaultUnsignedIntegerType;
@@ -419,6 +427,7 @@ static variable* resolveString(token& t)
 				line exprl = *t.Line;
 				exprl.text = "";
 				exprl.tpos = 0;
+				exprl.twhitespace += ParserState.Token.tcol + i + 1;
 				uint64_t bracec = 0;
 				i+=2;
 				while(true)

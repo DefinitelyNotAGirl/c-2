@@ -16,7 +16,7 @@ void parse::Directives::Include()
 				std::string rstFile = currentFile;
 				currentFile = inc;
 				auto Lines = getLines(inc);
-				parse::Lines(Lines);
+				parse::Lines(Lines,inc);
 				currentFile = rstFile;
 				//resetScope();
 				includedFiles.push_back(inc);
@@ -41,7 +41,7 @@ void parse::Directives::Include()
 					std::string rstFile = currentFile;
 					currentFile = inc;
 					auto Lines = getLines(inc);
-					parse::Lines(Lines);
+					parse::Lines(Lines,inc);
 					currentFile = rstFile;
 					//resetScope();
 					includedFiles.push_back(inc);
@@ -55,7 +55,7 @@ void parse::Directives::Include()
 					std::string rstFile = currentFile;
 					currentFile = inc;
 					auto Lines = getLines(inc);
-					parse::Lines(Lines);
+					parse::Lines(Lines,inc);
 					currentFile = rstFile;
 					//resetScope();
 					includedFiles.push_back(inc);

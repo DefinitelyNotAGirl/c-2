@@ -10,7 +10,6 @@ void parse::Keywords::Return()
 	variable* retVal = resolve(ParserState.Token);
 	std::vector<variable*> args = {currentScope->func->returnValue,retVal};
 	function* copyFunc = getFunction("operator=",args);
-	std::cout << ParserState.Line.text << std::endl;
 	call(copyFunc,args);
 	if(currentArchitecture == Architecture::AMD64)
 	{

@@ -1,10 +1,12 @@
 #include "parser.hxx"
 
+extern std::string __reqFileVSTC;
 void parse::Lines(std::vector<line>& Lines, std::string File)
 {
 	ParserState_T SavedState = ParserState;
-	if(!File.empty())
-		ParserState.File = File;
+	//if(!File.empty()) {
+	ParserState.File = File;
+	//}
 	ParserState.Lines = Lines;
 	ParserState.LineIterator = 0;
 	try {

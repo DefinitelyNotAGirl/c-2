@@ -12,6 +12,7 @@
 				"-Iinc","--fno-libc","-NOD",
 				"-S","-c",
 				"-Wno-unimplemented",
+				"--vstc",
 				"-o","build/main.o",
 				"${input:sourceFile}"
 			],
@@ -75,23 +76,23 @@
 		},
     ],
 	"inputs": [
-    	{
-      		"id": "sourceFile",
-      		"description": "select a source file to run the compiler on",
-      		"type": "pickString",
+		{
+			"id": "sourceFile",
+			"description": "select a source file to run the compiler on",
+			"type": "pickString",
 			"options": [
 				"src/main.c2",
 				"src/cpuid.c2",
 				"src/io.c2",
 			],
-      		"default": "src/main.c2"
-    	},
+			"default": "src/main.c2"
+		},
 		{
 			"id": "workingDirectory",
 			"description": "select a working directory in which to run the compiler",
 			"type": "pickString",
 			"options": ["${workspaceFolder}/../cpe2Example/","${workspaceFolder}/../stdcpe2/"],
 			"default": "${workspaceFolder}/../cpe2Example/"
-	  	}
-  	]
+		}
+	]
 }

@@ -33,6 +33,8 @@ void parse::Keywords::ElseIf() {
 	cl.tpos = 0;
 	token cond;
 	ParserState.NextToken();
+	cl.twhitespace = ParserState.Token.tcol+4;
+	//std::cout << "tcol: " << ParserState.Token.tcol << std::endl;
 	if(ParserState.Token.type == 30) {
 		cond = ParserState.Token;
 		for(char c : ParserState.Line.restText())

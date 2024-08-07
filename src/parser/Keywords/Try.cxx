@@ -72,7 +72,7 @@ void parse::Keywords::Try()
 				data->sc->parent->func->code->push(code);
 				for(Routine& r : data->sc->BranchCode)
 					data->sc->parent->BranchCode.push_back(r);
-				std::cout << "handle: " << data->sc->name+CPE2_SYMBOL_SCOPE_SEP+"handleexception" << std::endl;
+				//std::cout << "handle: " << data->sc->name+CPE2_SYMBOL_SCOPE_SEP+"handleexception" << std::endl;
 				data->sc->parent->BranchCode.push_back(Routine(data,
 					[](void* __data){
 						RoutineData_T* data = (RoutineData_T*)__data;

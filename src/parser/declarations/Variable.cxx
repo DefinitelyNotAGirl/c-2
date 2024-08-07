@@ -1,4 +1,5 @@
 #include "../parser.hxx"
+#include <event.hxx>
 
 void parse::Declaration::Variable()
 {
@@ -48,4 +49,9 @@ void parse::Declaration::Variable()
 			break;
 		}
 	}
+	Event::Data::TokenIdentified EventData;
+	ParserState.DeclarationData.NameToken.type = 10;
+	EventData.Token = &ParserState.DeclarationData.NameToken;
+	EventData.obj = var;
+	Event::TokenIdentified.fire(&EventData);
 }

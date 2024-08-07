@@ -130,7 +130,19 @@
 			"/**",
 			" * @brief $2",
 			" */",
-			"extern Event_T<Data::$1> $1;"
+			"global Event_T<Data::$1> $1;"
+		]
+	},
+	"new event handler": {
+		"prefix": "event handler",
+		"body": [
+			"Event::$1.EventHandlers.push_back(",
+			"\tEventHandler<Event::Data::$1>(",
+			"\t\t[](void* HandlerData, Event::Data::$1* EventData) {",
+			"\t\t\t$0",
+			"\t\t}",
+			"\t)",
+			");"
 		]
 	}
 }
