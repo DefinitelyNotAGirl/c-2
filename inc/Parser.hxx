@@ -1,11 +1,11 @@
 #pragma once
-#include <class_line.h>
-#include <class_token.h>
-#include <class_scope.h>
+#include "class_line.h"
+#include "class_token.h"
+#include "class_scope.h"
 #include <stack>
 #include <vector>
 #include <string>
-#include <EntityManagement.hxx>
+#include "EntityManagement.hxx"
 
 #ifdef PARSER_IMPLEMENTATION
 	#define global

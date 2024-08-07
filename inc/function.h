@@ -31,11 +31,11 @@
 
 struct castFunction;
 
-#include <class_type.h>
-#include <compiler.h>
-#include <stackframe.hxx>
-#include <cpustate.hxx>
-#include <colors.h>
+#include "class_type.h"
+#include "compiler.h"
+#include "stackframe.hxx"
+#include "cpustate.hxx"
+#include "colors.h"
 
 namespace smu {
 	class section;

@@ -29,7 +29,7 @@
  */
 #pragma once
 
-#include <compiler.h>
+#include "compiler.h"
 
 void defaultFormat_addScope(uint64_t fID, scope* sc);
 void defaultFormat_addClass(uint64_t fID, type* t);

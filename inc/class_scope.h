@@ -28,9 +28,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #pragma once
-#include <compiler.h>
+#include "compiler.h"
 #include <map>
-#include <Routine.hxx>
+#include "Routine.hxx"
 
 enum class scopeType : uint64_t
 {

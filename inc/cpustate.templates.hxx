@@ -1,6 +1,6 @@
 //+ intellisense shenanigans
 #ifndef cpustate_main
-#include <cpustate.hxx>
+#include "cpustate.hxx"
 #endif
 
 template<typename T>

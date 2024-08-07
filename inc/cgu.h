@@ -2,11 +2,11 @@
 #include <cstdint>
 #include <string>
 #include <vector>
-//#include <class_variable.h>
-//#include <function.h>
+//#include "class_variable.h"
+//#include "function.h"
 class function;
 class variable;
-#include <issues.hxx>
+#include "issues.hxx"
 namespace cgu
 {
 	enum class SymbolType : uint8_t {

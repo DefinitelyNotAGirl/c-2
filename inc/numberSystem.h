@@ -30,7 +30,7 @@
 #pragma once
 
 #include <string>
-#include <stdint.h>
+#include "stdint.h"
 
 extern std::string numberSystemNames[256];
 extern uint64_t(*numberSystems[256])(std::string& text, uint64_t* numlen);

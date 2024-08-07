@@ -31,24 +31,23 @@
 
 class ABI;
 
-#include <common.h>
-
-#include <options.h>
-#include <SMU.h>
-#include <arch.h>
-#include <class_variable.h>
-#include <class_token.h>
-#include <class_line.h>
-#include <class_type.h>
-#include <class_litop.h>
-#include <function.h>
-#include <class_scope.h>
+#include "common.h"
+#include "options.h"
+#include "SMU.h"
+#include "arch.h"
+#include "class_variable.h"
+#include "class_token.h"
+#include "class_line.h"
+#include "class_type.h"
+#include "class_litop.h"
+#include "function.h"
+#include "class_scope.h"
 #include <stack>
-#include <warning.h>
-#include <template.h>
-#include <ABI.h>
+#include "warning.h"
+#include "template.h"
+#include "ABI.h"
 #include <sstream>
-#include <system.h>
+#include "system.h"
 
 extern std::vector<castFunction*> castFunctions;
 #define currentFile ParserState.File
