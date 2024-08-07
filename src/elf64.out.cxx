@@ -93,10 +93,8 @@ static void GenerateRelaSection(std::string name,section* s)
 //+####################################################################################################################
 static void addSection(std::string name, section* s,uint64_t Flags,elf64::SectionType type,bool generateRela)
 {
-	if(s->size() == 0)
-	{
-		std::cout << "empty section: " << name << std::endl;
-		//return;
+	if(s->size() == 0) {
+		//std::cout << "empty section: " << name << std::endl;
 	}
 	uint64_t namePos = 0;
 	if(name != "")
@@ -405,7 +403,7 @@ void output::generateElf64()
 	//, generate header
 	//,
 	{
-		std::cout << "generating header..." << std::endl;
+		//std::cout << "generating header..." << std::endl;
 		elf64::Header* header = (elf64::Header*)headerBuffer;
 		header->Magic = elf64::Magic;
 		for(uint64_t i = 0;i<7;i++)
@@ -434,7 +432,7 @@ void output::generateElf64()
 	//, generate null entry
 	//,
 	{
-		std::cout << "generating null entry..." << std::endl;
+		//std::cout << "generating null entry..." << std::endl;
 		memset(headerBuffer,0x00,sizeof(elf64::SectionHeader));
 		headerOffset+=sizeof(elf64::SectionHeader);
 	}
@@ -444,7 +442,7 @@ void output::generateElf64()
 	uint64_t i = sh_count_initial;
 	for(eos& s : outputSections)
 	{
-		std::cout << "generating section "<<strtab.data+s.name<<"..." << std::endl;
+		//std::cout << "generating section "<<strtab.data+s.name<<"..." << std::endl;
 		//+
 		//+ header
 		//+
@@ -490,19 +488,4 @@ void output::generateElf64()
 	//std::cout << "closing file..." << std::endl;
 	fclose(f);
 	//std::cout << "done." << std::endl;
-	//,
-	//, show outputs
-	//,
-	if(false){
-		std::cout << "\033[33m>>>>>>>>>>>> elflint <<<<<<<<<<<<\033[0m" << std::endl;
-		system("eu-elflint test.elf64");
-		std::cout << "\033[33m>>>>>>>>>>>> readelf <<<<<<<<<<<<\033[0m" << std::endl;
-		system("eu-readelf -a test.elf64");
-		std::cout << "\033[33m>>>>>>>>>>>> objdump <<<<<<<<<<<<\033[0m" << std::endl;
-		system("objdump -d -M amd64 -M intel -M intel-mnemonic --no-show-raw-insn --visualize-jumps=extended-color --disassembler-color=extended test.elf64");
-		std::cout << "\033[33m>>>>>>>>>>>> ld <<<<<<<<<<<<\033[0m" << std::endl;
-		system("ld test.elf64 -o test.exe");
-		std::cout << "\033[33m>>>>>>>>>>>> objdump <<<<<<<<<<<<\033[0m" << std::endl;
-		system("objdump -d -M amd64 -M intel -M intel-mnemonic --no-show-raw-insn --visualize-jumps=extended-color --disassembler-color=extended test.exe");
-	}
 }

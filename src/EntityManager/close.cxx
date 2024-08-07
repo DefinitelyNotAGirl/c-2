@@ -13,7 +13,7 @@ using namespace issues;
  */
 bool Entity::close(scope* ts)
 {
-	std::cout << "closing scope: " << ts->name << std::endl;
+	//std::cout << "closing scope: " << ts->name << std::endl;
 	for(Routine& r : ts->StartClosure)r.run();
 	for(Routine& r : ts->Prologue)r.run();
 	for(Routine& r : ts->BodyCode)r.run();
@@ -31,7 +31,7 @@ bool Entity::close(scope* ts)
 		{
 			return false;
 		}
-		std::cout << "detected end of try-catch clause, double closing scope" << std::endl;
+		//std::cout << "detected end of try-catch clause, double closing scope" << std::endl;
 		return true;
 	}
 	return false;

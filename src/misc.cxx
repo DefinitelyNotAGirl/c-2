@@ -2,7 +2,7 @@
  * Created Date: Monday July 31st 2023
  * Author: Lilith
  * -----
- * Last Modified: Sat Aug 03 2024
+ * Last Modified: Sun Aug 04 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -664,7 +664,7 @@ type* getType(std::string name) {
 		lines.push_back(compLine("primitiveMod primitiveInPlace void operator%=("+name+",u64);"));
 		lines.push_back(compLine("primitiveMod primitiveInPlace void operator%=("+name+","+name+");"));
 		lines.push_back(compLine("primitiveArrayIndex primitiveInPlace "+t->valueType->name+" operator[]("+name+",u64);"));
-		parse::Lines(lines);
+		parse::Lines(lines,"compiler-generated-code");
 		return t;
 	}
 	if (name.back() == '&') {

@@ -28,6 +28,7 @@ void parse::Keywords::While()
 	cl.tpos = 0;
 	token cond;
 	ParserState.NextToken();
+	cl.twhitespace += ParserState.Token.tcol;
 	if(ParserState.Token.type == 30) {
 		cond = ParserState.Token;
 		for(char c : ParserState.Line.restText())

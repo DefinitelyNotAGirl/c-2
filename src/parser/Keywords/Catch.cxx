@@ -2,6 +2,7 @@
 
 #include <output.hxx>
 #include <cgu.h>
+#include <event.hxx>
 
 void parse::Keywords::Catch() 
 {
@@ -62,6 +63,11 @@ void parse::Keywords::Catch()
 			compilerBug("unsupported current architecture: "+std::to_string((uint64_t)currentArchitecture));
 		var->name = ParserState.Token.text;
 		sc->variables.push_back(var);
+		Event::Data::TokenIdentified EventData;
+		ParserState.Token.type = 60;
+		EventData.Token = &ParserState.Token;
+		EventData.obj = var;
+		Event::TokenIdentified.fire(&EventData);
 	}
 	//,
 	//,	check body type

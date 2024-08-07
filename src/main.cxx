@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Fri Aug 02 2024
+ * Last Modified: Sun Aug 04 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -79,6 +79,7 @@ void warn_init();
 void error_init();
 void install_crash_handlers();
 
+std::vector<Routine> PostCLIRoutines;
 int main(int argc, char** argv)
 {
 	install_crash_handlers();
@@ -119,6 +120,9 @@ int main(int argc, char** argv)
     initWarnings();
     setDefaults();
     cliOptions(argc, argv);
+	for(Routine& r : PostCLIRoutines) {
+		r.run();
+	}
     if(options::ddebug)
     {
         std::cout << "#\n#\n#\n#" << "c+=2 compiler running" << "\n#\n#\n#" << std::endl;
@@ -291,6 +295,7 @@ int main(int argc, char** argv)
         std::vector<line> lines = getLines(i);
         if(options::vstc || options::vsls)
             __reqFileVSTC = currentFile;
+		__reqFileVSTC = i;
         parse::Lines(lines,i);
         genOutput(i);
         if(options::docDir != "")
@@ -302,7 +307,7 @@ int main(int argc, char** argv)
             f->write(1,oname);
         }
     }
-	std::cout << "compiler done" << std::endl;
+	//std::cout << "compiler done" << std::endl;
 	if(issues::ErrorCount != 0)
 		return -1;
     return 0;

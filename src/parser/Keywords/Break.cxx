@@ -14,8 +14,8 @@ void parse::Keywords::Break() {
 	}
 	scope* sc = currentScope;
 	while(BreakCount > 0) {
-		std::cout << "sc: " << sc->name << std::endl;
-		std::cout << "BreakCount: " << BreakCount << std::endl;
+		//std::cout << "sc: " << sc->name << std::endl;
+		//std::cout << "BreakCount: " << BreakCount << std::endl;
 		if(sc->t == scopeType::Loop || sc->t == scopeType::Case) {
 			BreakCount--;
 		}

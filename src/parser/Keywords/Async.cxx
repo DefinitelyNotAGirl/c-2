@@ -27,6 +27,7 @@ void parse::Keywords::Async()
 		{
 			ivLine.tpos = 0;
 			ivLine.text = ParserState.Token.text;
+			ivLine.twhitespace += ParserState.Token.tcol;
 		}
 		//dump("resolving",&ivLine,"");
 		token ivt = ivLine.nextToken();
@@ -383,7 +384,7 @@ void parse::Keywords::Async()
 			v_null.dataType = defaultUnsignedIntegerType;
 			std::vector<variable*> args = {&v_null};
 			function* fexit = getFunction("exit",args);
-			std::cout << "fexit: " << fexit->expression_ansi() << std::endl;
+			//std::cout << "fexit: " << fexit->expression_ansi() << std::endl;
 			call(fexit,args);
 		}
 	));

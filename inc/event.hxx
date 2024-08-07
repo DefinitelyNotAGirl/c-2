@@ -1,6 +1,7 @@
 #include <string>
 #include <vector>
 #include <extint.hxx>
+#include <class_token.h>
 
 template<typename EventData_T>
 class EventHandler {
@@ -148,4 +149,15 @@ namespace Event {
 	 * @brief Fired when a variables constructor is ran. If the destructor is a non-primitive function a seperate Call event is Fired.
 	 */
 	global Event_T<Data::DestroyVariable> DestroyVariable;
+	namespace Data {
+		class TokenIdentified {
+		public:
+			token* Token;
+			void* obj;
+		};
+	}
+	/**
+	 * @brief fired when a token is itendtified
+	 */
+	global Event_T<Data::TokenIdentified> TokenIdentified;
 }

@@ -1,4 +1,5 @@
 #include "../parser.hxx"
+#include <event.hxx>
 
 void parse::Declaration::Class()
 {
@@ -43,12 +44,17 @@ void parse::Declaration::Class()
 	}
 	type* Type = nullptr;
 	if (ParserState.Token.type == 40 || ParserState.Token.type == 36) {
-		Entity::startTypeDefinition(ParserState.Attributes,ParserState.DeclarationData.NameToken.text,inherit,ParserState.Token.type == 40);
+		Type = Entity::startTypeDefinition(ParserState.Attributes,ParserState.DeclarationData.NameToken.text,inherit,ParserState.Token.type == 40);
 	} else if (ParserState.Token.type == 41) {
-		Entity::declareType(ParserState.Attributes,ParserState.DeclarationData.NameToken.text,inherit);
+		Type = Entity::declareType(ParserState.Attributes,ParserState.DeclarationData.NameToken.text,inherit);
 	} else {
 		unexpectedTokenType("",originCoreHere,source(currentFile,ParserState.Line,ParserState.Token),{40,41});
 	}
+	Event::Data::TokenIdentified EventData;
+	ParserState.DeclarationData.NameToken.type = 9;
+	EventData.Token = &ParserState.DeclarationData.NameToken;
+	EventData.obj = (void*)Type;
+	Event::TokenIdentified.fire(&EventData);
 	//if(templateMode == 0)
 	//{
 	//	declareDwarfType(ntype);

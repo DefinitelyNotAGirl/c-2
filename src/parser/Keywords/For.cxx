@@ -24,10 +24,18 @@ void parse::Keywords::For()
 	beginLine.text = ParserState.Line.restText();
 	beginLine.tpos = 0;
 	beginLine.leadingSpaces+=tabLength;
+	beginLine.twhitespace = ParserState.Token.tcol+ParserState.Token.text.length();
+	//std::cout << "ParserState.Line.twhitespace: " << ParserState.Line.twhitespace << std::endl;
+	//std::cout << "beginLine.twhitespace: " << beginLine.twhitespace << std::endl;
+	//std::cout << "beginLine.nextToken.tcol: " << beginLine.nextToken().tcol << std::endl;
+	//beginLine.tpos = 0;
+	//std::cout << "beginLine.nextToken.text: " << beginLine.nextToken().text << std::endl;
+	//beginLine.tpos = 0;
 	std::vector<line> beginLines = {beginLine};
 	line conditionLine = ParserState.Lines[++ParserState.LineIterator];
-	token cond = conditionLine.nextToken();
+	conditionLine.twhitespace += beginLine.twhitespace+beginLine.text.length();
 	line endLine = ParserState.Lines[++ParserState.LineIterator];
+	endLine.twhitespace += conditionLine.twhitespace+conditionLine.text.length();
 	{
 		uint64_t bi = endLine.text.size()-1;
 		while(endLine.text[bi] != ':' && endLine.text[bi] != '{')
@@ -51,6 +59,7 @@ void parse::Keywords::For()
 	//+	parse condition line
 	//+
 	{
+		token cond = conditionLine.nextToken();
 		code->placeSymbol(SymbolType::CodeLocation,0,sc->name+CPE2_SYMBOL_SCOPE_SEP+"continue");
 		variable* condition = resolve(cond);
 		if((u16)ConditionCode.top() == 0xF001) {

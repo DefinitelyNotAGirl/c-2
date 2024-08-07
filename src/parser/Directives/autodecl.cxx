@@ -181,6 +181,6 @@ void parse::Directives::Autodecl()
 				gLines.push_back(l);
 			}
 		}
-		if (gLines.size() > 0) parse::Lines(gLines);
+		if (gLines.size() > 0) parse::Lines(gLines,"compiler-generated-code");
 	}
 }

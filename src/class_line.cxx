@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Fri Jul 26 2024
+ * Last Modified: Mon Aug 05 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -35,6 +35,7 @@
 #include <issues.hxx>
 #include <dump.hxx>
 #include <Parser.hxx>
+#include <event.hxx>
 
 using namespace issues;
 
@@ -74,6 +75,7 @@ using namespace issues;
 // 50 - template arg type
 /**/
 // 60 - parameter (gets changed to 10 before return)
+// 61 - number (is never returned from tokenType, only used for Event::TokenIdentification)
 
 extern std::string __reqFileVSTC;
 
@@ -319,6 +321,7 @@ uint64_t tokenType(std::string& s)
 
 void sendVstcToken(token& t)
 {
+	return;
 	t.type = tokenType(t.text);
 	if(options::vstc && currentFile == __reqFileVSTC && !vstcDisableSend && t.lineNum != 0)
 	{
@@ -680,7 +683,7 @@ token line::nextToken(bool saveInfo)
 		this->ccol = t.col+t.text.length();
 	//if(currentFile == __reqFileVSTC)std::cout << "token: \"" << t.text << "\"" << std::endl;
 	//if(currentFile == __reqFileVSTC)std::cout << "new ccol: " << this->ccol << std::endl;
-	if(options::vstc && currentFile == __reqFileVSTC && !vstcDisableSend && t.lineNum != 0)
+	if(options::vstc && currentFile == __reqFileVSTC && !vstcDisableSend && t.lineNum != 0 && false)
 	{
 		std::string ID = "0000";
 		std::string mdata = "";
@@ -712,6 +715,12 @@ token line::nextToken(bool saveInfo)
 		}
 		std::cout << ID << '\x0c' << t.lineNum <<'\x0c'<< t.tcol <<'\x0c'<< t.text.length() <<'\x0c'<<t.text<<mdata<< '\n';
 		VSTC_NOSEND:;
+	}
+	if(t.type != 1) {
+		Event::Data::TokenIdentified EventData;
+		EventData.Token = &t;
+		EventData.obj = ltobj;
+		Event::TokenIdentified.fire(&EventData);
 	}
 	if(t.type == 60)
 		t.type = 10;//change to variable name before returning to compiler

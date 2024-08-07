@@ -1,4 +1,5 @@
 #include "../parser.hxx"
+#include <event.hxx>
 
 void parse::Declaration::Function()
 {
@@ -31,11 +32,16 @@ void parse::Declaration::Function()
 		}
 		ParserState.NextToken();
 		switch (ParserState.Token.type) {
-			case(1):
+			case(1): {
 				arg->name = ParserState.Token.text;
+				Event::Data::TokenIdentified EventData;
+				ParserState.Token.type = 60;
+				EventData.Token = &ParserState.Token;
+				EventData.obj = arg;
+				Event::TokenIdentified.fire(&EventData);
 				ParserState.NextToken();
 				break;
-			case(31):
+			} case(31):
 				arguments.push_back(arg);
 				goto FUNCTIONNOARGS;
 				break;
@@ -50,8 +56,9 @@ void parse::Declaration::Function()
 	}
 	FUNCTIONNOARGS:;
 	ParserState.NextToken();
+	function* func;
 	if (ParserState.Token.type == 40 || ParserState.Token.type == 36) {
-		Entity::startFunctionDefinition(
+		func = Entity::startFunctionDefinition(
 			ParserState.Attributes,
 			ParserState.DeclarationData.NameToken.text,
 			arguments,
@@ -59,11 +66,16 @@ void parse::Declaration::Function()
 			ParserState.Token.type == 40
 		);
 	} else if (ParserState.Token.type == 41) {
-		Entity::declareFunction(
+		func = Entity::declareFunction(
 			ParserState.Attributes,
 			ParserState.DeclarationData.NameToken.text,
 			arguments,
 			ParserState.DeclarationData.Type
 		);
 	} else unexpectedTokenType("",originCoreHere,source(ParserState.File,ParserState.Line,ParserState.Token),{40,36,41});
+	Event::Data::TokenIdentified EventData;
+	ParserState.DeclarationData.NameToken.type = 11;
+	EventData.Token = &ParserState.DeclarationData.NameToken;
+	EventData.obj = func;
+	Event::TokenIdentified.fire(&EventData);
 }
