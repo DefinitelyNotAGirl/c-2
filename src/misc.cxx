@@ -2,7 +2,7 @@
  * Created Date: Monday July 31st 2023
  * Author: Lilith
  * -----
- * Last Modified: Sun Aug 04 2024
+ * Last Modified: Thu Aug 08 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -33,6 +33,7 @@
 #include <Parser.hxx>
 #include <dump.hxx>
 #include <conditions.hxx>
+#include <event.hxx>
 
 using smu::InstructionComponent;
 using smu::InstructionComponentType;
@@ -95,6 +96,12 @@ variable* call(function* func,std::vector<variable*> args)
 {
 	if(args.size() != func->vparams.size())
 		compilerBug("invalid call to variable* call(function* func,std::vector<variable*> args), args.size() != func->vparams.size()");
+	if(func != nullptr) {
+		Event::Data::Call EventData;
+		EventData.func = func;
+		EventData.args = &args;
+		Event::Call.fire(&EventData);
+	}
 	//std::cout << "call to function: " << func->expression_ansi() << std::endl;
 	if(func->isPrimitive) {
 		if(true)

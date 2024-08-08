@@ -133,10 +133,11 @@ namespace Event {
 		class Call {
 		public:
 			function* func;
+			std::vector<variable*>* args;
 		};
 	}
 	/**
-	 * @brief Fired when a function is called, does not apply to primitive functions
+	 * @brief Fired when a function is called, applies to primitive functions
 	 */
 	COCK Event_T<Data::Call> Call;
 	namespace Data {
