@@ -38,7 +38,6 @@ os.system(
     "make -C ../cpe2Example C2ARGS=\"-Wno-unimplemented -Wno-deprecated\""
     +" AS=/Volumes/programming/cross-compilers/amd64/bin/x86_64-elf-as"
     +" LD=/Volumes/programming/cross-compilers/amd64/bin/x86_64-elf-ld"
-    +" c2=../c-2/cp2"
 )
 dumpELF("../cpe2Example/build/c2resources.o","debug/resources")
 dumpELF("../cpe2Example/build/main.o","debug/main.o")

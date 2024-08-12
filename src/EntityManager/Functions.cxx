@@ -324,7 +324,21 @@ function* Entity::startFunctionDefinition(std::vector<Attribute>& attributes,std
 	}
 	if (options::ddebug)
 		std::cout << "body started" << std::endl;
-	Event::FunctionDeclaration.fire((Event::Data::FunctionDeclaration*)&func);
-	Event::FunctionSwitch.fire((Event::Data::FunctionSwitch*)&func);
+	//.
+	//. function declaration event
+	//.
+	{
+		Event::Data::FunctionDeclaration EventData;
+		EventData.func = func;
+		Event::FunctionDeclaration.fire(&EventData);
+	}
+	//.
+	//. function switch event
+	//.
+	{
+		Event::Data::FunctionSwitch EventData;
+		EventData.func = func;
+		Event::FunctionSwitch.fire(&EventData);
+	}
 	return func;
 }

@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sun Aug 04 2024
+ * Last Modified: Wed Aug 07 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -80,6 +80,8 @@ void error_init();
 void install_crash_handlers();
 
 std::vector<Routine> PostCLIRoutines;
+std::vector<Routine> AbortRoutines;
+std::vector<Routine> FinishRoutines;
 int main(int argc, char** argv)
 {
 	install_crash_handlers();
@@ -297,6 +299,9 @@ int main(int argc, char** argv)
             __reqFileVSTC = currentFile;
 		__reqFileVSTC = i;
         parse::Lines(lines,i);
+		for(Routine& r : FinishRoutines) {
+			r.run();
+		}
         genOutput(i);
         if(options::docDir != "")
             std::filesystem::create_directories(options::docDir);
