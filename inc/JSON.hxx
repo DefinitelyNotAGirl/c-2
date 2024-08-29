@@ -36,26 +36,72 @@ public:
 	double FloatValue;
 public:
 	JSON(){}
-	JSON(std::string value, std::string name = "") {
+	JSON(std::string name,std::string value) {
 		this->Type = JSONObjectType::String;
 		this->StringValue = value;
 		this->name = name;
 	}
-	JSON(i64 value, std::string name = "") {
+	JSON(std::string name,i64 value) {
 		this->Type = JSONObjectType::Integer;
 		this->IntegerValue = value;
 		this->name = name;
 	}
-	JSON(double value, std::string name = "") {
+	JSON(std::string name,double value) {
 		this->Type = JSONObjectType::Float;
 		this->FloatValue = value;
 		this->name = name;
 	}
-	JSON(bool value, std::string name = "") {
+	JSON(std::string name,const char* value) {
+		this->Type = JSONObjectType::String;
+		this->StringValue = value;
+		this->name = name;
+	}
+	JSON(std::string name,bool value) {
 		this->Type = JSONObjectType::Boolean;
 		this->BooleanValue = value;
 		this->name = name;
 	}
+	JSON(std::string value) {
+		this->Type = JSONObjectType::String;
+		this->StringValue = value;
+		this->name = "";
+	}
+	JSON(i64 value) {
+		this->Type = JSONObjectType::Integer;
+		this->IntegerValue = value;
+		this->name = "";
+	}
+	JSON(double value) {
+		this->Type = JSONObjectType::Float;
+		this->FloatValue = value;
+		this->name = "";
+	}
+	JSON(const char* value) {
+		this->Type = JSONObjectType::String;
+		this->StringValue = value;
+		this->name = "";
+	}
+	JSON(bool value) {
+		this->Type = JSONObjectType::Boolean;
+		this->BooleanValue = value;
+		this->name = "";
+	}
+	static JSON list(std::string name,std::vector<JSON> children) {
+		JSON res;
+		res.name = name;
+		res.Type = JSONObjectType::List;
+		res.children = children;
+		return res;
+	}
+	static JSON list(std::vector<JSON> children) {return list("",children);}
+	static JSON object(std::string name,std::vector<JSON> children) {
+		JSON res;
+		res.name = name;
+		res.Type = JSONObjectType::Object;
+		res.children = children;
+		return res;
+	}
+	static JSON object(std::vector<JSON> children) {return object("",children);}
 	JSON(void*,std::string content) {
 		//std::cout << "content:\n" << content << std::endl;
 		this->Type = content[0] == '{' ? JSONObjectType::Object : JSONObjectType::List;
@@ -245,7 +291,7 @@ public:
 						i++;
 						len++;
 					}
-					std::cout << "name: " << name << std::endl;
+					//std::cout << "name: " << name << std::endl;
 					JSON child(nullptr,content.substr(i-len-1,len+1));
 					child.name = name;
 					this->children.push_back(child);
@@ -413,5 +459,12 @@ public:
 		JSON& child = this->operator[](key);
 		if(child.Type != JSONObjectType::Integer)throw (JSONObjectType)child.Type;
 		return child.IntegerValue;
+	}
+	void save(std::string path) {
+		std::string text = this->toString("");
+		char* data = text.data();
+		FILE* f = fopen(path.c_str(),"w");
+		fwrite(data,text.size(),1,f);
+		fclose(f);
 	}
 };

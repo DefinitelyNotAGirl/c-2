@@ -63,6 +63,19 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 				}
 				break;
 			}
+			case(AttributeType::StackStorage):
+			{
+				var->storageArch = Architecture::storage_member;
+				var->storage = (void*)(attr.StackOffset);
+				if(currentScope->t == scopeType::CLASS) {
+					//std::cout << "manual loc member: " << var->name << std::endl;
+					if((var->dataType->size+((u64)var->storage)) >= currentScope->cl->size) {
+						currentScope->cl->size = (var->dataType->size+((u64)var->storage));
+					}
+					currentScope->cl->members.push_back(*var);
+				}
+				break;
+			}
 			default:
 				invalidAttribute(
 					"",originCoreHere,source(ParserState.File,*attr.Token.Line,attr.Token),
@@ -127,6 +140,7 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 		//+
 		else if(currentArchitecture == Architecture::AMD64 && (currentScope->t == scopeType::CLASS))
 		{
+			//std::cout << "auto loc member: " << var->name << std::endl;
 			var->storageArch = Architecture::storage_member;
 			var->storage = (void*)(currentScope->cl->size);
 			currentScope->cl->size += var->dataType->size;
@@ -250,7 +264,8 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 			}
 		}
 	}
-	//dump("declared variable",var,"");
+	//dump("declared variable",&var->name,"");
+	//std::cout << "member offset: " << (u64)var->storage << std::endl;
 	//,
 	//, debug info
 	//,

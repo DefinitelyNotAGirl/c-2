@@ -2,7 +2,7 @@
  * Created Date: Monday July 31st 2023
  * Author: Lilith
  * -----
- * Last Modified: Sat Aug 10 2024
+ * Last Modified: Sat Aug 24 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -634,12 +634,13 @@ type* getType(std::string name) {
 		//else
 		//    std::cout << "\"" << name << "\" != \"" << i->tname << "\"" << std::endl;
 	}
-	{//TODO: remove this later, this is just for debugging purposes
-		if(name.find_first_of('*') != std::string::npos && name.length()-name.find_first_of('*') >= 10)
-		{
-			exit(-1);
-		}
-	}
+	//{//TODO: remove this later, this is just for debugging purposes
+	//	if(name.find_first_of('*') != std::string::npos && name.length()-name.find_first_of('*') >= 10)
+	//	{
+	//		std::cerr << "error, pointer overflow" << std::endl;
+	//		exit(-1);
+	//	}
+	//}
 	for (type* t : types)
 		if (t->name == name) return t;
 	if (name.back() == '*') {

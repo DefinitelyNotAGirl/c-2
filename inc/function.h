@@ -154,6 +154,25 @@ public:
 		res += ")";
 		return res;
 	}
+
+	/**
+	 * @brief Get the Function Expression as html code
+	 * 
+	 * @callgraph
+	 * @callergraph
+	 * 
+	 * @return std::string 
+	 */
+	std::string expression_html() {
+		std::string res = "<span class='code-class'>" + this->returnType->name + "</span><span class='code-function'>" + this->name +"</span>"+ "(";
+		for (variable* i : this->vparams)
+		{
+			res += "<span class='code-class'>" + i->dataType->name + "</span><span class='code-parameter'>"+ i->name +"</span>"+ ",";
+		}
+		if (res.back() == ',') res.pop_back();
+		res += ")";
+		return res;
+	}
 };
 
 struct castFunction

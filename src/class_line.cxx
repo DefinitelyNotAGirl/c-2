@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Mon Aug 05 2024
+ * Last Modified: Sun Aug 18 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -54,7 +54,7 @@ using namespace issues;
 // 11 - function name
 // 12 - built in primitive type
 // 13 - short OP
-// 14 - description directive
+// 14 - extension call
 // 15 - builtin function name
 /**/
 // 20 - attribute
@@ -125,11 +125,8 @@ uint64_t tokenType(std::string& s)
 	else if(s == ":")return 40;
 	else if(s == ";")return 41;
 	else if(s == ",")return 42;
-	//desc directives
-	else if(s == "@desc")return 14;
-	else if(s == "@return")return 14;
-	else if(s == "@param")return 14;
-	else if(s == "@tparam")return 14;
+	//extension calls
+	else if(s.front() == '@')return 14;
 	//directives
 	else if(s == "#cum")return 5;
 	else if(s == "#include")return 5;

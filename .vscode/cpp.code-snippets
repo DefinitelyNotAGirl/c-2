@@ -130,7 +130,7 @@
 			"/**",
 			" * @brief $2",
 			" */",
-			"global Event_T<Data::$1> $1;"
+			"COCK Event_T<Data::$1> $1;"
 		]
 	},
 	"new event handler": {
@@ -143,6 +143,18 @@
 			"\t\t}",
 			"\t)",
 			");"
+		]
+	},
+	"fire event": {
+		"prefix": "event fire",
+		"body": [
+			"//+ fire $1 event",
+			"{",
+				"\tEvent::Data::$1 EventData;{",
+					"\t\t$0",
+				"\t}",
+				"\tEvent::$1.fire(&EventData);",
+			"}"
 		]
 	}
 }

@@ -174,7 +174,10 @@ function* Entity::declareFunction(std::vector<Attribute>& attributes,std::string
 		func->abi->setFunctionStorages(func);
 		importExternalFunction(func->symbol);
 	}
-	Event::FunctionDeclaration.fire((Event::Data::FunctionDeclaration*)&func);
+	Event::Data::FunctionDeclaration EventData;{
+		EventData.func = func;
+	}
+	Event::FunctionDeclaration.fire(&EventData);
 	return func;
 }
 
@@ -297,6 +300,7 @@ function* Entity::startFunctionDefinition(std::vector<Attribute>& attributes,std
 	currentScope->Finalize.push_back(Routine(RoutineData,
 		[](void* __data){
 			RoutineData_T* data = (RoutineData_T*)__data;
+			//std::cout << "finalizing function: " << data->func->expression_ansi() << std::endl;
 			code->placeSymbol(SymbolType::CodeLocation,0,data->func->symbol+".passexception");
 			for(Routine& r : data->sc->Epilogue) {
 				if(r.data != data)
@@ -310,6 +314,13 @@ function* Entity::startFunctionDefinition(std::vector<Attribute>& attributes,std
 				r.run();
 			code->symbols[0].size = code->size();
 			text.push(code);
+			//+ fire FunctionFinalization event
+			{
+				Event::Data::FunctionFinalization EventData;{
+					EventData.func = data->func;
+				}
+				Event::FunctionFinalization.fire(&EventData);
+			}
 			code->data = nullptr;
 			delete code;
 			Entity::ExceptionHandlers.pop();
@@ -323,14 +334,14 @@ function* Entity::startFunctionDefinition(std::vector<Attribute>& attributes,std
 		unimplementedDebugInfo("function body");
 	}
 	if (options::ddebug)
-		std::cout << "body started" << std::endl;
+		std::cout << "body started: " << func->expression_ansi() << std::endl;
 	//.
 	//. function declaration event
 	//.
 	{
-		Event::Data::FunctionDeclaration EventData;
+		Event::Data::FunctionImplementation EventData;
 		EventData.func = func;
-		Event::FunctionDeclaration.fire(&EventData);
+		Event::FunctionImplementation.fire(&EventData);
 	}
 	//.
 	//. function switch event

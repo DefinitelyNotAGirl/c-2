@@ -115,6 +115,13 @@ type* Entity::startTypeDefinition(std::vector<Attribute>& attributes, std::strin
 			[](void* __data){
 				RoutineData_T* data = (RoutineData_T*)__data;
 				data->Type->incomplete = false;
+				//+ fire TypeFinalization event
+				{
+					Event::Data::TypeFinalization EventData;{
+						EventData.Type = data->Type;
+					}
+					Event::TypeFinalization.fire(&EventData);
+				}
 			}
 		));
 	}

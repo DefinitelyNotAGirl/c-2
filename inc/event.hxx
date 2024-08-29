@@ -161,4 +161,34 @@ namespace Event {
 	 * @brief fired when a token is itendtified
 	 */
 	COCK Event_T<Data::TokenIdentified> TokenIdentified;
+	namespace Data {
+		class FunctionImplementation {
+		public:
+			function* func;
+		};
+	}
+	/**
+	 * @brief fired when a function body starts
+	 */
+	COCK Event_T<Data::FunctionImplementation> FunctionImplementation;
+	namespace Data {
+		class FunctionFinalization {
+		public:
+			function* func;
+		};
+	}
+	/**
+	 * @brief fired when a function finalizes
+	 */
+	COCK Event_T<Data::FunctionFinalization> FunctionFinalization;
+	namespace Data {
+		class TypeFinalization {
+		public:
+			type* Type;
+		};
+	}
+	/**
+	 * @brief fired when a type is finalized
+	 */
+	COCK Event_T<Data::TypeFinalization> TypeFinalization;
 }
