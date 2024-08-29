@@ -1,2 +1,2 @@
-#define global
+#define COCK
 #include <event.hxx>

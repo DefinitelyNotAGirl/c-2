@@ -1,5 +1,5 @@
-#include <SMU.h>
-#include <ELF64.hxx>
+#include "SMU.h"
+#include "ELF64.hxx"
 
 extern section text;
 extern section data;

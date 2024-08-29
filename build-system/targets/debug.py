@@ -2,6 +2,7 @@ import util.fs
 import util.dependencies
 import compile.debug
 import os
+import options
 
 class target:
 	type: str
@@ -53,6 +54,26 @@ def getCleanList() -> list[str]:
 		cleanFiles.append(target.path+".d")
 	return cleanFiles
 
+def archive(objects: list[str],out: str) -> int:
+	ExitCode: int = 0
+	cmd = options.linker
+	for object in objects:
+		cmd += " "+object
+	cmd += " lib/libcargparse.a"
+	cmd += " "+options.args_linker
+	cmd += " -shared -o "+out+" &> ./build/.stdout"
+	#+
+	#+ link
+	#+
+	ExitCode = os.system(cmd)
+	if ExitCode != 0:
+		print(" \033[31m\u25CB\033[0m",out)
+		print(util.fs.readAll("./build/.stdout"),end='')
+		return ExitCode
+	print(" \033[32m\u25CF\033[0m",out)
+	print(util.fs.readAll("./build/.stdout"),end='')
+	return ExitCode
+
 def run() -> int:
 	print(" \033[32m\U0001F6E0\033[0m running debug build...")
 	targets: list[target] = getTargetList()
@@ -63,7 +84,9 @@ def run() -> int:
 		if buildTarget(trg,i,targets.__len__()) != 0:
 			return 2
 		i+=1
-	if compile.debug.link(objects,"./cp2") != 0:
+	if compile.debug.link(objects,"./cp2-noext") != 0:
+		return 2
+	if archive(objects,"./cp2-archive") != 0:
 		return 2
 	print(" \033[32m\U0001F6E0\033[0m debug build complete.")
 	return 0

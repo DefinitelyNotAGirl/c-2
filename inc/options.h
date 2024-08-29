@@ -29,8 +29,8 @@
  */
 #pragma once
 
-#include <common.h>
-#include <compiler.h>
+#include "common.h"
+#include "compiler.h"
 #define defaultSysRoot "/usr/local"
 
 extern std::list<std::string> sourceFiles;

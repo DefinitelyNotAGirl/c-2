@@ -1,6 +1,6 @@
 #pragma once
-#include <amd64.cgu.hxx>
-#include <issues.hxx>
+#include "amd64.cgu.hxx"
+#include "issues.hxx"
 
 #define cpustate_main
 
@@ -131,7 +131,7 @@ protected:
 public:
 	void registerStatus(amd64::Register reg, RegisterStatus status);
 	RegisterStatus registerStatus(amd64::Register reg) const;
-	#include <cpustate.templates.hxx>
+	#include "cpustate.templates.hxx"
 	bool registerValueKnown(amd64::Register reg) const;
 	amd64::Register getFreeRegister();
 	/*

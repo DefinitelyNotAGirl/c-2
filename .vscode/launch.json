@@ -5,7 +5,7 @@
 			"name": "Test compiler on single source file",
 			"type": "cppdbg",
 			"request": "launch",
-			"program": "${workspaceFolder}/cp2",
+			"program": "${input:workingDirectory}.cpe2/bin/compiler",
 			"args": [
 				"-MD",
 				"-Bbuild","-Ddocumentation",

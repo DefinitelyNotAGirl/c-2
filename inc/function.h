@@ -31,11 +31,11 @@
 
 struct castFunction;
 
-#include <class_type.h>
-#include <compiler.h>
-#include <stackframe.hxx>
-#include <cpustate.hxx>
-#include <colors.h>
+#include "class_type.h"
+#include "compiler.h"
+#include "stackframe.hxx"
+#include "cpustate.hxx"
+#include "colors.h"
 
 namespace smu {
 	class section;
@@ -149,6 +149,25 @@ public:
 		for (variable* i : this->vparams)
 		{
 			res += COLOR_TYPE + i->dataType->name + " " +COLOR_VAR+ i->name +COLOR_RESET+ ",";
+		}
+		if (res.back() == ',') res.pop_back();
+		res += ")";
+		return res;
+	}
+
+	/**
+	 * @brief Get the Function Expression as html code
+	 * 
+	 * @callgraph
+	 * @callergraph
+	 * 
+	 * @return std::string 
+	 */
+	std::string expression_html() {
+		std::string res = "<span class='code-class'>" + this->returnType->name + "</span><span class='code-function'>" + this->name +"</span>"+ "(";
+		for (variable* i : this->vparams)
+		{
+			res += "<span class='code-class'>" + i->dataType->name + "</span><span class='code-parameter'>"+ i->name +"</span>"+ ",";
 		}
 		if (res.back() == ',') res.pop_back();
 		res += ")";

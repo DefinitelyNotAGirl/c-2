@@ -30,7 +30,7 @@
 #pragma once
 
 #include <string>
-#include <common.h>
+#include "common.h"
 
 void strToLower(std::string& str);
 

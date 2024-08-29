@@ -1,8 +1,8 @@
 #pragma once
 
-#include <compiler.h>
+#include "compiler.h"
 
-#include <cgu.h>
+#include "cgu.h"
 
 namespace smu
 {

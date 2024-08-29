@@ -2,7 +2,7 @@
  * Created Date: Wednesday May 22nd 2024
  * Author: Lilith
  * -----
- * Last Modified: Sun Aug 04 2024
+ * Last Modified: Wed Aug 07 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -30,15 +30,15 @@
 
 #pragma once
 
-#include <colors.h>
-#include <stacktrace.hxx>
+#include "colors.h"
+#include "stacktrace.hxx"
 #include <stack>
 #include <string>
 
 class function;
 class type;
 class token;
-#include <class_line.h>
+#include "class_line.h"
 #include <list>
 class scope;
 

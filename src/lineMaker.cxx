@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 25th 2023
  * Author: Lilith
  * -----
- * Last Modified: Fri Jul 26 2024
+ * Last Modified: Mon Aug 26 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -281,26 +281,31 @@ std::vector<line> getLines(std::string fname)
         terminatorCOLO = ':';
         terminatorSCOP = '{';
         terminatorSCCL = '}';
-        if(startsWith(content,"//"))
-            terminatorLINE = '\n';
-        if(startsWith(content,"@"))
+		bool isComment = false;
+        if(startsWith(content,"//")) {
+			terminatorLINE = '\n';
+			isComment = true;
+		}
+        else if(startsWith(content,"@"))
         {
+			//std::cout << "line starts with @" << std::endl;
             terminatorLINE = '\n';
             terminatorSEMI = '\n';
             terminatorCOLO = '\n';
             terminatorSCOP = '\n';
             terminatorSCCL = '\n';
+			isComment = true;
         }
-        if(startsWith(content,"#"))
+		else if(startsWith(content,"#"))
             terminatorLINE = '\n';
-        if(startsWith(content,"template"))
+        else if(startsWith(content,"template"))
             terminatorLINE = '\n';
-        if (content.find("class") != std::string::npos) 
+        else if (content.find("class") != std::string::npos) 
         {
             terminatorCOLO = ';';
             terminatorLINE = '\n';
         }
-        if (content.find("namespace") != std::string::npos) 
+        else if (content.find("namespace") != std::string::npos) 
         {
             terminatorCOLO = ';';
             terminatorLINE = '\n';
@@ -325,6 +330,8 @@ std::vector<line> getLines(std::string fname)
                 case('`'):
                 case('"'):
                 {
+					if(isComment)
+						goto char_default;
                     char limiter = content[i];
                     lineText.push_back(content[i++]);
                     while(true)
@@ -360,6 +367,7 @@ std::vector<line> getLines(std::string fname)
                     Line++;
                     break;
                 default:
+					char_default:;
                     lineText.push_back(content[i]);
                     break;
             }
@@ -428,6 +436,7 @@ std::vector<line> getLines(std::string fname)
             lineText = "#outcom " + lineText.substr(2,lineText.length()-3);
             wasComment = true;
         }
+		//std::cout << "lineText: " << lineText << std::endl;
         L.text = lineText;
         L.file = fname;
         L.leadingSpaces = leadingSpace;

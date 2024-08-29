@@ -29,8 +29,8 @@
  */
 #pragma once
 
-#include <extint.hxx>
-#include <class_token.h>
+#include "extint.hxx"
+#include "class_token.h"
 #include <string>
 
 class line

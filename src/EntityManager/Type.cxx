@@ -115,16 +115,29 @@ type* Entity::startTypeDefinition(std::vector<Attribute>& attributes, std::strin
 			[](void* __data){
 				RoutineData_T* data = (RoutineData_T*)__data;
 				data->Type->incomplete = false;
+				//+ fire TypeFinalization event
+				{
+					Event::Data::TypeFinalization EventData;{
+						EventData.Type = data->Type;
+					}
+					Event::TypeFinalization.fire(&EventData);
+				}
 			}
 		));
 	}
-	Event::TypeDeclaration.fire((Event::Data::TypeDeclaration*)&Type);
+	Event::Data::TypeDeclaration EventData;{
+		EventData.Type = Type;
+	}
+	Event::TypeDeclaration.fire(&EventData);
 	return Type;
 }
 
 type* Entity::declareType(std::vector<Attribute>& attributes,std::string name, std::vector<token> inherit)
 {
 	type* Type = constructType(attributes,name,inherit);
-	Event::TypeDeclaration.fire((Event::Data::TypeDeclaration*)&Type);
+	Event::Data::TypeDeclaration EventData;{
+		EventData.Type = Type;
+	}
+	Event::TypeDeclaration.fire(&EventData);
 	return Type;
 }

@@ -34,11 +34,16 @@ def dumpELF(file: str,dir: str):
 	return
 
 execute("python ./build-system/main.py debug")
+cwd = os.getcwd()
+execute("cp "+cwd+"/cp2-archive ../cpe2Example/.cpe2/bin/compiler-archive")
+execute("cp "+cwd+"/cp2-noext ../cpe2Example/.cpe2/bin/compiler-noext")
+execute("cd ../cpe2Example && install_name_tool .cpe2/bin/compiler-archive -id .cpe2/bin/compiler-archive")
+execute("cd ../cpe2Example && install_name_tool .cpe2/bin/compiler-noext -id .cpe2/bin/compiler-noext")
+execute("cd ../cpe2Example && c2util relink")
 os.system(
     "make -C ../cpe2Example C2ARGS=\"-Wno-unimplemented -Wno-deprecated\""
     +" AS=/Volumes/programming/cross-compilers/amd64/bin/x86_64-elf-as"
     +" LD=/Volumes/programming/cross-compilers/amd64/bin/x86_64-elf-ld"
-    +" c2=../c-2/cp2"
 )
 dumpELF("../cpe2Example/build/c2resources.o","debug/resources")
 dumpELF("../cpe2Example/build/main.o","debug/main.o")

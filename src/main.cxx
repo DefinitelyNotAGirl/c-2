@@ -2,7 +2,7 @@
  * Created Date: Tuesday July 18th 2023
  * Author: Lilith
  * -----
- * Last Modified: Sun Aug 04 2024
+ * Last Modified: Sun Aug 18 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2023 DefinitelyNotAGirl@github
@@ -46,9 +46,9 @@
 #include <DWARF.h>
 #include <error.h>
 #include <EntityManagement.hxx>
-
+#include <filesystem>
+#include <JSON.hxx>
 #include <Parser.hxx>
-
 #include <stacktrace.hxx>
 
 void cliOptions(int argc, char **argv);
@@ -80,6 +80,8 @@ void error_init();
 void install_crash_handlers();
 
 std::vector<Routine> PostCLIRoutines;
+std::vector<Routine> AbortRoutines;
+std::vector<Routine> FinishRoutines;
 int main(int argc, char** argv)
 {
 	install_crash_handlers();
@@ -272,15 +274,18 @@ int main(int argc, char** argv)
 		}
         if(!options::fnoautoinclude)
         {
-            std::vector<line> stdLines;
-            stdLines.push_back(defLine("#include <stdint>"));
-            stdLines.push_back(defLine("#include <userspace>"));
-            stdLines.push_back(defLine("#include <lang>"));
-            stdLines.push_back(defLine("#include <Memory>"));
-            stdLines.push_back(defLine("#include <OperatingSystem>"));
-            if(!options::fnolibc)
-                stdLines.push_back(defLine("#include <libc>"));
-            parse::Lines(stdLines,"@default includes");
+			if(std::filesystem::exists(".cpe2/config.json")) {
+				JSON config;
+				config.load(".cpe2/config.json");
+				try {
+					for(JSON& child : config["AutoInclude"].children) {
+						if(child.Type == JSONObjectType::String) {
+							std::vector<line> lines = getLines(child.StringValue);
+							parse::Lines(lines,child.StringValue);
+						}
+					}
+				}catch(JSONNoSuchChild){}
+			}
         }
         if(!options::C)
         {
@@ -297,6 +302,9 @@ int main(int argc, char** argv)
             __reqFileVSTC = currentFile;
 		__reqFileVSTC = i;
         parse::Lines(lines,i);
+		for(Routine& r : FinishRoutines) {
+			r.run();
+		}
         genOutput(i);
         if(options::docDir != "")
             std::filesystem::create_directories(options::docDir);

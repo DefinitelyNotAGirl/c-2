@@ -1,7 +1,7 @@
 #include <string>
 #include <vector>
-#include <extint.hxx>
-#include <class_token.h>
+#include "extint.hxx"
+#include "class_token.h"
 
 template<typename EventData_T>
 class EventHandler {
@@ -32,8 +32,8 @@ public:
 	}
 };
 
-#ifndef global
-	#define global extern
+#ifndef COCK
+	#define COCK extern
 #endif
 
 //.
@@ -56,7 +56,7 @@ namespace Event {
 	/**
 	 * @brief Fired when a function is declared
 	 */
-	global Event_T<Data::FunctionDeclaration> FunctionDeclaration;
+	COCK Event_T<Data::FunctionDeclaration> FunctionDeclaration;
 	namespace Data {
 		class FunctionSwitch {
 		public:
@@ -66,7 +66,7 @@ namespace Event {
 	/**
 	 * @brief Fired when the function for which the compiler is generating code changes. This event does not imply that the function is done.
 	 */
-	global Event_T<Data::FunctionSwitch> FunctionSwitch;
+	COCK Event_T<Data::FunctionSwitch> FunctionSwitch;
 	namespace Data {
 		class VariableDeclaration {
 		public:
@@ -76,7 +76,7 @@ namespace Event {
 	/**
 	 * @brief Fired when a variable is declared
 	 */
-	global Event_T<Data::VariableDeclaration> VariableDeclaration;
+	COCK Event_T<Data::VariableDeclaration> VariableDeclaration;
 	namespace Data {
 		class TypeDeclaration {
 		public:
@@ -86,7 +86,7 @@ namespace Event {
 	/**
 	 * @brief Fired when a type is declared
 	 */
-	global Event_T<Data::TypeDeclaration> TypeDeclaration;
+	COCK Event_T<Data::TypeDeclaration> TypeDeclaration;
 	namespace Data {
 		class BranchSplit {
 		public:
@@ -96,7 +96,7 @@ namespace Event {
 	/**
 	 * @brief Fired when the current branch splits
 	 */
-	global Event_T<Data::BranchSplit> BranchSplit;
+	COCK Event_T<Data::BranchSplit> BranchSplit;
 	namespace Data {
 		class BranchSwitch {
 		public:
@@ -106,7 +106,7 @@ namespace Event {
 	/**
 	 * @brief Fired when the compiler switches the branch for which it is generating code
 	 */
-	global Event_T<Data::BranchSwitch> BranchSwitch;
+	COCK Event_T<Data::BranchSwitch> BranchSwitch;
 	namespace Data {
 		class BranchExit {
 		public:
@@ -115,7 +115,7 @@ namespace Event {
 	/**
 	 * @brief Fired when the current branch exists
 	 */
-	global Event_T<Data::BranchExit> BranchExit;
+	COCK Event_T<Data::BranchExit> BranchExit;
 	namespace Data {
 		class BranchMerge {
 		public:
@@ -128,17 +128,18 @@ namespace Event {
 	/**
 	 * @brief Fired when the current branch merges with another
 	 */
-	global Event_T<Data::BranchMerge> BranchMerge;
+	COCK Event_T<Data::BranchMerge> BranchMerge;
 	namespace Data {
 		class Call {
 		public:
 			function* func;
+			std::vector<variable*>* args;
 		};
 	}
 	/**
-	 * @brief Fired when a function is called, does not apply to primitive functions
+	 * @brief Fired when a function is called, applies to primitive functions
 	 */
-	global Event_T<Data::Call> Call;
+	COCK Event_T<Data::Call> Call;
 	namespace Data {
 		class DestroyVariable {
 		public:
@@ -148,7 +149,7 @@ namespace Event {
 	/**
 	 * @brief Fired when a variables constructor is ran. If the destructor is a non-primitive function a seperate Call event is Fired.
 	 */
-	global Event_T<Data::DestroyVariable> DestroyVariable;
+	COCK Event_T<Data::DestroyVariable> DestroyVariable;
 	namespace Data {
 		class TokenIdentified {
 		public:
@@ -159,5 +160,35 @@ namespace Event {
 	/**
 	 * @brief fired when a token is itendtified
 	 */
-	global Event_T<Data::TokenIdentified> TokenIdentified;
+	COCK Event_T<Data::TokenIdentified> TokenIdentified;
+	namespace Data {
+		class FunctionImplementation {
+		public:
+			function* func;
+		};
+	}
+	/**
+	 * @brief fired when a function body starts
+	 */
+	COCK Event_T<Data::FunctionImplementation> FunctionImplementation;
+	namespace Data {
+		class FunctionFinalization {
+		public:
+			function* func;
+		};
+	}
+	/**
+	 * @brief fired when a function finalizes
+	 */
+	COCK Event_T<Data::FunctionFinalization> FunctionFinalization;
+	namespace Data {
+		class TypeFinalization {
+		public:
+			type* Type;
+		};
+	}
+	/**
+	 * @brief fired when a type is finalized
+	 */
+	COCK Event_T<Data::TypeFinalization> TypeFinalization;
 }

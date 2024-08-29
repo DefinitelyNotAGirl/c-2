@@ -1,7 +1,7 @@
 #pragma once
-#include <class_variable.h>
+#include "class_variable.h"
 class function;
-#include <extint.hxx>
+#include "extint.hxx"
 
 namespace runtime::amd64
 {
