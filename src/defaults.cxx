@@ -2,8 +2,8 @@
  * Created Date: Wednesday January 17th 2024
  * Author: Lilith
  * -----
- * Last Modified: Wednesday May 22nd 2024 11:30:22 am
- * Modified By: Lilith (definitelynotagirl115169@gmail.com)
+ * Last Modified: Fri Aug 30 2024
+ * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
  * 
@@ -46,6 +46,6 @@ void setDefaults()
         std::cout << "ERROR: could not find default ABI, aborting!" << std::endl;
         exit(-1);
     }
-	currentArchitecture = Architecture::AMD64;
+	currentArchitecture = Architecture::ARMv9;
 	currentSystem = System::Linux;
 }

@@ -175,6 +175,35 @@ variable* Entity::defineVariable(std::vector<Attribute>& attributes,std::string&
 				storage->displacement = ImmediateValue(negative(offset));
 			}
 		}
+		//+
+		//+	ARMv9 local variable
+		//+
+		else if(currentArchitecture == Architecture::AMD64)
+		{
+			var->storage = new amd64::VariableStorage;
+			amd64::VariableStorage* storage = (amd64::VariableStorage*)var->storage;
+			amd64::Register ireg = currentScope->func->cpu.amd64.getFreeRegister();
+			amd64::Register freg = amd64::Register::xmm0;
+			if(var->dataType->regMode == 1 && var->dataType->size <= 8 && ireg != amd64::Register::invalid)
+			{
+				//+ integer register storage
+				storage->mode = amd64::StorageMode::DirectRegister;
+				storage->reg = ireg;
+			}
+			else if(var->dataType->regMode == 2 && var->dataType->size <= 32 && freg != amd64::Register::invalid)
+			{
+				//+ floating point register storage
+				compilerBug("unimplemented: floating point register storage");
+			}
+			else
+			{
+				//+ stack storage
+				storage->mode = amd64::StorageMode::IndirectRegister;
+				storage->reg = amd64::Register::rbp;
+				uint64_t offset = currentScope->func->stack->push(var->dataType->size);
+				storage->displacement = ImmediateValue(negative(offset));
+			}
+		}
 		else
 		{
 			compilerBug("unimplemented architecture-scope combination.");
