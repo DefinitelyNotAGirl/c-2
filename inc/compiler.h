@@ -59,20 +59,40 @@ std::string getIndent();
 
 void printStacktrace(uint64_t len);
 
+/**
+ * @brief fetches the type of the specified name, if the type doesnt exist and is a pointer type, the pointer type is created provided that the corresponding value type can be found by this function, meaning that poiinter types can be declared recursively using just this function.
+ * if the type is a template instance that does not yet exist the template instance is created.
+ */
 type* getType(std::string name);
+/**
+ * @brief fetches the variable of the specified name
+ */
 variable* getVariable(std::string name);
+/**
+ * @brief obsolete
+ */
 function* getFunction(std::string name);
+/**
+ * @brief redirects to getFunction(std::string&,std::vector<variable*>&)
+ */
 function* getFunction(const char* name, std::vector<variable*>& args);
+/**
+ * @brief fetches the function that has both the specified name and the specified set of arguments, the argument names are not considered, only their type
+ * if multiple functions match then an error is thrown
+ */
 function* getFunction(std::string& name, std::vector<variable*>& args);
 function* getFunction(type* returnType, std::string& name, std::vector<variable*>& args);
 uint64_t tokenType(std::string& s);
 std::string manglePseudoName(std::string& s);
 std::string mangleTypeName(std::string& s);
 
+/**
+ * @brief returns aa string representing thee function including ANSI espaces
+ */
 std::string getPrintFunctionExpression(function* f, bool showVariableNames = false);
-
 std::string getNewName();
 std::string getNewVariableName();
+std::string getNewGlobalName();
 
 ABI* getABI(std::string name);
 

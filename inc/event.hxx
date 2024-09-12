@@ -16,6 +16,9 @@ public:
 	EventHandler(EventHandlerCallback callback)
 		:callback(callback){}
 
+	/**
+	 * @brief runs the handler
+	 */
 	void run(EventData_T* EventData){
 		this->callback(this->HandlerData,EventData);
 	}
@@ -25,6 +28,9 @@ template<typename EventData_T>
 class Event_T {
 public:
 	std::vector<EventHandler<EventData_T>> EventHandlers;
+	/**
+	 * @brief fires the event, calling all handlers synchronously in the process, returns when the last handler has returned
+	 */
 	void fire(EventData_T* EventData) {
 		for(EventHandler<EventData_T>& handler : this->EventHandlers) {
 			handler.run(EventData);

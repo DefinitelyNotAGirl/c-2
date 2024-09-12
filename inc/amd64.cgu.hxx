@@ -140,11 +140,23 @@ namespace amd64
 		vm_cr 			= register_encode_cpl(0) | register_encode_msr(0xC0010114),
 		vm_hsave_pa 	= register_encode_cpl(0) | register_encode_msr(0xC0010117)
 	};
+	/**
+	 * @brief returns tthe privilege llevel required to access the register
+	 */
 	inline constexpr uint64_t register_decode_cpl	(Register reg){return (((uint64_t)reg)&(0b11<<11))>>11;};
+	/**
+	 * @brief returnss the  registerr bbase identifier
+	 */
 	inline constexpr uint64_t register_decode_base	(Register reg){return (((uint64_t)reg)&(0b111<<0))>>0;};
+	/**
+	 * @brief reeturns the registers REX extension
+	 */
 	inline constexpr uint64_t register_decode_rex	(Register reg){return (((uint64_t)reg)&(1<<3))>>3;};
 
 	Register string_to_register(const std::string& reg_str);
+	/**
+	 * @brief returns the registers name
+	 */
 	const char* register_name(Register reg);
 
 	constexpr uint64_t operator<<(Register r,uint64_t i){return ((uint64_t)r)<<i;}
@@ -218,6 +230,9 @@ namespace amd64
 	*/
 	byte SIB(uint8_t scale, Register index, Register base);
 
+	/**
+	 * @brief condition codes which can be placed into machine code, contains duplicates due to architecture details
+	 */
 	enum class Condition {
 		Overflow 		= 0x0,
 		NotOverflow		= 0x1,
@@ -250,7 +265,7 @@ namespace amd64
 		NotLessOrEqual	= 0xF,
 		Greater			= 0xF
 	};
-	
+
 	namespace prefix
 	{
 		/**
