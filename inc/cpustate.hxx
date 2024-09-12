@@ -129,10 +129,22 @@ protected:
 	RegisterState< uint80_t> Register_idtr;
 	RegisterState< uint80_t> Register_ldtr;
 public:
+	/**
+	 * @brief sets the status of a register
+	 */
 	void registerStatus(amd64::Register reg, RegisterStatus status);
+	/**
+	 * @brief gets the status of a register
+	 */
 	RegisterStatus registerStatus(amd64::Register reg) const;
 	#include "cpustate.templates.hxx"
+	/**
+	 * @brief checks if a registers value is known
+	 */
 	bool registerValueKnown(amd64::Register reg) const;
+	/**
+	 * @brief returns the first unused register, returns the invalid register if there are no free registers
+	 */
 	amd64::Register getFreeRegister();
 	/*
 		. Flags
@@ -157,11 +169,20 @@ public:
 	/*
 		. Privilege levels
 	*/
+	/**
+	 * @brief cpu privilege level that the compiler is to assume the current code will be run with
+	 */
 	uint8_t cpuPrivilegeLevel = 3;
+	/**
+	 * @brief io privilege level that the compiler is to assume the current code will be run with
+	 */
 	uint8_t ioPrivilegeLevel = 0;
 	/*
 		. Features
 	*/
+	/**
+	 * @brief CPU feature flags
+	 */
 	cpufeatures_amd64 Features;
 };
 
