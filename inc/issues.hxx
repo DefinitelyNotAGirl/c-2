@@ -2,7 +2,7 @@
  * Created Date: Wednesday May 22nd 2024
  * Author: Lilith
  * -----
- * Last Modified: Wed Aug 07 2024
+ * Last Modified: Thu Sep 12 2024
  * Modified By: Lilith
  * -----
  * Copyright (c) 2023-2024 DefinitelyNotAGirl@github
@@ -54,6 +54,9 @@ namespace issues {
 		ignore
 	};
 
+	/**
+	 * @brief invokes an issue, if the issue is configred as an error then this function throws the specified object, if it is configured as a warning thihs invokes issueTtype::error.top()(e)
+	 */
 	template<typename issueType>
 	void invoke(issueType e)
 	{
@@ -204,6 +207,9 @@ namespace issues {
 		std::stack<int(*)(unexpectedTokenType e)> unexpectedTokenType::error;
 	#endif
 
+	/**
+	 * @brief issue for when the user specifies aa file that doesnt exist
+	 */
 	class noSuchFile : public fatal {
 	public:
 		std::string file;//examples
@@ -222,6 +228,9 @@ namespace issues {
 		std::stack<int(*)(noSuchFile e)> noSuchFile::error;
 	#endif
 
+	/**
+	 * @brief issue for when a non-existent typename is specified
+	 */
 	class noSuchType : public fatal {
 	public:
 		std::string name;
@@ -237,6 +246,9 @@ namespace issues {
 		std::stack<int(*)(noSuchType e)> noSuchType::error;
 	#endif
 
+	/**
+	 * @brief issue for when an undefined identifier is specified
+	 */
 	class noSuchIdentifier : public fatal {
 	public:
 		std::string name;
@@ -252,6 +264,9 @@ namespace issues {
 		std::stack<int(*)(noSuchIdentifier e)> noSuchIdentifier::error;
 	#endif
 
+	/**
+	 * @brief issue for when a keyword is used in a scope in which that keyword is invalid, ex: using return in the global scope
+	 */
 	class invalidUseOfKeywordInScope : public fatal {
 	public:
 		scope* Scope;
@@ -267,6 +282,9 @@ namespace issues {
 		std::stack<int(*)(invalidUseOfKeywordInScope e)> invalidUseOfKeywordInScope::error;
 	#endif
 
+	/**
+	 * @brief issue for when a requested ABI doesnt exist
+	 */
 	class noSuchABI : public fatal {
 	public:
 		std::string name;
@@ -282,6 +300,9 @@ namespace issues {
 		std::stack<int(*)(noSuchABI e)> noSuchABI::error;
 	#endif
 
+	/**
+	 * @brief issue for wehenn the size of an array isnt constexpr
+	 */
 	class nonImmediateArraySize : public fatal {
 	public:
 		type* valueType;
@@ -297,6 +318,9 @@ namespace issues {
 		std::stack<int(*)(nonImmediateArraySize e)> nonImmediateArraySize::error;
 	#endif
 
+	/**
+	 * @brief issue for when an innteger template argument isnt constexpr
+	 */
 	class nonImmediateIntegerTemplateArgument : public fatal {
 	public:
 		static std::stack<void(*)(nonImmediateIntegerTemplateArgument e)> info;
@@ -311,6 +335,9 @@ namespace issues {
 		std::stack<int(*)(nonImmediateIntegerTemplateArgument e)> nonImmediateIntegerTemplateArgument::error;
 	#endif
 
+	/**
+	 * @brief issue for when a non-exisstent literal operattor is requested
+	 */
 	class noSuchLitop : public fatal {
 	public:
 		std::string name;
@@ -326,6 +353,9 @@ namespace issues {
 		std::stack<int(*)(noSuchLitop e)> noSuchLitop::error;
 	#endif
 
+	/**
+	 * @brief issue for when an attribute is specified for a type of object on which that attribute is invalid
+	 */
 	class invalidAttribute : public fatal {
 	public:
 		std::string entityName;
@@ -343,6 +373,9 @@ namespace issues {
 		std::stack<int(*)(invalidAttribute e)> invalidAttribute::error;
 	#endif
 
+	/**
+	 * @brief issue for when a non-existent funnction is used
+	 */
 	class noSuchFunction : public fatal {
 	public:
 		function* neededFunction;
@@ -359,6 +392,9 @@ namespace issues {
 		std::stack<int(*)(noSuchFunction e)> noSuchFunction::error;
 	#endif
 
+	/**
+	 * @brief issue for wwhen a non-existent vvariable is used
+	 */
 	class noSuchVariable : public fatal {
 	public:
 		std::string name;
@@ -374,6 +410,9 @@ namespace issues {
 		std::stack<int(*)(noSuchVariable e)> noSuchVariable::error;
 	#endif
 
+	/**
+	 * @brief issue for when a specified mangler isnt found
+	 */
 	class noSuchMangler : public fatal {
 	public:
 		std::string name;
@@ -389,6 +428,9 @@ namespace issues {
 		std::stack<int(*)(noSuchMangler e)> noSuchMangler::error;
 	#endif
 
+	/**
+	 * @brief issue for when a non-existent system type is specified
+	 */
 	class noSuchSystem : public fatal {
 	public:
 		std::string name;
@@ -404,6 +446,9 @@ namespace issues {
 		std::stack<int(*)(noSuchSystem e)> noSuchSystem::error;
 	#endif
 
+	/**
+	 * @brief issue for when a non existent system is specified
+	 */
 	class noSuchArchitecture : public fatal {
 	public:
 		std::string name;
@@ -419,6 +464,9 @@ namespace issues {
 		std::stack<int(*)(noSuchArchitecture e)> noSuchArchitecture::error;
 	#endif
 
+	/**
+	 * @brief issue for when code specifies a non-existent number system, note that this may currently not be used, segfaulting instead
+	 */
 	class noSuchNumberSystem : public fatal {
 	public:
 		std::string name;
@@ -434,6 +482,9 @@ namespace issues {
 		std::stack<int(*)(noSuchNumberSystem e)> noSuchNumberSystem::error;
 	#endif
 
+	/**
+	 * @brief issue for when a specified type is invalid in a given context
+	 */
 	class invalidType : public fatal {
 	public:
 		std::list<type*> validTypes;
@@ -450,6 +501,9 @@ namespace issues {
 		std::stack<int(*)(invalidType e)> invalidType::error;
 	#endif
 
+	/**
+	 * @brief issue for when a buffer ends unexpectedly, such as the file terminating in the middle of a string
+	 */
 	class unexpectedBufferTermination : public fatal {
 	public:
 		static std::stack<void(*)(unexpectedBufferTermination e)> info;
@@ -608,6 +662,9 @@ namespace issues {
 /*
  , Warnings are issues that are warnings by default but can be disabled or upgraded to errors
 */
+	/**
+	 * @brief issue for when some piece of debug information should be emitted but the code to do so wasn't written yet
+	 */
 	class unimplementedDebugInfo : public issue {
 	public:
 		static action Action;
@@ -624,6 +681,9 @@ namespace issues {
 		std::stack<int(*)(unimplementedDebugInfo e)> unimplementedDebugInfo::error;
 	#endif
 
+	/**
+	 *  @brief issue for when the the programmer attempts to access a register but the assumed privilege level is insufficient
+	 */
 	class insufficientPrivilegeLevel : public issue {
 	public:
 		static action Action;
@@ -640,6 +700,9 @@ namespace issues {
 		std::stack<int(*)(insufficientPrivilegeLevel e)> insufficientPrivilegeLevel::error;
 	#endif
 
+	/**
+	 * @brief issue for when a variable is stored on the stack pointer
+	 */
 	class stackPointerStorage : public issue {
 	public:
 		static action Action;
@@ -656,6 +719,9 @@ namespace issues {
 		std::stack<int(*)(stackPointerStorage e)> stackPointerStorage::error;
 	#endif
 
+	/**
+	 * @brief issue for when a variable is explicitly stored at an absolute memory address
+	 */
 	class absoluteMemoryStorage : public issue {
 	public:
 		static action Action;
@@ -734,5 +800,8 @@ namespace issues {
 //*  ██████  ██           ██     ██████   ██████   ███ ███  ██   ████  ██████  ██   ██ ██   ██ ██████  ███████
 //*####################################################################################################################
 //*####################################################################################################################
+	/**
+	 * @brief changes the static action member on a group of issues
+	 */
 	void changeGroupAction(std::string name, action Action);
 }

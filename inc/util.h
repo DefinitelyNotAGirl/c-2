@@ -32,6 +32,9 @@
 #include <string>
 #include "common.h"
 
+/**
+ * @brief converts all characters in string to lower case, note that this operating is performed in place
+ */
 void strToLower(std::string& str);
 
 bool isDigit(char);
@@ -39,9 +42,18 @@ bool isLatinChar(char);
 
 uint64_t roundUp(uint64_t numToRound, uint64_t multiple);
 
+/**
+ * @brief strips a file path of its extension
+ */
 void stripExt(std::string& str);
+/**
+ * @brief extracts the file extension from a path
+ */
 std::string getExt(std::string& str);
 
+/**
+ * @brief inserts an element into a vector at a given position
+ */
 template<typename T>
 void inject(std::vector<T>& src, std::vector<T>& dst, uint64_t offset)
 {
@@ -61,6 +73,9 @@ void inject(std::vector<T>& src, std::vector<T>& dst, uint64_t offset)
 
 void fileOut(std::string content, std::string path);
 
+/**
+ * @brief checks if any element in a vector is equivalent to val
+ */
 template<typename t>
 bool contains(std::vector<t>& v,t& val)
 {

@@ -2,6 +2,9 @@
 #include <SYS_LINUX.h>
 #include <output.hxx>
 
+/**
+ * @brief parses the async statement and inserts the required machine code to allocate stack space and launch a new thread
+ */
 void parse::Keywords::Async()
 {
 	ParserState.Token = ParserState.Line.nextToken();
@@ -57,7 +60,7 @@ void parse::Keywords::Async()
 		}
 	}
 	//listdump("async inputs",&inputs,"");
-	std::string threadCodeSymbol = getNewName();
+	std::string threadCodeSymbol = getNewGlobalName();
 	//,
 	//, create new stack (result stored in rax)
 	//,
@@ -393,7 +396,7 @@ void parse::Keywords::Async()
 			RoutineData_T* data = (RoutineData_T*)__data;
 			for(Routine& r : data->sc->BranchCode)
 				r.run();
-			text.placeSymbol(SymbolType::LocalFunction,code->size(),data->sc->name);
+			text.placeSymbol(SymbolType::GlobalFunction,code->size(),data->sc->name);
 			text.push(code);
 		}
 	));

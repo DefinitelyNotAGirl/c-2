@@ -50,6 +50,7 @@ namespace Entity {
 		//, "... constructor deleted ... ill-formed ..." - my ass, 
 		//, calling the constructors of union members is totally illogical and as a consequence a union can't have a constructor.
 		//, do not attempt to refactor this into a union, total hours wasted here: 1
+		//, - Lilith
 		PrimitiveAttributeData Primitive;
 		mangler* Mangler;
 		ABI* Abi;
@@ -94,6 +95,10 @@ namespace Entity {
 
 	bool close(scope* s);
 
+	/**
+	 * @brief updates the compilers current operating scope, this should really be reafactored into a stack, 
+	 * but it's deeply embedded into the code so refactoring would be a pain in the ass
+	 */
 	inline void updateCurrentScope(scope* sc) {
 		currentScope = sc;
 		if(sc->func != nullptr)
